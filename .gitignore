@@ -1,0 +1,6 @@
+# Universal patterns
+bin/
+target/
+.settings/
+.classpath
+.project
