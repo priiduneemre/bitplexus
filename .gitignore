@@ -4,3 +4,6 @@ target/
 .settings/
 .classpath
 .project
+
+# Project-specific patterns
+rebel.xml
