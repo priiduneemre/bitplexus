@@ -8,7 +8,7 @@
 	<packaging>war</packaging>
 
 	<name>Bitplexus</name>
-	<description>A proof-of-concept online wallet service for multiple cryptocurrencies (Bitcoin, Litecoin etc.)</description>
+	<description>A proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)</description>
 	<url>http://bitplexus.neemre.com</url>
 
 	<licenses>
@@ -23,13 +23,28 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
 		<jdk.version>1.7</jdk.version>
-		<spring-framework.version>4.1.1.RELEASE</spring-framework.version>
+		<spring.version>4.1.5.RELEASE</spring.version>
 		<jackson.version>2.4.2</jackson.version>
 		<slf4j.version>1.7.5</slf4j.version>
 		<geda.version>3.1.0</geda.version>
 	</properties>
 
 	<dependencies>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-jdbc</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>com.neemre.btcd-cli4j</groupId>
 			<artifactId>btcd-cli4j-core</artifactId>

@@ -1,6 +1,6 @@
 
 /*Project:          Bitplexus - a proof-of-concept online wallet service for multiple cryptocurrencies (Bitcoin, Litecoin etc.)*/
-/*File description: DDL & DML statements for recreating the application's database structure (optimized for PostgreSQL 9.4.1).*/
+/*File description: DDL & DML statements for constructing the application's database structure (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
 /*Last modified:    2015-03-19 18:39:47*/
 
