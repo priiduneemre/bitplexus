@@ -2,16 +2,17 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DML statements for reconstructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-03-26 19:35:13*/
+/*Last modified:    2015-03-27 16:37:58*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
-/*1.1.1 Creation statements (platform independent)*/
+/*1.1 Creation statements (platform independent)*/
 CREATE ROLE bitplexus_customer WITH LOGIN ENCRYPTED PASSWORD '5rNiXDiD1L2MJw7trF2V';
 CREATE ROLE bitplexus_employee WITH LOGIN ENCRYPTED PASSWORD 'H8Jw68doiJzUxJUR4jHU';
-CREATE ROLE bitplexus_dba WITH LOGIN ENCRYPTED PASSWORD 'C4VEammTWUrWmUMddBQZ';
+CREATE ROLE bitplexus_dbm WITH LOGIN ENCRYPTED PASSWORD 'du8Re1YKpte6cfr4Bi9X';
+CREATE ROLE bitplexus_dba WITH SUPERUSER CREATEDB CREATEROLE REPLICATION LOGIN ENCRYPTED PASSWORD 'C4VEammTWUrWmUMddBQZ';
 
-/*1.1.1 Creation statements (platform dependent)*/
+/*1.2 Creation statements (platform dependent)*/
 /*(Option #1: for Linux environments)*/
 CREATE DATABASE bitplexus
 WITH
@@ -32,9 +33,10 @@ LC_COLLATE 'English_United states.1252'
 LC_CTYPE 'English_United states.1252'
 CONNECTION LIMIT 100;
 
-/*1.2 Removal statements*/
+/*1.3 Removal statements*/
 DROP ROLE IF EXISTS bitplexus_customer;
 DROP ROLE IF EXISTS bitplexus_employee;
+DROP ROLE IF EXISTS bitplexus_dbm;
 DROP ROLE IF EXISTS bitplexus_dba;
 DROP DATABASE IF EXISTS bitplexus;
 
@@ -48,7 +50,7 @@ DROP DATABASE IF EXISTS bitplexus;
 /*3.1 Creation statements*/
 CREATE TABLE member (
     member_id       SERIAL,
-    username        VARCHAR(15)     NOT NULL,
+    username        VARCHAR(20)     NOT NULL,
     password        CHAR(60)        NOT NULL,
     failed_logins   SMALLINT        NOT NULL    DEFAULT 0,
     is_active       BOOLEAN         NOT NULL    DEFAULT TRUE,
@@ -58,26 +60,12 @@ CREATE TABLE member (
 
     CONSTRAINT pk_member PRIMARY KEY (member_id),
     CONSTRAINT ak_member_username UNIQUE (username),
-    CONSTRAINT fk_member_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id)
+    CONSTRAINT fk_member_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
 
-    CONSTRAINT chk_member_failed_logins_in_range CHECK (failed_logins > 0),
-    CONSTRAINT chk_member_is_active_valid CHECK (!(failed_logins > 2 AND is_active = TRUE)),
-    CONSTRAINT chk_member_registered_at_in_range CHECK (registered_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),
-    CONSTRAINT chk_member_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')
-);
-
-CREATE TABLE person (
-    person_id   INTEGER         NOT NULL,
-    first_name  VARCHAR(50)     NOT NULL,
-    last_name   VARCHAR(50)     NOT NULL,
-    created_at  TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
-    updated_at  TIMESTAMP(0),
-    
-    CONSTRAINT pk_person PRIMARY KEY (person_id),
-    CONSTRAINT fk_person_person_id FOREIGN KEY (person_id) REFERENCES member (member_id) ON DELETE CASCADE,
-    
-    CONSTRAINT chk_person_created_at_in_range CHECK (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),
-    CONSTRAINT chk_person_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')
+    CONSTRAINT ck_member_failed_logins_in_range CHECK (failed_logins >= 0),
+    CONSTRAINT ck_member_is_active_valid CHECK (NOT (failed_logins > 2 AND is_active = TRUE)),
+    CONSTRAINT ck_member_registered_at_in_range CHECK (registered_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_member_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE email_address (
@@ -88,52 +76,66 @@ CREATE TABLE email_address (
     CONSTRAINT pk_email_address PRIMARY KEY (email_address_id),
     CONSTRAINT ak_email_address_address UNIQUE (address),
     
-    CONSTRAINT chk_email_address_created_at_in_range CHECK (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),    
+    CONSTRAINT ck_email_address_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),    
 );
 
 CREATE TABLE phone_number (
     phone_number_id     SERIAL,
     country_code        VARCHAR(3)      NOT NULL,
     subscriber_number   VARCHAR(14)     NOT NULL,
-    created_at,         TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    created_at          TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
     CONSTRAINT pk_phone_number PRIMARY KEY (phone_number_id),
     CONSTRAINT ak_phone_number_country_code_subscriber_number UNIQUE (country_code, subscriber_number),
     
-    CONSTRAINT chk_phone_number_created_at_in_range CHECK (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),    
+    CONSTRAINT ck_phone_number_subscriber_number_length CHECK (length(subscriber_number) > 7),
+    CONSTRAINT ck_phone_number_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),    
 );
 
-CREATE TABLE person_email_address (
-    person_id           INTEGER         NOT NULL,
+CREATE TABLE member_email_address (
+    member_id           INTEGER         NOT NULL,
     email_address_id    INTEGER         NOT NULL,
     is_verified         BOOLEAN         NOT NULL    DEFAULT FALSE,
     is_active           BOOLEAN         NOT NULL    DEFAULT TRUE,
     linked_at,          TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     updated_at          TIMESTAMP(0),
     
-    CONSTRAINT pk_person_email_address PRIMARY KEY (person_id, email_address_id),
-    CONSTRAINT fk_person_email_address_person_id FOREIGN KEY (person_id) REFERENCES person (person_id) ON DELETE CASCADE,
-    CONSTRAINT fk_person_email_address_email_address_id FOREIGN KEY (email_address_id) REFERENCES email_address (email_address_id),
+    CONSTRAINT pk_member_email_address PRIMARY KEY (member_id, email_address_id),
+    CONSTRAINT fk_member_email_address_member_id FOREIGN KEY (member_id) REFERENCES member (member_id),
+    CONSTRAINT fk_member_email_address_email_address_id FOREIGN KEY (email_address_id) REFERENCES email_address (email_address_id),
     
-    CONSTRAINT chk_person_email_address_linked_at_in_range CHECK (linked_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),    
-    CONSTRAINT chk_person_email_address_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),    
+    CONSTRAINT ck_member_email_address_linked_at_in_range CHECK (linked_at BETWEEN '1900-01-01' AND '2100-01-01'),    
+    CONSTRAINT ck_member_email_address_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')   
 );
 
-CREATE TABLE person_phone_number (
-    person_id           INTEGER         NOT NULL,
+CREATE TABLE member_phone_number (
+    member_id           INTEGER         NOT NULL,
     phone_number_id     INTEGER         NOT NULL,
     is_verified         BOOLEAN         NOT NULL    DEFAULT FALSE,
     is_active           BOOLEAN         NOT NULL    DEFAULT TRUE,
     linked_at           TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     updated_at          TIMESTAMP(0),
     
-    CONSTRAINT pk_person_phone_number PRIMARY KEY (person_id, phone_number_id),
-    CONSTRAINT fk_person_phone_number_person_id FOREIGN KEY (person_id) REFERENCES person (person_id) ON DELETE CASCADE,
-    CONSTRAINT fk_person_phone_number_phone_number_id FOREIGN KEY (phone_number_id) REFERENCES phone_number (phone_number_id),
+    CONSTRAINT pk_member_phone_number PRIMARY KEY (member_id, phone_number_id),
+    CONSTRAINT fk_member_phone_number_member_id FOREIGN KEY (member_id) REFERENCES member (member_id),
+    CONSTRAINT fk_member_phone_number_phone_number_id FOREIGN KEY (phone_number_id) REFERENCES phone_number (phone_number_id),
     
-    CONSTRAINT chk_person_phone_number_linked_at_in_range CHECK (linked_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),    
-    CONSTRAINT chk_person_phone_number_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),    
+    CONSTRAINT ck_member_phone_number_linked_at_in_range CHECK (linked_at BETWEEN '1900-01-01' AND '2100-01-01'),    
+    CONSTRAINT ck_member_phone_number_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')    
+);
+
+CREATE TABLE person (
+    person_id   INTEGER         NOT NULL,
+    first_name  VARCHAR(50)     NOT NULL,
+    last_name   VARCHAR(50)     NOT NULL,
+    created_at  TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    updated_at  TIMESTAMP(0),
     
+    CONSTRAINT pk_person PRIMARY KEY (person_id),
+    CONSTRAINT fk_person_person_id FOREIGN KEY (person_id) REFERENCES member (member_id),
+    
+    CONSTRAINT ck_person_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_person_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE customer (
@@ -141,9 +143,9 @@ CREATE TABLE customer (
     created_at      TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
     CONSTRAINT pk_customer PRIMARY KEY (customer_id),
-    CONSTRAINT fk_customer_customer_id FOREIGN KEY (customer_id) REFERENCES person (person_id) ON DELETE CASCADE,
+    CONSTRAINT fk_customer_customer_id FOREIGN KEY (customer_id) REFERENCES person (person_id),
     
-    CONSTRAINT chk_customer_created_at_in_range CHECK (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')
+    CONSTRAINT ck_customer_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE employee (
@@ -156,12 +158,13 @@ CREATE TABLE employee (
     created_at      TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
     CONSTRAINT pk_employee PRIMARY KEY (employee_id),
-    CONSTRAINT fk_employee_employee_id FOREIGN KEY (employee_id) REFERENCES person (person_id) ON DELETE CASCADE,
+    CONSTRAINT fk_employee_employee_id FOREIGN KEY (employee_id) REFERENCES person (person_id),
     
-    CONSTRAINT chk_employee_born_on_in_range CHECK (born_on BETWEEN '1900-01-01' AND '2099-12-31'),
-    CONSTRAINT chk_employee_employed_on_in_range CHECK (employed_on BETWEEN '1900-01-01' AND '2099-12-31'),
-    CONSTRAINT chk_employee_resigned_on_in_range CHECK (resigned_on BETWEEN '1900-01-01' AND '2099-12-31'),
-    CONSTRAINT chk_employee_created_at_in_range CHECK (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')
+    CONSTRAINT ck_employee_iban_length CHECK (length(iban) > 4),
+    CONSTRAINT ck_employee_born_on_in_range CHECK (born_on BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_employee_employed_on_in_range CHECK (employed_on BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_employee_resigned_on_in_range CHECK (resigned_on BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_employee_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE role (
@@ -181,10 +184,10 @@ CREATE TABLE employee_role (
     assigned_at     TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
     CONSTRAINT pk_employee_role PRIMARY KEY (employee_id, role_id),
-    CONSTRAINT fk_employee_role_employee_id FOREIGN KEY (employee_id) ON DELETE CASCADE,
-    CONSTRAINT fk_employee_role_role_id FOREIGN KEY (role_id) ON UPDATE CASCADE,
+    CONSTRAINT fk_employee_role_employee_id FOREIGN KEY (employee_id) REFERENCES employee (employee_id),
+    CONSTRAINT fk_employee_role_role_id FOREIGN KEY (role_id) REFERENCES role (role_id) ON UPDATE CASCADE,
     
-    CONSTRAINT chk_employee_role_assigned_at_in_range CHECK (assigned_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')    
+    CONSTRAINT ck_employee_role_assigned_at_in_range CHECK (assigned_at BETWEEN '1900-01-01' AND '2100-01-01')    
 );
 
 CREATE TABLE currency (
@@ -192,7 +195,7 @@ CREATE TABLE currency (
     name            VARCHAR(25)     NOT NULL,
     abbreviation    VARCHAR(8)      NOT NULL,
     symbol          VARCHAR(3)      NOT NULL,
-    supply_limit    BIGINT          NOT NULL,
+    supply_limit    NUMERIC(19, 8)  NOT NULL,
     website_url     VARCHAR(100)    NOT NULL,
     launched_on     DATE            NOT NULL,
     created_at      TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
@@ -208,10 +211,11 @@ CREATE TABLE currency (
     CONSTRAINT fk_currency_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_currency_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
-    CONSTRAINT chk_currency_supply_limit_in_range CHECK (supply_limit > 0),
-    CONSTRAINT chk_currency_launched_on_in_range CHECK (launched_on BETWEEN '1900-01-01' AND '2099-12-31'),
-    CONSTRAINT chk_currency_created_at_in_range CHECK (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59') 
-    CONSTRAINT chk_currency_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')
+    CONSTRAINT ck_currency_supply_limit_in_range CHECK (supply_limit > 0),
+    CONSTRAINT ck_currency_website_url_length CHECK (length(website_url) > 2),
+    CONSTRAINT ck_currency_launched_on_in_range CHECK (launched_on BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_currency_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01') 
+    CONSTRAINT ck_currency_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE chain (
@@ -228,13 +232,13 @@ CREATE TABLE chain (
     CONSTRAINT pk_chain PRIMARY KEY (chain_id),
     CONSTRAINT ak_chain_code UNIQUE (code),
     CONSTRAINT ak_chain_name UNIQUE (name),
-    CONSTRAINT fk_chain_currency_id FOREIGN KEY (currency_id) REFERENCES currency (currency_id) ON DELETE CASCADE,
+    CONSTRAINT fk_chain_currency_id FOREIGN KEY (currency_id) REFERENCES currency (currency_id),
     CONSTRAINT fk_chain_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_chain_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
-    CONSTRAINT chk_chain_started_on_in_range CHECK (started_on BETWEEN '1900-01-01' AND '2099-12-31'),
-    CONSTRAINT chk_chain_created_at_in_range CHECK (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),
-    CONSTRAINT chk_chain_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')
+    CONSTRAINT ck_chain_started_on_in_range CHECK (started_on BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_chain_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_chain_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE wallet_state_type (
@@ -256,11 +260,11 @@ CREATE TABLE wallet (
     updated_at              TIMESTAMP(0),
     
     CONSTRAINT pk_wallet PRIMARY KEY (wallet_id),
-    CONSTRAINT fk_wallet_customer_id FOREIGN KEY (customer_id) REFERENCES customer (customer_id) ON DELETE CASCADE,
+    CONSTRAINT fk_wallet_customer_id FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
     CONSTRAINT fk_wallet_wallet_state_type_id FOREIGN KEY (wallet_state_type_id) REFERENCES wallet_state_type (wallet_state_type_id) ON UPDATE CASCADE,
     
-    CONSTRAINT chk_wallet_created_at_in_range CHECK (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),
-    CONSTRAINT chk_wallet_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')    
+    CONSTRAINT ck_wallet_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_wallet_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')    
 );
 
 CREATE TABLE address_type (
@@ -281,8 +285,8 @@ CREATE TABLE address_type (
     CONSTRAINT fk_address_type_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_address_type_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
-    CONSTRAINT chk_address_type_created_at_in_range (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),
-    CONSTRAINT chk_address_type_updated_at_in_range (updated_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')
+    CONSTRAINT ck_address_type_created_at_in_range (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_address_type_updated_at_in_range (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE address_state_type (
@@ -312,9 +316,10 @@ CREATE TABLE address (
     CONSTRAINT fk_address_address_type_id FOREIGN KEY (address_type_id) REFERENCES address_type (address_type_id),
     CONSTRAINT fk_address_address_state_type_id FOREIGN KEY (address_state_type_id) REFERENCES address_state_type (address_state_type_id),
     
-    CONSTRAINT chk_address_balance_in_range CHECK (balance >= 0),
-    CONSTRAINT chk_address_created_at_in_range (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),
-    CONSTRAINT chk_address_updated_at_in_range (updated_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')
+    CONSTRAINT ck_address_encoded_form_length CHECK (length(encoded_form) > 25),
+    CONSTRAINT ck_address_balance_in_range CHECK (balance >= 0),
+    CONSTRAINT ck_address_created_at_in_range (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_address_updated_at_in_range (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE address_book_entry (
@@ -329,8 +334,8 @@ CREATE TABLE address_book_entry (
     CONSTRAINT fk_address_book_entry_customer_id FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
     CONSTRAINT fk_address_book_entry_address_id FOREIGN KEY (address_id) REFERENCES address (address_id),
     
-    CONSTRAINT chk_address_book_entry_created_at_in_range (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),
-    CONSTRAINT chk_address_book_entry_updated_at_in_range (updated_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')
+    CONSTRAINT ck_address_book_entry_created_at_in_range (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_address_book_entry_updated_at_in_range (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE transaction_status_type (
@@ -355,18 +360,20 @@ CREATE TABLE transactions (
     unit_price                  NUMERIC(19, 8)  NOT NULL,
     note                        VARCHAR(255),
     created_at                  TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    updated_at                  TIMESTAMP(0),
     
     CONSTRAINT pk_transactions PRIMARY KEY (transaction_id),
     CONSTRAINT ak_transactions_local_uid UNIQUE (local_uid),
     CONSTRAINT ak_transactions_network_uid UNIQUE (network_uid),
-    CONSTRAINT fk_transactions_transaction_status_type_id FOREIGN KEY (transactions_status_type_id) REFERENCES transactions_status_type (transactions_status_type_id),
+    CONSTRAINT fk_transactions_transaction_status_type_id FOREIGN KEY (transaction_status_type_id) REFERENCES transaction_status_type (transaction_status_type_id),
         
-    CONSTRAINT chk_transactions_block_height_in_range CHECK (block_height > 0),
-    CONSTRAINT chk_transactions_hex_size_in_range CHECK (hex_size > 0),
-    CONSTRAINT chk_transactions_fee_in_range CHECK (fee >= 0),
-    CONSTRAINT chk_transactions_unit_price_in_range CHECK (unit_price > 0),
-    CONSTRAINT chk_transactions_received_at_in_range CHECK (received_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),
-    CONSTRAINT chk_transactions_created_at_in_range CHECK (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),
+    CONSTRAINT ck_transactions_block_height_in_range CHECK (block_height > 0),
+    CONSTRAINT ck_transactions_hex_size_in_range CHECK (hex_size > 0),
+    CONSTRAINT ck_transactions_fee_in_range CHECK (fee >= 0),
+    CONSTRAINT ck_transactions_unit_price_in_range CHECK (unit_price > 0),
+    CONSTRAINT ck_transactions_received_at_in_range CHECK (received_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transactions_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transactions_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE transaction_endpoint_type (
@@ -392,12 +399,12 @@ CREATE TABLE transaction_endpoint (
     CONSTRAINT fk_transaction_endpoint_address_id FOREIGN KEY (address_id) REFERENCES address (address_id),
     CONSTRAINT fk_transaction_endpoint_transaction_endpoint_type_id FOREIGN KEY (transaction_endpoint_type_id) REFERENCES transaction_endpoint_type (transaction_endpoint_type_id) ON UPDATE CASCADE,
     
-    CONSTRAINT chk_transactions_amount_in_range CHECK (amount > 0),
-    CONSTRAINT chk_transaction_endpoint_created_at_in_range CHECK (created_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')
+    CONSTRAINT ck_transaction_endpoint_amount_in_range CHECK (amount > 0),
+    CONSTRAINT ck_transaction_endpoint_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE payment_request (
-    payment_request_id  SERIAL,
+    payment_request_id  BIGSERIAL,
     address_id          BIGINT          NOT NULL,
     amount              NUMERIC(19, 8)  NOT NULL,
     note                VARCHAR(255),
@@ -406,8 +413,8 @@ CREATE TABLE payment_request (
     CONSTRAINT pk_payment_request PRIMARY KEY (payment_request_id),
     CONSTRAINT fk_payment_request_address_id FOREIGN KEY (address_id) REFERENCES address (address_id),
     
-    CONSTRAINT chk_payment_request_amount_in_range CHECK (amount > 0),
-    CONSTRAINT chk_payment_request_requested_at_in_range CHECK (requested_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59'),
+    CONSTRAINT ck_payment_request_amount_in_range CHECK (amount > 0),
+    CONSTRAINT ck_payment_request_requested_at_in_range CHECK (requested_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE visit (
@@ -420,16 +427,17 @@ CREATE TABLE visit (
     CONSTRAINT ak_visit_ip_address UNIQUE (ip_address),
     CONSTRAINT fk_visit_member_id FOREIGN KEY (member_id) REFERENCES member (member_id),
     
-    CONSTRAINT chk_visit_visited_at_in_range CHECK (visisted_at BETWEEN '1900-01-01 00:00:00' AND '2099-12-31 23:59:59')
+    CONSTRAINT ck_visit_ip_address_length CHECK (length(ip_address) > 6),
+    CONSTRAINT ck_visit_visited_at_in_range CHECK (visisted_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 /*3.2 Removal statements*/
 DROP TABLE IF EXISTS member CASCADE;
-DROP TABLE IF EXISTS person CASCADE;
 DROP TABLE IF EXISTS email_address CASCADE;
 DROP TABLE IF EXISTS phone_number CASCADE;
-DROP TABLE IF EXISTS person_email_address CASCADE;
-DROP TABLE IF EXISTS person_phone_number CASCADE;
+DROP TABLE IF EXISTS member_email_address CASCADE;
+DROP TABLE IF EXISTS member_phone_number CASCADE;
+DROP TABLE IF EXISTS person CASCADE;
 DROP TABLE IF EXISTS customer CASCADE;
 DROP TABLE IF EXISTS employee CASCADE;
 DROP TABLE IF EXISTS role CASCADE;
@@ -454,10 +462,8 @@ DROP TABLE IF EXISTS visit CASCADE;
 /*4.1 Primary indices (foreign keys etc.)*/
 /*4.1.1 Creation statements*/
 CREATE INDEX idx_member_updated_by ON member USING btree (updated_by);
-CREATE INDEX idx_person_person_id ON person USING btree (person_id);
-CREATE INDEX idx_person_email_address_email_address_id ON person_email_address USING btree (email_address_id);
-CREATE INDEX idx_person_phone_number_phone_number_id ON perosn_phone_number USING btree (phone_number_id);
-CREATE INDEX idx_customer_customer_id ON customer USING btree (customer_id);
+CREATE INDEX idx_member_email_address_email_address_id ON member_email_address USING btree (email_address_id);
+CREATE INDEX idx_member_phone_number_phone_number_id ON member_phone_number USING btree (phone_number_id);
 CREATE INDEX idx_employee_employee_id ON employee USING btree (employee_id);
 CREATE INDEX idx_employee_role_role_id ON employee_role USING btree (role_id);
 CREATE INDEX idx_currency_created_by ON currency USING btree (created_by);
@@ -483,10 +489,8 @@ CREATE INDEX idx_visit_member_id ON visit USING btree (member_id);
 
 /*4.1.2 Removal statements*/
 DROP INDEX IF EXISTS idx_member_updated_by;
-DROP INDEX IF EXISTS idx_person_person_id;
-DROP INDEX IF EXISTS idx_person_email_address_email_address_id;
-DROP INDEX IF EXISTS idx_person_phone_number_phone_number_id;
-DROP INDEX IF EXISTS idx_customer_customer_id;
+DROP INDEX IF EXISTS idx_member_email_address_email_address_id;
+DROP INDEX IF EXISTS idx_member_phone_number_phone_number_id;
 DROP INDEX IF EXISTS idx_employee_employee_id;
 DROP INDEX IF EXISTS idx_employee_role_role_id;
 DROP INDEX IF EXISTS idx_currency_created_by;
@@ -536,7 +540,25 @@ REVOKE ALL PRIVILEGES ON DATABASE bitplexus FROM public;
 REVOKE ALL PRIVILEGES ON SCHEMA public FROM public;
 
 /*7.2 Assignation statements*/
+GRANT CONNECT ON DATABASE bitplexus TO bitplexus_customer;
+GRANT USAGE ON SCHEMA public TO bitplexus_customer;
+
+GRANT CONNECT ON DATABASE bitplexus TO bitplexus_employee;
+GRANT USAGE ON SCHEMA public TO bitplexus_employee;
+
+GRANT CONNECT ON DATABASE bitplexus TO bitplexus_dbm;
+GRANT USAGE ON SCHEMA public TO bitplexus_dbm;
+
 /*7.3 Revocation statements*/
+REVOKE CONNECT ON DATABASE bitplexus FROM bitplexus_customer;
+REVOKE USAGE ON SCHEMA public FROM bitplexus_customer;
+
+REVOKE CONNECT ON DATABASE bitplexus FROM bitplexus_employee;
+REVOKE USAGE ON SCHEMA public FROM bitplexus_employee;
+
+REVOKE CONNECT ON DATABASE bitplexus FROM bitplexus_dbm;
+REVOKE USAGE ON SCHEMA public FROM bitplexus_dbm;
+
 
 /*8. DML - Management of initial data*/
 /*8.1 Regular tables*/
