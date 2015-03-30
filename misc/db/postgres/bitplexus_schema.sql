@@ -93,14 +93,15 @@ CREATE TABLE phone_number (
 );
 
 CREATE TABLE member_email_address (
-    member_id           INTEGER         NOT NULL,
-    email_address_id    INTEGER         NOT NULL,
-    is_verified         BOOLEAN         NOT NULL    DEFAULT FALSE,
-    is_active           BOOLEAN         NOT NULL    DEFAULT TRUE,
-    linked_at,          TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
-    updated_at          TIMESTAMP(0),
+    member_email_address_id     SERIAL,
+    member_id                   INTEGER         NOT NULL,
+    email_address_id            INTEGER         NOT NULL,
+    is_verified                 BOOLEAN         NOT NULL    DEFAULT FALSE,
+    is_active                   BOOLEAN         NOT NULL    DEFAULT TRUE,
+    linked_at,                  TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    updated_at                  TIMESTAMP(0),
     
-    CONSTRAINT pk_member_email_address PRIMARY KEY (member_id, email_address_id),
+    CONSTRAINT pk_member_email_address PRIMARY KEY (member_email_address_id),
     CONSTRAINT fk_member_email_address_member_id FOREIGN KEY (member_id) REFERENCES member (member_id),
     CONSTRAINT fk_member_email_address_email_address_id FOREIGN KEY (email_address_id) REFERENCES email_address (email_address_id),
     
@@ -109,14 +110,15 @@ CREATE TABLE member_email_address (
 );
 
 CREATE TABLE member_phone_number (
-    member_id           INTEGER         NOT NULL,
-    phone_number_id     INTEGER         NOT NULL,
-    is_verified         BOOLEAN         NOT NULL    DEFAULT FALSE,
-    is_active           BOOLEAN         NOT NULL    DEFAULT TRUE,
-    linked_at           TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
-    updated_at          TIMESTAMP(0),
+    member_phone_number_id  SERIAL,
+    member_id               INTEGER         NOT NULL,
+    phone_number_id         INTEGER         NOT NULL,
+    is_verified             BOOLEAN         NOT NULL    DEFAULT FALSE,
+    is_active               BOOLEAN         NOT NULL    DEFAULT TRUE,
+    linked_at               TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    updated_at              TIMESTAMP(0),
     
-    CONSTRAINT pk_member_phone_number PRIMARY KEY (member_id, phone_number_id),
+    CONSTRAINT pk_member_phone_number PRIMARY KEY (member_phone_number_id),
     CONSTRAINT fk_member_phone_number_member_id FOREIGN KEY (member_id) REFERENCES member (member_id),
     CONSTRAINT fk_member_phone_number_phone_number_id FOREIGN KEY (phone_number_id) REFERENCES phone_number (phone_number_id),
     
@@ -168,7 +170,7 @@ CREATE TABLE employee (
 );
 
 CREATE TABLE role (
-    role_id     SMALLSERIAL,
+    role_id     SMALLINT,
     code        VARCHAR(30)     NOT NULL,
     name        VARCHAR(60)     NOT NULL,
     
@@ -178,12 +180,13 @@ CREATE TABLE role (
 );
 
 CREATE TABLE employee_role (
-    employee_id     INTEGER         NOT NULL,
-    role_id         SMALLINT        NOT NULL,
-    is_active       BOOLEAN         NOT NULL    DEFAULT TRUE,
-    assigned_at     TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    employee_role_id    SERIAL,
+    employee_id         INTEGER         NOT NULL,
+    role_id             SMALLINT        NOT NULL,
+    is_active           BOOLEAN         NOT NULL    DEFAULT TRUE,
+    assigned_at         TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
-    CONSTRAINT pk_employee_role PRIMARY KEY (employee_id, role_id),
+    CONSTRAINT pk_employee_role PRIMARY KEY (employee_role_id),
     CONSTRAINT fk_employee_role_employee_id FOREIGN KEY (employee_id) REFERENCES employee (employee_id),
     CONSTRAINT fk_employee_role_role_id FOREIGN KEY (role_id) REFERENCES role (role_id) ON UPDATE CASCADE,
     
@@ -232,7 +235,7 @@ CREATE TABLE chain (
     CONSTRAINT pk_chain PRIMARY KEY (chain_id),
     CONSTRAINT ak_chain_code UNIQUE (code),
     CONSTRAINT ak_chain_name UNIQUE (name),
-    CONSTRAINT fk_chain_currency_id FOREIGN KEY (currency_id) REFERENCES currency (currency_id),
+    CONSTRAINT fk_chain_currency_id FOREIGN KEY (currency_id) REFERENCES currency (currency_id) ON DELETE CASCADE,
     CONSTRAINT fk_chain_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_chain_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
@@ -242,7 +245,7 @@ CREATE TABLE chain (
 );
 
 CREATE TABLE wallet_state_type (
-    wallet_state_type_id    SMALLSERIAL,
+    wallet_state_type_id    SMALLINT,
     code                    VARCHAR(30)     NOT NULL,
     name                    VARCHAR(60)     NOT NULL,
     
@@ -281,7 +284,7 @@ CREATE TABLE address_type (
     CONSTRAINT pk_address_type PRIMARY KEY (address_type_id),
     CONSTRAINT ak_address_type_code UNIQUE (code),
     CONSTRAINT ak_address_type_name UNIQUE (name),
-    CONSTRAINT fk_address_type_chain_id FOREIGN KEY (chain_id) REFERENCES chain (chain_id),
+    CONSTRAINT fk_address_type_chain_id FOREIGN KEY (chain_id) REFERENCES chain (chain_id) ON DELETE CASCADE,
     CONSTRAINT fk_address_type_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_address_type_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
@@ -290,7 +293,7 @@ CREATE TABLE address_type (
 );
 
 CREATE TABLE address_state_type (
-    address_state_type_id   SMALLSERIAL,
+    address_state_type_id   SMALLINT,
     code                    VARCHAR(30)     NOT NULL,
     name                    VARCHAR(60)     NOT NULL,
     
@@ -307,14 +310,14 @@ CREATE TABLE address (
     label                   VARCHAR(60),
     encoded_form            VARCHAR(35)         NOT NULL,
     balance                 NUMERIC(19, 8),
-    created_at              TIMESTAMP(0)        NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    encountered_at          TIMESTAMP(0)        NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     updated_at              TIMESTAMP(0),
     
     CONSTRAINT pk_address PRIMARY KEY (address_id),
     CONSTRAINT ak_address_encoded_form UNIQUE (encoded_form),
     CONSTRAINT fk_address_wallet_id FOREIGN KEY (wallet_id) REFERENCES wallet (wallet_id),
     CONSTRAINT fk_address_address_type_id FOREIGN KEY (address_type_id) REFERENCES address_type (address_type_id),
-    CONSTRAINT fk_address_address_state_type_id FOREIGN KEY (address_state_type_id) REFERENCES address_state_type (address_state_type_id),
+    CONSTRAINT fk_address_address_state_type_id FOREIGN KEY (address_state_type_id) REFERENCES address_state_type (address_state_type_id) ON UPDATE CASCADE,
     
     CONSTRAINT ck_address_encoded_form_length CHECK (length(encoded_form) > 25),
     CONSTRAINT ck_address_balance_in_range CHECK (balance >= 0),
@@ -339,7 +342,7 @@ CREATE TABLE address_book_entry (
 );
 
 CREATE TABLE transaction_status_type (
-    transaction_status_type_id  SMALLSERIAL,
+    transaction_status_type_id  SMALLINT,
     code                        VARCHAR(30)     NOT NULL,
     name                        VARCHAR(60)     NOT NULL,
     
@@ -359,13 +362,13 @@ CREATE TABLE transactions (
     fee                         NUMERIC(19, 8)  NOT NULL,
     unit_price                  NUMERIC(19, 8)  NOT NULL,
     note                        VARCHAR(255),
-    created_at                  TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    logged_at                   TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     updated_at                  TIMESTAMP(0),
     
     CONSTRAINT pk_transactions PRIMARY KEY (transaction_id),
     CONSTRAINT ak_transactions_local_uid UNIQUE (local_uid),
     CONSTRAINT ak_transactions_network_uid UNIQUE (network_uid),
-    CONSTRAINT fk_transactions_transaction_status_type_id FOREIGN KEY (transaction_status_type_id) REFERENCES transaction_status_type (transaction_status_type_id),
+    CONSTRAINT fk_transactions_transaction_status_type_id FOREIGN KEY (transaction_status_type_id) REFERENCES transaction_status_type (transaction_status_type_id) ON UPDATE CASCADE,
         
     CONSTRAINT ck_transactions_block_height_in_range CHECK (block_height > 0),
     CONSTRAINT ck_transactions_hex_size_in_range CHECK (hex_size > 0),
@@ -377,7 +380,7 @@ CREATE TABLE transactions (
 );
 
 CREATE TABLE transaction_endpoint_type (
-    transaction_endpoint_type_id    SMALLSERIAL,
+    transaction_endpoint_type_id    SMALLINT,
     code                            VARCHAR(30)     NOT NULL,
     name                            VARCHAR(60)     NOT NULL,
     
@@ -392,7 +395,7 @@ CREATE TABLE transaction_endpoint (
     address_id                      BIGINT          NOT NULL,
     transaction_endpoint_type_id    SMALLINT        NOT NULL,
     amount                          NUMERIC(19, 8)  NOT NULL,
-    created_at                      TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    logged_at                       TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
     CONSTRAINT pk_transaction_endpoint PRIMARY KEY (transaction_endpoint_id),
     CONSTRAINT fk_transaction_endpoint_transaction_id FOREIGN KEY (transaction_id) REFERENCES transactions (transaction_id),
@@ -462,12 +465,15 @@ DROP TABLE IF EXISTS visit CASCADE;
 /*4.1 Primary indices (foreign keys etc.)*/
 /*4.1.1 Creation statements*/
 CREATE INDEX idx_member_updated_by ON member USING btree (updated_by);
+CREATE INDEX idx_member_email_address_member_id ON member_email_address USING btree (member_id);
 CREATE INDEX idx_member_email_address_email_address_id ON member_email_address USING btree (email_address_id);
+CREATE INDEX idx_member_phone_number_member_id ON member_phone_number USING btree (member_id);
 CREATE INDEX idx_member_phone_number_phone_number_id ON member_phone_number USING btree (phone_number_id);
-CREATE INDEX idx_employee_employee_id ON employee USING btree (employee_id);
+CREATE INDEX idx_employee_role_employee_id ON employee_role USING btree (employee_id);
 CREATE INDEX idx_employee_role_role_id ON employee_role USING btree (role_id);
 CREATE INDEX idx_currency_created_by ON currency USING btree (created_by);
 CREATE INDEX idx_currency_updated_by ON currency USING btree (updated_by);
+CREATE INDEX idx_chain_currency_id ON chain USING btree (currency_id);
 CREATE INDEX idx_chain_created_by ON chain USING btree (created_by);
 CREATE INDEX idx_chain_updated_by ON chain USING btree (updated_by);
 CREATE INDEX idx_wallet_customer_id ON wallet USING btree (customer_id);
@@ -489,12 +495,15 @@ CREATE INDEX idx_visit_member_id ON visit USING btree (member_id);
 
 /*4.1.2 Removal statements*/
 DROP INDEX IF EXISTS idx_member_updated_by;
+DROP INDEX IF EXISTS idx_member_email_address_member_id;
 DROP INDEX IF EXISTS idx_member_email_address_email_address_id;
+DROP INDEX IF EXISTS idx_member_phone_number_member_id;
 DROP INDEX IF EXISTS idx_member_phone_number_phone_number_id;
-DROP INDEX IF EXISTS idx_employee_employee_id;
+DROP INDEX IF EXISTS idx_employee_role_employee_id;
 DROP INDEX IF EXISTS idx_employee_role_role_id;
 DROP INDEX IF EXISTS idx_currency_created_by;
 DROP INDEX IF EXISTS idx_currency_updated_by;
+DROP INDEX IF EXISTS idx_chain_currency_id;
 DROP INDEX IF EXISTS idx_chain_created_by;
 DROP INDEX IF EXISTS idx_chain_updated_by;
 DROP INDEX IF EXISTS idx_wallet_customer_id;
@@ -514,7 +523,7 @@ DROP INDEX IF EXISTS idx_transaction_endpoint_transaction_endpoint_type_id;
 DROP INDEX IF EXISTS idx_payment_request_address_id;
 DROP INDEX IF EXISTS idx_visit_member_id;
 
-/*4.2 Secondary indices (application-specific needs etc.)*/
+/*4.2 Secondary indices (frequent filter columns etc.)*/
 /*4.2.1 Creation statements*/
 CREATE INDEX idx_tabeli_nimi_veeru_nimi ON tabeli_nimi USING btree (veeru_nimi);
 
@@ -572,7 +581,6 @@ INSERT INTO role (role_id, code, name) VALUES (, , );
 /*8.2.2 Deletion statements*/
 TRUNCATE TABLE role CASCADE;
 TRUNCATE TABLE wallet_state_type CASCADE;
-TRUNCATE TABLE address_type CASCADE;
 TRUNCATE TABLE address_state_type CASCADE;
 TRUNCATE TABLE transaction_status_type CASCADE;
 TRUNCATE TABLE transaction_endpoint_type CASCADE;
