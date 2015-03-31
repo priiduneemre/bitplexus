@@ -1,8 +1,8 @@
 
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
-/*File description: DDL & DML statements for reconstructing the application's database (optimized for PostgreSQL 9.4.1).*/
+/*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-03-27 16:37:58*/
+/*Last modified:    2015-03-31 16:26:31*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -43,7 +43,10 @@ DROP DATABASE IF EXISTS bitplexus;
 
 /*2. DDL - Database-level objects (schemas, extensions etc.)*/
 /*2.1 Creation statements*/
+CREATE EXTENSION pgcrypto;
+
 /*2.2 Removal statements*/
+DROP EXTENSION IF EXISTS pgcrypto;
 
 
 /*3. DDL - Tables*/
@@ -88,6 +91,8 @@ CREATE TABLE phone_number (
     CONSTRAINT pk_phone_number PRIMARY KEY (phone_number_id),
     CONSTRAINT ak_phone_number_country_code_subscriber_number UNIQUE (country_code, subscriber_number),
     
+    CONSTRAINT ck_phone_number_country_code_valid CHECK (country_code ~ '^([0-9])+$'),
+    CONSTRAINT ck_phone_number_subscriber_number_valid CHECK (subscriber_number ~ '^([0-9])+$'), 
     CONSTRAINT ck_phone_number_subscriber_number_length CHECK (length(subscriber_number) > 7),
     CONSTRAINT ck_phone_number_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),    
 );
@@ -160,6 +165,7 @@ CREATE TABLE employee (
     created_at      TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
     CONSTRAINT pk_employee PRIMARY KEY (employee_id),
+    CONSTRAINT ak_employee_iban UNIQUE(iban),
     CONSTRAINT fk_employee_employee_id FOREIGN KEY (employee_id) REFERENCES person (person_id),
     
     CONSTRAINT ck_employee_iban_length CHECK (length(iban) > 4),
@@ -310,7 +316,7 @@ CREATE TABLE address (
     label                   VARCHAR(60),
     encoded_form            VARCHAR(35)         NOT NULL,
     balance                 NUMERIC(19, 8),
-    encountered_at          TIMESTAMP(0)        NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    indexed_at              TIMESTAMP(0)        NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     updated_at              TIMESTAMP(0),
     
     CONSTRAINT pk_address PRIMARY KEY (address_id),
@@ -523,12 +529,32 @@ DROP INDEX IF EXISTS idx_transaction_endpoint_transaction_endpoint_type_id;
 DROP INDEX IF EXISTS idx_payment_request_address_id;
 DROP INDEX IF EXISTS idx_visit_member_id;
 
-/*4.2 Secondary indices (frequent filter columns etc.)*/
+/*4.2 Secondary indices (common filter columns etc.)*/
 /*4.2.1 Creation statements*/
-CREATE INDEX idx_tabeli_nimi_veeru_nimi ON tabeli_nimi USING btree (veeru_nimi);
+CREATE UNIQUE INDEX uidx_member_email_address_member_id_email_address_id ON member_email_address USING btree (member_id, email_address_id) WHERE is_active = TRUE;
+CREATE UNIQUE INDEX uidx_member_phone_number_member_id_phone_number_id ON member_phone_number USING btree (member_id, phone_number_id) WHERE is_active = TRUE;
+CREATE UNIQUE INDEX uidx_employee_role_employee_id_role_id ON employee_role USING btree (employee_id, role_id) WHERE is_active = TRUE;
+
+CREATE INDEX idx_member_failed_logins ON member USING btree (failed_logins) WHERE failed_logins > 2;
+CREATE INDEX idx_phone_number_subscriber_number ON phone_number USING btree (subscriber_number varchar_pattern_ops);
+CREATE INDEX idx_person_first_name ON person USING btree (lower(first_name) varchar_pattern_ops);
+CREATE INDEX idx_person_last_name ON person USING btree (lower(last_name) varchar_pattern_ops);
+CREATE INDEX idx_address_type_leading_symbol ON address_type USING btree (leading_symbol);
+CREATE INDEX idx_transactions_block_height ON transactions USING btree (block_height);
+CREATE INDEX idx_visit_visited_at ON visit USING btree (visited_at);
 
 /*4.2.2 Removal statements*/
-DROP INDEX IF EXISTS idx_tabeli_nimi_veeru_nimi;
+DROP INDEX IF EXISTS uidx_member_email_address_member_id_email_address_id;
+DROP INDEX IF EXISTS uidx_member_phone_number_member_id_phone_number_id;
+DROP INDEX IF EXISTS uidx_employee_role_employee_id_role_id;
+
+DROP INDEX IF EXISTS idx_member_failed_logins;
+DROP INDEX IF EXISTS idx_phone_number_subscriber_number;
+DROP INDEX IF EXISTS idx_person_first_name;
+DROP INDEX IF EXISTS idx_person_last_name;
+DROP INDEX IF EXISTS idx_address_type_leading_symbol;
+DROP INDEX IF EXISTS idx_transactions_block_height;
+DROP INDEX IF EXISTS idx_visit_visited_at;
 
 
 /*5. DDL - Views*/
@@ -543,47 +569,143 @@ DROP INDEX IF EXISTS idx_tabeli_nimi_veeru_nimi;
 /*6.2.1 Creation statements*/
 /*6.2.2 Removal statements*/
 
-/*7. DCL - Privileges*/
-/*7.1 Precautionary statements*/
+/*7. DDL - Triggers*/
+/*7.1 Creation statements*/
+/*7.2 Removal statements*/
+
+
+/*8. DCL - Privileges*/
+/*8.1 Preparatory statements*/
 REVOKE ALL PRIVILEGES ON DATABASE bitplexus FROM public;
 REVOKE ALL PRIVILEGES ON SCHEMA public FROM public;
 
-/*7.2 Assignation statements*/
-GRANT CONNECT ON DATABASE bitplexus TO bitplexus_customer;
-GRANT USAGE ON SCHEMA public TO bitplexus_customer;
+/*8.2 Assignation statements*/
+GRANT CONNECT ON DATABASE bitplexus TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT USAGE ON SCHEMA public TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 
-GRANT CONNECT ON DATABASE bitplexus TO bitplexus_employee;
-GRANT USAGE ON SCHEMA public TO bitplexus_employee;
+GRANT SELECT ON TABLE member TO Abc;
+GRANT SELECT ON TABLE email_address TO Abc;
+GRANT SELECT ON TABLE phone_number TO Abc;
+GRANT SELECT ON TABLE member_email_address TO Abc;
+GRANT SELECT ON TABLE member_phone_number TO Abc;
+GRANT SELECT ON TABLE person TO Abc;
+GRANT SELECT ON TABLE customer TO Abc;
+GRANT SELECT ON TABLE employee TO Abc;
+GRANT SELECT ON TABLE role TO Abc;
+GRANT SELECT ON TABLE employee_role TO Abc;
+GRANT SELECT ON TABLE currency TO Abc;
+GRANT SELECT ON TABLE chain TO Abc;
+GRANT SELECT ON TABLE wallet_state_type TO Abc;
+GRANT SELECT ON TABLE wallet TO Abc;
+GRANT SELECT ON TABLE address_type TO Abc;
+GRANT SELECT ON TABLE address_state_type TO Abc;
+GRANT SELECT ON TABLE address TO Abc;
+GRANT SELECT ON TABLE address_book_entry TO Abc;
+GRANT SELECT ON TABLE transaction_status_type TO Abc;
+GRANT SELECT ON TABLE transactions TO Abc;
+GRANT SELECT ON TABLE transaction_endpoint_type TO Abc;
+GRANT SELECT ON TABLE transaction_endpoint TO Abc;
+GRANT SELECT ON TABLE payment_request TO Abc;
+GRANT SELECT ON TABLE visit TO Abc;
 
-GRANT CONNECT ON DATABASE bitplexus TO bitplexus_dbm;
-GRANT USAGE ON SCHEMA public TO bitplexus_dbm;
+GRANT INSERT ON TABLE member TO Abc;
+GRANT INSERT ON TABLE email_address TO Abc;
+GRANT INSERT ON TABLE phone_number TO Abc;
+GRANT INSERT ON TABLE member_email_address TO Abc;
+GRANT INSERT ON TABLE member_phone_number TO Abc;
+GRANT INSERT ON TABLE person TO Abc;
+GRANT INSERT ON TABLE customer TO Abc;
+GRANT INSERT ON TABLE employee TO Abc;
+GRANT INSERT ON TABLE role TO Abc;
+GRANT INSERT ON TABLE employee_role TO Abc;
+GRANT INSERT ON TABLE currency TO Abc;
+GRANT INSERT ON TABLE chain TO Abc;
+GRANT INSERT ON TABLE wallet_state_type TO Abc;
+GRANT INSERT ON TABLE wallet TO Abc;
+GRANT INSERT ON TABLE address_type TO Abc;
+GRANT INSERT ON TABLE address_state_type TO Abc;
+GRANT INSERT ON TABLE address TO Abc;
+GRANT INSERT ON TABLE address_book_entry TO Abc;
+GRANT INSERT ON TABLE transaction_status_type TO Abc;
+GRANT INSERT ON TABLE transactions TO Abc;
+GRANT INSERT ON TABLE transaction_endpoint_type TO Abc;
+GRANT INSERT ON TABLE transaction_endpoint TO Abc;
+GRANT INSERT ON TABLE payment_request TO Abc;
+GRANT INSERT ON TABLE visit TO Abc;
 
-/*7.3 Revocation statements*/
-REVOKE CONNECT ON DATABASE bitplexus FROM bitplexus_customer;
-REVOKE USAGE ON SCHEMA public FROM bitplexus_customer;
+GRANT UPDATE ON TABLE member TO Abc;
+GRANT UPDATE ON TABLE email_address TO Abc;
+GRANT UPDATE ON TABLE phone_number TO Abc;
+GRANT UPDATE ON TABLE member_email_address TO Abc;
+GRANT UPDATE ON TABLE member_phone_number TO Abc;
+GRANT UPDATE ON TABLE person TO Abc;
+GRANT UPDATE ON TABLE customer TO Abc;
+GRANT UPDATE ON TABLE employee TO Abc;
+GRANT UPDATE ON TABLE role TO Abc;
+GRANT UPDATE ON TABLE employee_role TO Abc;
+GRANT UPDATE ON TABLE currency TO Abc;
+GRANT UPDATE ON TABLE chain TO Abc;
+GRANT UPDATE ON TABLE wallet_state_type TO Abc;
+GRANT UPDATE ON TABLE wallet TO Abc;
+GRANT UPDATE ON TABLE address_type TO Abc;
+GRANT UPDATE ON TABLE address_state_type TO Abc;
+GRANT UPDATE ON TABLE address TO Abc;
+GRANT UPDATE ON TABLE address_book_entry TO Abc;
+GRANT UPDATE ON TABLE transaction_status_type TO Abc;
+GRANT UPDATE ON TABLE transactions TO Abc;
+GRANT UPDATE ON TABLE transaction_endpoint_type TO Abc;
+GRANT UPDATE ON TABLE transaction_endpoint TO Abc;
+GRANT UPDATE ON TABLE payment_request TO Abc;
+GRANT UPDATE ON TABLE visit TO Abc;
 
-REVOKE CONNECT ON DATABASE bitplexus FROM bitplexus_employee;
-REVOKE USAGE ON SCHEMA public FROM bitplexus_employee;
+GRANT DELETE ON TABLE member TO Abc;
+GRANT DELETE ON TABLE email_address TO Abc;
+GRANT DELETE ON TABLE phone_number TO Abc;
+GRANT DELETE ON TABLE member_email_address TO Abc;
+GRANT DELETE ON TABLE member_phone_number TO Abc;
+GRANT DELETE ON TABLE person TO Abc;
+GRANT DELETE ON TABLE customer TO Abc;
+GRANT DELETE ON TABLE employee TO Abc;
+GRANT DELETE ON TABLE role TO Abc;
+GRANT DELETE ON TABLE employee_role TO Abc;
+GRANT DELETE ON TABLE currency TO Abc;
+GRANT DELETE ON TABLE chain TO Abc;
+GRANT DELETE ON TABLE wallet_state_type TO Abc;
+GRANT DELETE ON TABLE wallet TO Abc;
+GRANT DELETE ON TABLE address_type TO Abc;
+GRANT DELETE ON TABLE address_state_type TO Abc;
+GRANT DELETE ON TABLE address TO Abc;
+GRANT DELETE ON TABLE address_book_entry TO Abc;
+GRANT DELETE ON TABLE transaction_status_type TO Abc;
+GRANT DELETE ON TABLE transactions TO Abc;
+GRANT DELETE ON TABLE transaction_endpoint_type TO Abc;
+GRANT DELETE ON TABLE transaction_endpoint TO Abc;
+GRANT DELETE ON TABLE payment_request TO Abc;
+GRANT DELETE ON TABLE visit TO Abc;
 
-REVOKE CONNECT ON DATABASE bitplexus FROM bitplexus_dbm;
-REVOKE USAGE ON SCHEMA public FROM bitplexus_dbm;
+GRANT USAGE ON SEQUENCE member_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE email_address_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE phone_number_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE member_email_address_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE member_phone_number_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE employee_role_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE currency_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE chain_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE wallet_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE address_type_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE address_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE address_book_entry_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE transaction_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE transaction_endpoint_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE payment_request_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE visit_id_seq TO Abc;
 
+/*8.3 Revocation statements*/
+REVOKE CONNECT ON DATABASE bitplexus FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+REVOKE USAGE ON SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 
-/*8. DML - Management of initial data*/
-/*8.1 Regular tables*/
-/*8.1.1 Insertion statements*/
-/*8.1.2 Deletion statements*/
-
-/*8.2 Reference tables*/
-/*8.2.1 Insertion statements*/
-INSERT INTO role (role_id, code, name) VALUES (, , );
-
-/*8.2.2 Deletion statements*/
-TRUNCATE TABLE role CASCADE;
-TRUNCATE TABLE wallet_state_type CASCADE;
-TRUNCATE TABLE address_state_type CASCADE;
-TRUNCATE TABLE transaction_status_type CASCADE;
-TRUNCATE TABLE transaction_endpoint_type CASCADE;
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 
 
 /*9. Miscellaneous objects & operations*/
