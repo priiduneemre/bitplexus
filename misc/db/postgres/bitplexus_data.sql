@@ -52,11 +52,25 @@ TRUNCATE TABLE visit CASCADE;
 
 /*2. DML - Reference tables*/
 /*2.1 Insertion statements*/
-INSERT INTO role (role_id, code, name) VALUES (1, 'SUPPORT_ENGINEER', 'Support engineer');
-INSERT INTO wallet_state_type (wallet_state_type_id, code, name) VALUES (, , ,);
-INSERT INTO address_state_type (address_state_type_id, code, name) VALUES (, , ,);
-INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (, , ,);
-INSERT INTO transaction_endpoint_type (transaction_endpoint_type_id, code, name) VALUES (, , ,);
+INSERT INTO role (role_id, code, name) VALUES (1, 'SUPPORT_ENGINEER', 'Support Engineer');
+INSERT INTO role (role_id, code, name) VALUES (2, 'DATABASE_MANAGER', 'Database Manager');
+
+INSERT INTO wallet_state_type (wallet_state_type_id, code, name) VALUES (1, 'UNUSED', 'Unused');
+INSERT INTO wallet_state_type (wallet_state_type_id, code, name) VALUES (2, 'ACTIVE', 'Active');
+INSERT INTO wallet_state_type (wallet_state_type_id, code, name) VALUES (3, 'DELETED', 'Deleted');
+
+INSERT INTO address_state_type (address_state_type_id, code, name) VALUES (1, 'GENERATED', 'Newly generated');
+INSERT INTO address_state_type (address_state_type_id, code, name) VALUES (1, 'ACTIVE', 'Active');
+INSERT INTO address_state_type (address_state_type_id, code, name) VALUES (1, 'RETIRED', 'Retired');
+
+INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (1, 'UNCONFIRMED', 'Unconfirmed');
+INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (2, 'CONFIRMED', 'Confirmed');
+INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (3, 'MATURE', 'Mature');
+INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (4, '', ''); 
+
+INSERT INTO transaction_endpoint_type (transaction_endpoint_type_id, code, name) VALUES (1, 'INPUT', 'Input address');
+INSERT INTO transaction_endpoint_type (transaction_endpoint_type_id, code, name) VALUES (2, 'OUTPUT', 'Output address');
+
 
 /*2.2 Deletion statements*/
 TRUNCATE TABLE role CASCADE;
