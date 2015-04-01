@@ -165,7 +165,7 @@ CREATE TABLE employee (
     created_at      TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
     CONSTRAINT pk_employee PRIMARY KEY (employee_id),
-    CONSTRAINT ak_employee_iban UNIQUE(iban),
+    CONSTRAINT ak_employee_iban UNIQUE (iban),
     CONSTRAINT fk_employee_employee_id FOREIGN KEY (employee_id) REFERENCES person (person_id),
     
     CONSTRAINT ck_employee_iban_length CHECK (length(iban) > 4),
@@ -204,7 +204,7 @@ CREATE TABLE currency (
     name            VARCHAR(25)     NOT NULL,
     abbreviation    VARCHAR(8)      NOT NULL,
     symbol          VARCHAR(3)      NOT NULL,
-    supply_limit    NUMERIC(19, 8)  NOT NULL,
+    supply_limit    NUMERIC(23, 8)  NOT NULL,
     website_url     VARCHAR(100)    NOT NULL,
     launched_on     DATE            NOT NULL,
     created_at      TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
@@ -315,7 +315,7 @@ CREATE TABLE address (
     address_state_type_id   SMALLINT            NOT NULL,
     label                   VARCHAR(60),
     encoded_form            VARCHAR(35)         NOT NULL,
-    balance                 NUMERIC(19, 8),
+    balance                 NUMERIC(23, 8),
     indexed_at              TIMESTAMP(0)        NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     updated_at              TIMESTAMP(0),
     
@@ -363,10 +363,12 @@ CREATE TABLE transactions (
     local_uid                   CHAR(36)        NOT NULL, 
     network_uid                 CHAR(64)        NOT NULL,
     received_at                 TIMESTAMP(0)    NOT NULL,
-    block_height                INTEGER         NOT NULL,
-    hex_size                    INTEGER         NOT NULL,
-    fee                         NUMERIC(19, 8)  NOT NULL,
-    unit_price                  NUMERIC(19, 8)  NOT NULL,
+    confirmed_at                TIMESTAMP(0),
+    matured_at                  TIMESTAMP(0),
+    block_height                INTEGER,
+    binary_size                 INTEGER         NOT NULL,
+    fee                         NUMERIC(23, 8)  NOT NULL,
+    unit_price                  NUMERIC(23, 8)  NOT NULL,
     note                        VARCHAR(255),
     logged_at                   TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     updated_at                  TIMESTAMP(0),
@@ -377,10 +379,12 @@ CREATE TABLE transactions (
     CONSTRAINT fk_transactions_transaction_status_type_id FOREIGN KEY (transaction_status_type_id) REFERENCES transaction_status_type (transaction_status_type_id) ON UPDATE CASCADE,
         
     CONSTRAINT ck_transactions_block_height_in_range CHECK (block_height > 0),
-    CONSTRAINT ck_transactions_hex_size_in_range CHECK (hex_size > 0),
+    CONSTRAINT ck_transactions_binary_size_in_range CHECK (binary_size > 0),
     CONSTRAINT ck_transactions_fee_in_range CHECK (fee >= 0),
     CONSTRAINT ck_transactions_unit_price_in_range CHECK (unit_price > 0),
     CONSTRAINT ck_transactions_received_at_in_range CHECK (received_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transactions_confirmed_at_in_range CHECK (confirmed_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transactions_matured_at_in_range CHECK (matured_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
@@ -400,7 +404,7 @@ CREATE TABLE transaction_endpoint (
     transaction_id                  BIGINT          NOT NULL,
     address_id                      BIGINT          NOT NULL,
     transaction_endpoint_type_id    SMALLINT        NOT NULL,
-    amount                          NUMERIC(19, 8)  NOT NULL,
+    amount                          NUMERIC(23, 8)  NOT NULL,
     logged_at                       TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
     CONSTRAINT pk_transaction_endpoint PRIMARY KEY (transaction_endpoint_id),
@@ -415,7 +419,7 @@ CREATE TABLE transaction_endpoint (
 CREATE TABLE payment_request (
     payment_request_id  BIGSERIAL,
     address_id          BIGINT          NOT NULL,
-    amount              NUMERIC(19, 8)  NOT NULL,
+    amount              NUMERIC(23, 8)  NOT NULL,
     note                VARCHAR(255),
     requested_at        TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
@@ -578,127 +582,116 @@ DROP INDEX IF EXISTS idx_visit_visited_at;
 /*8.1 Preparatory statements*/
 REVOKE ALL PRIVILEGES ON DATABASE bitplexus FROM public;
 REVOKE ALL PRIVILEGES ON SCHEMA public FROM public;
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM public;
 
 /*8.2 Assignation statements*/
 GRANT CONNECT ON DATABASE bitplexus TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT USAGE ON SCHEMA public TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 
-GRANT SELECT ON TABLE member TO Abc;
-GRANT SELECT ON TABLE email_address TO Abc;
-GRANT SELECT ON TABLE phone_number TO Abc;
-GRANT SELECT ON TABLE member_email_address TO Abc;
-GRANT SELECT ON TABLE member_phone_number TO Abc;
-GRANT SELECT ON TABLE person TO Abc;
-GRANT SELECT ON TABLE customer TO Abc;
-GRANT SELECT ON TABLE employee TO Abc;
-GRANT SELECT ON TABLE role TO Abc;
-GRANT SELECT ON TABLE employee_role TO Abc;
-GRANT SELECT ON TABLE currency TO Abc;
-GRANT SELECT ON TABLE chain TO Abc;
-GRANT SELECT ON TABLE wallet_state_type TO Abc;
-GRANT SELECT ON TABLE wallet TO Abc;
-GRANT SELECT ON TABLE address_type TO Abc;
-GRANT SELECT ON TABLE address_state_type TO Abc;
-GRANT SELECT ON TABLE address TO Abc;
-GRANT SELECT ON TABLE address_book_entry TO Abc;
-GRANT SELECT ON TABLE transaction_status_type TO Abc;
-GRANT SELECT ON TABLE transactions TO Abc;
-GRANT SELECT ON TABLE transaction_endpoint_type TO Abc;
-GRANT SELECT ON TABLE transaction_endpoint TO Abc;
-GRANT SELECT ON TABLE payment_request TO Abc;
-GRANT SELECT ON TABLE visit TO Abc;
+GRANT SELECT ON TABLE member TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE email_address TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE phone_number TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE member_email_address TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE member_phone_number TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE person TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE customer TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE employee TO bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE role TO bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE employee_role TO bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE currency TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE chain TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE wallet_state_type TO bitplexus_dbm;
+GRANT SELECT ON TABLE wallet TO bitplexus_customer, bitplexus_dbm;
+GRANT SELECT ON TABLE address_type TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT SELECT ON TABLE address_state_type TO bitplexus_dbm;
+GRANT SELECT ON TABLE address TO bitplexus_customer, bitplexus_dbm;
+GRANT SELECT ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
+GRANT SELECT ON TABLE transaction_status_type TO bitplexus_customer, bitplexus_dbm;
+GRANT SELECT ON TABLE transactions TO bitplexus_customer, bitplexus_dbm;
+GRANT SELECT ON TABLE transaction_endpoint_type TO bitplexus_customer, bitplexus_dbm;
+GRANT SELECT ON TABLE transaction_endpoint TO bitplexus_customer, bitplexus_dbm;
+GRANT SELECT ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
+GRANT SELECT ON TABLE visit TO bitplexus_employee, bitplexus_dbm;
 
-GRANT INSERT ON TABLE member TO Abc;
-GRANT INSERT ON TABLE email_address TO Abc;
-GRANT INSERT ON TABLE phone_number TO Abc;
-GRANT INSERT ON TABLE member_email_address TO Abc;
-GRANT INSERT ON TABLE member_phone_number TO Abc;
-GRANT INSERT ON TABLE person TO Abc;
-GRANT INSERT ON TABLE customer TO Abc;
-GRANT INSERT ON TABLE employee TO Abc;
-GRANT INSERT ON TABLE role TO Abc;
-GRANT INSERT ON TABLE employee_role TO Abc;
-GRANT INSERT ON TABLE currency TO Abc;
-GRANT INSERT ON TABLE chain TO Abc;
-GRANT INSERT ON TABLE wallet_state_type TO Abc;
-GRANT INSERT ON TABLE wallet TO Abc;
-GRANT INSERT ON TABLE address_type TO Abc;
-GRANT INSERT ON TABLE address_state_type TO Abc;
-GRANT INSERT ON TABLE address TO Abc;
-GRANT INSERT ON TABLE address_book_entry TO Abc;
-GRANT INSERT ON TABLE transaction_status_type TO Abc;
-GRANT INSERT ON TABLE transactions TO Abc;
-GRANT INSERT ON TABLE transaction_endpoint_type TO Abc;
-GRANT INSERT ON TABLE transaction_endpoint TO Abc;
-GRANT INSERT ON TABLE payment_request TO Abc;
-GRANT INSERT ON TABLE visit TO Abc;
+GRANT INSERT ON TABLE member TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE email_address TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE phone_number TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE member_email_address TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE member_phone_number TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE person TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE customer TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE employee TO bitplexus_dbm;
+GRANT INSERT ON TABLE employee_role TO bitplexus_dbm;
+GRANT INSERT ON TABLE currency TO bitplexus_employee, bitplexus_dbm;
+GRANT INSERT ON TABLE chain TO bitplexus_employee, bitplexus_dbm;
+GRANT INSERT ON TABLE wallet TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE address_type TO bitplexus_employee, bitplexus_dbm;
+GRANT INSERT ON TABLE address TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE transactions TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE transaction_endpoint TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE visit TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 
-GRANT UPDATE ON TABLE member TO Abc;
-GRANT UPDATE ON TABLE email_address TO Abc;
-GRANT UPDATE ON TABLE phone_number TO Abc;
-GRANT UPDATE ON TABLE member_email_address TO Abc;
-GRANT UPDATE ON TABLE member_phone_number TO Abc;
-GRANT UPDATE ON TABLE person TO Abc;
-GRANT UPDATE ON TABLE customer TO Abc;
-GRANT UPDATE ON TABLE employee TO Abc;
-GRANT UPDATE ON TABLE role TO Abc;
-GRANT UPDATE ON TABLE employee_role TO Abc;
-GRANT UPDATE ON TABLE currency TO Abc;
-GRANT UPDATE ON TABLE chain TO Abc;
-GRANT UPDATE ON TABLE wallet_state_type TO Abc;
-GRANT UPDATE ON TABLE wallet TO Abc;
-GRANT UPDATE ON TABLE address_type TO Abc;
-GRANT UPDATE ON TABLE address_state_type TO Abc;
-GRANT UPDATE ON TABLE address TO Abc;
-GRANT UPDATE ON TABLE address_book_entry TO Abc;
-GRANT UPDATE ON TABLE transaction_status_type TO Abc;
-GRANT UPDATE ON TABLE transactions TO Abc;
-GRANT UPDATE ON TABLE transaction_endpoint_type TO Abc;
-GRANT UPDATE ON TABLE transaction_endpoint TO Abc;
-GRANT UPDATE ON TABLE payment_request TO Abc;
-GRANT UPDATE ON TABLE visit TO Abc;
+GRANT UPDATE ON TABLE member TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT UPDATE ON TABLE email_address TO bitplexus_dbm;
+GRANT UPDATE ON TABLE phone_number TO bitplexus_dbm;
+GRANT UPDATE ON TABLE member_email_address TO bitplexus_customer, bitplexus_dbm;
+GRANT UPDATE ON TABLE member_phone_number TO bitplexus_customer, bitplexus_dbm;
+GRANT UPDATE ON TABLE person TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT UPDATE ON TABLE customer TO bitplexus_dbm;
+GRANT UPDATE ON TABLE employee TO bitplexus_employee, bitplexus_dbm;
+GRANT UPDATE ON TABLE employee_role TO bitplexus_dbm;
+GRANT UPDATE ON TABLE currency TO bitplexus_employee, bitplexus_dbm;
+GRANT UPDATE ON TABLE chain TO bitplexus_employee, bitplexus_dbm;
+GRANT UPDATE ON TABLE wallet TO bitplexus_customer, bitplexus_dbm;
+GRANT UPDATE ON TABLE address_type TO bitplexus_employee, bitplexus_dbm;
+GRANT UPDATE ON TABLE address TO bitplexus_customer, bitplexus_dbm;
+GRANT UPDATE ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
+GRANT UPDATE ON TABLE transactions TO bitplexus_customer, bitplexus_dbm;
+GRANT UPDATE ON TABLE transaction_endpoint TO bitplexus_dbm;
+GRANT UPDATE ON TABLE payment_request TO bitplexus_dbm;
+GRANT UPDATE ON TABLE visit TO bitplexus_dbm;
 
-GRANT DELETE ON TABLE member TO Abc;
-GRANT DELETE ON TABLE email_address TO Abc;
-GRANT DELETE ON TABLE phone_number TO Abc;
-GRANT DELETE ON TABLE member_email_address TO Abc;
-GRANT DELETE ON TABLE member_phone_number TO Abc;
-GRANT DELETE ON TABLE person TO Abc;
-GRANT DELETE ON TABLE customer TO Abc;
-GRANT DELETE ON TABLE employee TO Abc;
-GRANT DELETE ON TABLE role TO Abc;
-GRANT DELETE ON TABLE employee_role TO Abc;
-GRANT DELETE ON TABLE currency TO Abc;
-GRANT DELETE ON TABLE chain TO Abc;
-GRANT DELETE ON TABLE wallet_state_type TO Abc;
-GRANT DELETE ON TABLE wallet TO Abc;
-GRANT DELETE ON TABLE address_type TO Abc;
-GRANT DELETE ON TABLE address_state_type TO Abc;
-GRANT DELETE ON TABLE address TO Abc;
-GRANT DELETE ON TABLE address_book_entry TO Abc;
-GRANT DELETE ON TABLE transaction_status_type TO Abc;
-GRANT DELETE ON TABLE transactions TO Abc;
-GRANT DELETE ON TABLE transaction_endpoint_type TO Abc;
-GRANT DELETE ON TABLE transaction_endpoint TO Abc;
-GRANT DELETE ON TABLE payment_request TO Abc;
-GRANT DELETE ON TABLE visit TO Abc;
+GRANT DELETE ON TABLE member TO bitplexus_dbm;
+GRANT DELETE ON TABLE email_address TO bitplexus_dbm;
+GRANT DELETE ON TABLE phone_number TO bitplexus_dbm;
+GRANT DELETE ON TABLE member_email_address TO bitplexus_dbm;
+GRANT DELETE ON TABLE member_phone_number TO bitplexus_dbm;
+GRANT DELETE ON TABLE person TO bitplexus_dbm;
+GRANT DELETE ON TABLE customer TO bitplexus_dbm;
+GRANT DELETE ON TABLE employee TO bitplexus_dbm;
+GRANT DELETE ON TABLE employee_role TO bitplexus_dbm;
+GRANT DELETE ON TABLE currency TO bitplexus_employee, bitplexus_dbm;
+GRANT DELETE ON TABLE chain TO bitplexus_employee, bitplexus_dbm;
+GRANT DELETE ON TABLE wallet TO bitplexus_dbm;
+GRANT DELETE ON TABLE address_type TO bitplexus_employee, bitplexus_dbm;
+GRANT DELETE ON TABLE address TO bitplexus_dbm;
+GRANT DELETE ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
+GRANT DELETE ON TABLE transactions TO bitplexus_dbm;
+GRANT DELETE ON TABLE transaction_endpoint TO bitplexus_dbm;
+GRANT DELETE ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
+GRANT DELETE ON TABLE visit TO bitplexus_dbm;
 
-GRANT USAGE ON SEQUENCE member_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE email_address_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE phone_number_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE member_email_address_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE member_phone_number_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE employee_role_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE currency_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE chain_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE wallet_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE address_type_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE address_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE address_book_entry_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE transaction_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE transaction_endpoint_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE payment_request_id_seq TO Abc;
-GRANT USAGE ON SEQUENCE visit_id_seq TO Abc;
+GRANT USAGE ON SEQUENCE member_id_seq TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE email_address_id_seq TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE phone_number_id_seq TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE member_email_address_id_seq TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE member_phone_number_id_seq TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE employee_role_id_seq TO bitplexus_dbm;
+GRANT USAGE ON SEQUENCE currency_id_seq TO bitplexus_employee, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE chain_id_seq TO bitplexus_employee, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE wallet_id_seq TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE address_type_id_seq TO bitplexus_employee, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE address_id_seq TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE address_book_entry_id_seq TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE transaction_id_seq TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE transaction_endpoint_id_seq TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE payment_request_id_seq TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE visit_id_seq TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+
+GRANT EXECUTE ON FUNCTION gen_salt(TEXT) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION crypt(TEXT, TEXT) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 
 /*8.3 Revocation statements*/
 REVOKE CONNECT ON DATABASE bitplexus FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
@@ -706,6 +699,7 @@ REVOKE USAGE ON SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitpl
 
 REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 
 
 /*9. Miscellaneous objects & operations*/
