@@ -320,14 +320,13 @@ CREATE TABLE address (
     updated_at              TIMESTAMP(0),
     
     CONSTRAINT pk_address PRIMARY KEY (address_id),
-    CONSTRAINT ak_address_encoded_form UNIQUE (encoded_form),
     CONSTRAINT fk_address_wallet_id FOREIGN KEY (wallet_id) REFERENCES wallet (wallet_id),
     CONSTRAINT fk_address_address_type_id FOREIGN KEY (address_type_id) REFERENCES address_type (address_type_id),
     CONSTRAINT fk_address_address_state_type_id FOREIGN KEY (address_state_type_id) REFERENCES address_state_type (address_state_type_id) ON UPDATE CASCADE,
     
     CONSTRAINT ck_address_encoded_form_length CHECK (length(encoded_form) > 25),
     CONSTRAINT ck_address_balance_in_range CHECK (balance >= 0),
-    CONSTRAINT ck_address_created_at_in_range (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_address_indexed_at_in_range (indexed_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_address_updated_at_in_range (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
@@ -364,7 +363,7 @@ CREATE TABLE transactions (
     network_uid                 CHAR(64)        NOT NULL,
     received_at                 TIMESTAMP(0)    NOT NULL,
     confirmed_at                TIMESTAMP(0),
-    matured_at                  TIMESTAMP(0),
+    completed_at                TIMESTAMP(0),
     block_height                INTEGER,
     binary_size                 INTEGER         NOT NULL,
     fee                         NUMERIC(23, 8)  NOT NULL,
@@ -375,7 +374,6 @@ CREATE TABLE transactions (
     
     CONSTRAINT pk_transactions PRIMARY KEY (transaction_id),
     CONSTRAINT ak_transactions_local_uid UNIQUE (local_uid),
-    CONSTRAINT ak_transactions_network_uid UNIQUE (network_uid),
     CONSTRAINT fk_transactions_transaction_status_type_id FOREIGN KEY (transaction_status_type_id) REFERENCES transaction_status_type (transaction_status_type_id) ON UPDATE CASCADE,
         
     CONSTRAINT ck_transactions_block_height_in_range CHECK (block_height > 0),
@@ -384,7 +382,7 @@ CREATE TABLE transactions (
     CONSTRAINT ck_transactions_unit_price_in_range CHECK (unit_price > 0),
     CONSTRAINT ck_transactions_received_at_in_range CHECK (received_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_confirmed_at_in_range CHECK (confirmed_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_transactions_matured_at_in_range CHECK (matured_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transactions_completed_at_in_range CHECK (completed_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
@@ -533,32 +531,38 @@ DROP INDEX IF EXISTS idx_transaction_endpoint_transaction_endpoint_type_id;
 DROP INDEX IF EXISTS idx_payment_request_address_id;
 DROP INDEX IF EXISTS idx_visit_member_id;
 
-/*4.2 Secondary indices (common filter columns etc.)*/
+/*4.2 Secondary indices (commonly-used filter columns etc.)*/
 /*4.2.1 Creation statements*/
-CREATE UNIQUE INDEX uidx_member_email_address_member_id_email_address_id ON member_email_address USING btree (member_id, email_address_id) WHERE is_active = TRUE;
-CREATE UNIQUE INDEX uidx_member_phone_number_member_id_phone_number_id ON member_phone_number USING btree (member_id, phone_number_id) WHERE is_active = TRUE;
-CREATE UNIQUE INDEX uidx_employee_role_employee_id_role_id ON employee_role USING btree (employee_id, role_id) WHERE is_active = TRUE;
-
 CREATE INDEX idx_member_failed_logins ON member USING btree (failed_logins) WHERE failed_logins > 2;
 CREATE INDEX idx_phone_number_subscriber_number ON phone_number USING btree (subscriber_number varchar_pattern_ops);
-CREATE INDEX idx_person_first_name ON person USING btree (lower(first_name) varchar_pattern_ops);
-CREATE INDEX idx_person_last_name ON person USING btree (lower(last_name) varchar_pattern_ops);
 CREATE INDEX idx_address_type_leading_symbol ON address_type USING btree (leading_symbol);
 CREATE INDEX idx_transactions_block_height ON transactions USING btree (block_height);
 CREATE INDEX idx_visit_visited_at ON visit USING btree (visited_at);
 
-/*4.2.2 Removal statements*/
-DROP INDEX IF EXISTS uidx_member_email_address_member_id_email_address_id;
-DROP INDEX IF EXISTS uidx_member_phone_number_member_id_phone_number_id;
-DROP INDEX IF EXISTS uidx_employee_role_employee_id_role_id;
+CREATE INDEX fidx_person_first_name ON person USING btree (lower(first_name) varchar_pattern_ops);
+CREATE INDEX fidx_person_last_name ON person USING btree (lower(last_name) varchar_pattern_ops);
+CREATE INDEX fidx_address_encoded_form ON address USING btree (lower(encoded_form) varchar_pattern_ops);
+CREATE INDEX fidx_transactions_network_uid ON transactions USING btree (lower(network_uid) varchar_pattern_ops);
 
+CREATE UNIQUE INDEX uidx_member_email_address_member_id_email_address_id ON member_email_address USING btree (member_id, email_address_id) WHERE is_active = TRUE;
+CREATE UNIQUE INDEX uidx_member_phone_number_member_id_phone_number_id ON member_phone_number USING btree (member_id, phone_number_id) WHERE is_active = TRUE;
+CREATE UNIQUE INDEX uidx_employee_role_employee_id_role_id ON employee_role USING btree (employee_id, role_id) WHERE is_active = TRUE;
+
+/*4.2.2 Removal statements*/
 DROP INDEX IF EXISTS idx_member_failed_logins;
 DROP INDEX IF EXISTS idx_phone_number_subscriber_number;
-DROP INDEX IF EXISTS idx_person_first_name;
-DROP INDEX IF EXISTS idx_person_last_name;
 DROP INDEX IF EXISTS idx_address_type_leading_symbol;
 DROP INDEX IF EXISTS idx_transactions_block_height;
 DROP INDEX IF EXISTS idx_visit_visited_at;
+
+DROP INDEX IF EXISTS fidx_person_first_name;
+DROP INDEX IF EXISTS fidx_person_last_name;
+DROP INDEX IF EXISTS fidx_address_encoded_form;
+DROP INDEX IF EXISTS fidx_transactions_network_uid;
+
+DROP INDEX IF EXISTS uidx_member_email_address_member_id_email_address_id;
+DROP INDEX IF EXISTS uidx_member_phone_number_member_id_phone_number_id;
+DROP INDEX IF EXISTS uidx_employee_role_employee_id_role_id;
 
 
 /*5. DDL - Views*/
