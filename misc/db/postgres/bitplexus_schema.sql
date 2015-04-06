@@ -200,17 +200,18 @@ CREATE TABLE employee_role (
 );
 
 CREATE TABLE currency (
-    currency_id     SMALLSERIAL,
-    name            VARCHAR(25)     NOT NULL,
-    abbreviation    VARCHAR(8)      NOT NULL,
-    symbol          VARCHAR(3)      NOT NULL,
-    supply_limit    NUMERIC(23, 8)  NOT NULL,
-    website_url     VARCHAR(100)    NOT NULL,
-    launched_on     DATE            NOT NULL,
-    created_at      TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
-    created_by      INTEGER         NOT NULL,
-    updated_at      TIMESTAMP(0),
-    updated_by      INTEGER,
+    currency_id         SMALLSERIAL,
+    name                VARCHAR(25)     NOT NULL,
+    abbreviation        VARCHAR(8)      NOT NULL,
+    symbol              VARCHAR(3),
+    block_interval      INTEGER         NOT NULL,
+    available_supply    NUMERIC(23, 8)  NOT NULL,
+    website_url         VARCHAR(100)    NOT NULL,
+    launched_on         DATE            NOT NULL,
+    created_at          TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    created_by          INTEGER         NOT NULL,
+    updated_at          TIMESTAMP(0),
+    updated_by          INTEGER,
     
     CONSTRAINT pk_currency PRIMARY KEY (currency_id),
     CONSTRAINT ak_currency_name UNIQUE (name),
@@ -220,7 +221,8 @@ CREATE TABLE currency (
     CONSTRAINT fk_currency_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_currency_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
-    CONSTRAINT ck_currency_supply_limit_in_range CHECK (supply_limit > 0),
+    CONSTRAINT ck_currency_block_interval_in_range CHECK (block_interval > 0),
+    CONSTRAINT ck_currency_available_supply_in_range CHECK (available_supply > 0),
     CONSTRAINT ck_currency_website_url_length CHECK (length(website_url) > 2),
     CONSTRAINT ck_currency_launched_on_in_range CHECK (launched_on BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_currency_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01') 
