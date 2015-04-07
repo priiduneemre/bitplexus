@@ -204,7 +204,7 @@ CREATE TABLE currency (
     name                VARCHAR(25)     NOT NULL,
     abbreviation        VARCHAR(8)      NOT NULL,
     symbol              VARCHAR(3),
-    block_interval      INTEGER         NOT NULL,
+    block_time          INTEGER         NOT NULL,
     available_supply    NUMERIC(23, 8)  NOT NULL,
     website_url         VARCHAR(100)    NOT NULL,
     launched_on         DATE            NOT NULL,
@@ -221,7 +221,7 @@ CREATE TABLE currency (
     CONSTRAINT fk_currency_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_currency_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
-    CONSTRAINT ck_currency_block_interval_in_range CHECK (block_interval > 0),
+    CONSTRAINT ck_currency_block_time_in_range CHECK (block_time > 0),
     CONSTRAINT ck_currency_available_supply_in_range CHECK (available_supply > 0),
     CONSTRAINT ck_currency_website_url_length CHECK (length(website_url) > 2),
     CONSTRAINT ck_currency_launched_on_in_range CHECK (launched_on BETWEEN '1900-01-01' AND '2100-01-01'),
@@ -235,6 +235,7 @@ CREATE TABLE chain (
     code            VARCHAR(30)     NOT NULL,
     name            VARCHAR(60)     NOT NULL,
     started_on      DATE            NOT NULL,
+    is_operational  BOOLEAN         NOT NULL    DEFAULT TRUE,
     created_at      TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     created_by      INTEGER         NOT NULL,
     updated_at      TIMESTAMP(0),
@@ -242,7 +243,6 @@ CREATE TABLE chain (
     
     CONSTRAINT pk_chain PRIMARY KEY (chain_id),
     CONSTRAINT ak_chain_code UNIQUE (code),
-    CONSTRAINT ak_chain_name UNIQUE (name),
     CONSTRAINT fk_chain_currency_id FOREIGN KEY (currency_id) REFERENCES currency (currency_id) ON DELETE CASCADE,
     CONSTRAINT fk_chain_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_chain_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
@@ -291,7 +291,6 @@ CREATE TABLE address_type (
     
     CONSTRAINT pk_address_type PRIMARY KEY (address_type_id),
     CONSTRAINT ak_address_type_code UNIQUE (code),
-    CONSTRAINT ak_address_type_name UNIQUE (name),
     CONSTRAINT fk_address_type_chain_id FOREIGN KEY (chain_id) REFERENCES chain (chain_id) ON DELETE CASCADE,
     CONSTRAINT fk_address_type_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_address_type_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),

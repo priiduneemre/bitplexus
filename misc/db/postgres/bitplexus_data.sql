@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DML statements for populating the application's database with seed data (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-04-04 00:00:34*/
+/*Last modified:    2015-04-07 14:35:28*/
 
 
 /*1. DML - Regular tables*/
@@ -62,18 +62,31 @@ INSERT INTO employee_role (, , ,) VALUES (, , ,);
 INSERT INTO employee_role (, , ,) VALUES (, , ,);
 INSERT INTO employee_role (, , ,) VALUES (, , ,);
 
-INSERT INTO currency (name, abbreviation, symbol, block_interval, available_supply, website_url, launched_on, created_by) VALUES ('Bitcoin', 'BTC', '฿', 600, 21000000, );
-INSERT INTO currency (name, abbreviation, symbol, block_interval, available_supply, website_url, launched_on, created_by) VALUES ('Litecoin', 'LTC', 'Ł', 150, 84000000, );
-INSERT INTO currency (name, abbreviation, block_interval, available_supply, website_url, launched_on, created_by) VALUES ('Dash', 'DASH', 150, 22000000, );
-INSERT INTO currency (name, abbreviation, symbol, block_interval, available_supply, website_url, launched_on, created_by) VALUES ('Peercoin', 'PPC', 'Ᵽ', 600, , );
-INSERT INTO currency (name, abbreviation, block_interval, available_supply, website_url, launched_on, created_by) VALUES ('Monero', 'XMR', 60, );
-INSERT INTO currency (name, abbreviation, symbol, block_interval, available_supply, website_url, launched_on, created_by) VALUES ('Namecoin', 'NMC', 'ℕ', 600, ,);
+INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_by) 
+    VALUES ('Bitcoin', 'BTC', '฿', 600, f_bitcoin_calc_supply(), 'https://bitcoin.org/', 2009-01-03, 3);
+INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_by) 
+    VALUES ('Litecoin', 'LTC', 'Ł', 150, f_litecoin_calc_supply(), 'https://litecoin.org/', 2011-10-08, 3);
+INSERT INTO currency (name, abbreviation, block_time, available_supply, website_url, launched_on, created_by) 
+    VALUES ('Dash', 'DASH', 150, 5261810, 'https://www.dashpay.io/', 2014-01-19, 3);
+INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_by) 
+    VALUES ('Peercoin', 'PPC', 'Ᵽ', 600, 22212010, 'http://peercoin.net/', 2012-08-20, 3);
+INSERT INTO currency (name, abbreviation, block_time, available_supply, website_url, launched_on, created_by) 
+    VALUES ('Monero', 'XMR', 60, 7079487, 'https://getmonero.org/', 2014-04-18, 3);
+INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_by) 
+    VALUES ('Namecoin', 'NMC', 'ℕ', 600, 11269000, 'https://namecoin.info/', 2011-04-17, 3);
 
-INSERT INTO chain (, , ,) VALUES (, , ,);
-INSERT INTO chain (, , ,) VALUES (, , ,);
-INSERT INTO chain (, , ,) VALUES (, , ,);
-INSERT INTO chain (, , ,) VALUES (, , ,);
-INSERT INTO chain (, , ,) VALUES (, , ,);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_by) 
+    VALUES (1, 'BITCOIN_MAIN', 'Mainnet chain', '2009-01-03', true, 3);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_by) 
+    VALUES (1, 'BITCOIN_TEST1', 'Testnet1 chain', '2010-10-19', false, 3);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_by) 
+    VALUES (1, 'BITCOIN_TEST2', 'Testnet2 chain', '2011-02-02', false, 3);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_by) 
+    VALUES (1, 'BITCOIN_TEST3', 'Testnet3 chain', '2012-04-13', true, 3);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_by) 
+    VALUES (2, 'LITECOIN_MAIN', 'Mainnet chain', '2011-10-08', true, 3);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_by) 
+    VALUES (2, 'LITECOIN_TEST1', 'Testnet1 chain', '2011-10-05', true, 3);
 
 INSERT INTO wallet (, , ,) VALUES (, , ,);
 INSERT INTO wallet (, , ,) VALUES (, , ,);
@@ -81,11 +94,28 @@ INSERT INTO wallet (, , ,) VALUES (, , ,);
 INSERT INTO wallet (, , ,) VALUES (, , ,);
 INSERT INTO wallet (, , ,) VALUES (, , ,);
 
-INSERT INTO address_type (, , ,) VALUES (, , ,);
-INSERT INTO address_type (, , ,) VALUES (, , ,);
-INSERT INTO address_type (, , ,) VALUES (, , ,);
-INSERT INTO address_type (, , ,) VALUES (, , ,);
-INSERT INTO address_type (, , ,) VALUES (, , ,);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_by) 
+    VALUES (1, 'BITCOIN_P2PKH_MAIN', 'P2PKH address', '1', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_by) 
+    VALUES (4, 'BITCOIN_P2PKH_TEST3_1', 'P2PKH address', 'm', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_by) 
+    VALUES (4, 'BITCOIN_P2PKH_TEST3_2', 'P2PKH address', 'n', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_by) 
+    VALUES (1, 'BITCOIN_P2SH_MAIN', 'P2SH address', '3', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_by) 
+    VALUES (4, 'BITCOIN_P2SH_TEST3', 'P2SH address', '2', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_by) 
+    VALUES (5, 'LITECOIN_P2PKH_MAIN', 'P2PKH address', 'L', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_by) 
+    VALUES (6, 'LITECOIN_P2PKH_TEST1_1', 'P2PKH address', 'm', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_by) 
+    VALUES (6, 'LITECOIN_P2PKH_TEST1_2', 'P2PKH address', 'n', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_by) 
+    VALUES (5, 'LITECOIN_P2SH_MAIN', 'P2SH address', '3', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_by) 
+    VALUES (6, 'LITECOIN_P2SH_TEST1', 'P2SH address', '2', 3);
+
+
 
 INSERT INTO address (, , ,) VALUES (, , ,);
 INSERT INTO address (, , ,) VALUES (, , ,);
