@@ -240,7 +240,7 @@ CREATE TABLE chain (
     created_by      INTEGER         NOT NULL,
     updated_at      TIMESTAMP(0),
     updated_by      INTEGER,
-    
+                
     CONSTRAINT pk_chain PRIMARY KEY (chain_id),
     CONSTRAINT ak_chain_code UNIQUE (code),
     CONSTRAINT fk_chain_currency_id FOREIGN KEY (currency_id) REFERENCES currency (currency_id) ON DELETE CASCADE,
