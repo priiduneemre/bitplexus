@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-03-31 16:26:31*/
+/*Last modified:    2015-04-09 14:16:31*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/

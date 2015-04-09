@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DML statements for populating the application's database with seed data (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-04-07 14:35:28*/
+/*Last modified:    2015-04-09 14:16:39*/
 
 
 /*1. DML - Regular tables*/
@@ -47,83 +47,89 @@ INSERT INTO person (person_id, first_name, last_name, created_at) VALUES (3, 'Ad
 INSERT INTO person (person_id, first_name, last_name, created_at) VALUES (4, 'John', 'Doe', '2015-03-24 13:06:51');
 INSERT INTO person (person_id, first_name, last_name, created_at) VALUES (5, 'Miłosz', 'Szczepański', '2015-03-26 18:42:39');
 
+INSERT INTO customer (customer_id, created_at) VALUES (1, '2015-03-19 09:15:37');
+INSERT INTO customer (customer_id, created_at) VALUES (2, '2015-03-19 16:52:03');
+INSERT INTO customer (customer_id, created_at) VALUES (3, '2015-03-19 23:19:57');
 INSERT INTO customer (customer_id, created_at) VALUES (4, '2015-03-24 13:06:51');
 INSERT INTO customer (customer_id, created_at) VALUES (5, '2015-03-26 18:42:39');
 
 INSERT INTO employee (employee_id, born_on, iban, employed_on, created_at) VALUES (1, '1976-10-29', '', '2015-03-02', '2015-03-19 09:15:37');
 INSERT INTO employee (employee_id, born_on, iban, employed_on, created_at) VALUES (2, '1982-03-12', '', '2015-03-13', '2015-03-19 16:52:03');
-INSERT INTO employee (employee_id, born_on, iban, employed_on, created_at) VALUES (3, '1978-09-05', '', '2015-03-02', '2015-03-19 23:19:57');
+INSERT INTO employee (employee_id, born_on, iban, employed_on, created_at) VALUES (3, '1978-09-18', '', '2015-03-02', '2015-03-19 23:19:57');
 
-INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (1, 1, 4, '');
-INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (2, 1, 3, '');
-INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (3, 2, 2, '');
-INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (4, 3, 1, '');
-INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (5, 3, 2, '');
+INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (1, 1, 4, '2015-03-19 09:19:43');
+INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (2, 1, 3, '2015-03-19 09:19:43');
+INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (3, 2, 2, '2015-03-19 16:57:10');
+INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (4, 3, 1, '2015-03-19 23:22:58');
+INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (5, 3, 2, '2015-03-19 23:22:58');
 
-INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) 
-    VALUES ('Bitcoin', 'BTC', '฿', 600, f_bitcoin_calc_supply(), 'https://bitcoin.org/', 2009-01-03, '', 3);
-INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) 
-    VALUES ('Litecoin', 'LTC', 'Ł', 150, f_litecoin_calc_supply(), 'https://litecoin.org/', 2011-10-08, '', 3);
-INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) 
-    VALUES ('Dash', 'DASH', NULL, 150, 5261810, 'https://www.dashpay.io/', 2014-01-19, '', 3);
-INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) 
-    VALUES ('Peercoin', 'PPC', 'Ᵽ', 600, 22212010, 'http://peercoin.net/', 2012-08-20, '', 3);
-INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) 
-    VALUES ('Monero', 'XMR', NULL, 60, 7079487, 'https://getmonero.org/', 2014-04-18, '', 3);
-INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) 
-    VALUES ('Namecoin', 'NMC', 'ℕ', 600, 11269000, 'https://namecoin.info/', 2011-04-17, '', 3);
+INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES ('Bitcoin', 'BTC', '฿', 600, f_bitcoin_calc_supply(), 'https://bitcoin.org/', '2009-01-03', '2015-03-19 23:48:41', 3);
+INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES ('Litecoin', 'LTC', 'Ł', 150, f_litecoin_calc_supply(), 'https://litecoin.org/', '2011-10-08', '2015-03-20 00:34:20', 3);
+INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES ('Dash', 'DASH', NULL, 150, 5261810, 'https://www.dashpay.io/', '2014-01-19', '2015-03-20 01:21:36', 3);
+INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES ('Peercoin', 'PPC', 'Ᵽ', 600, 22212010, 'http://peercoin.net/', '2012-08-20', '2015-03-20 01:57:18', 3);
+INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES ('Monero', 'XMR', NULL, 60, 7079487, 'https://getmonero.org/', '2014-04-18', '2015-03-20 02:30:54', 3);
+INSERT INTO currency (name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES ('Namecoin', 'NMC', 'ℕ', 600, 11269000, 'https://namecoin.info/', '2011-04-17', '2015-03-20 02:59:07', 3);
 
-INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) 
-    VALUES (1, 'BITCOIN_MAIN', 'Mainnet chain', '2009-01-03', TRUE, '', 3);
-INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) 
-    VALUES (1, 'BITCOIN_TEST1', 'Testnet1 chain', '2010-10-19', FALSE, '', 3);
-INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) 
-    VALUES (1, 'BITCOIN_TEST2', 'Testnet2 chain', '2011-02-02', FALSE, '', 3);
-INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) 
-    VALUES (1, 'BITCOIN_TEST3', 'Testnet3 chain', '2012-04-13', TRUE, '', 3);
-INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) 
-    VALUES (2, 'LITECOIN_MAIN', 'Mainnet chain', '2011-10-08', TRUE, '', 3);
-INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) 
-    VALUES (2, 'LITECOIN_TEST1', 'Testnet1 chain', '2011-10-05', TRUE, '', 3);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (1, 'BITCOIN_MAIN', 'Mainnet chain', '2009-01-03', TRUE, '2015-03-19 23:52:13', 3);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (1, 'BITCOIN_TEST1', 'Testnet1 chain', '2010-10-19', FALSE, '2015-03-19 23:54:30', 3);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (1, 'BITCOIN_TEST2', 'Testnet2 chain', '2011-02-02', FALSE, '2015-03-19 23:56:55', 3);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (1, 'BITCOIN_TEST3', 'Testnet3 chain', '2012-04-13', TRUE, '2015-03-19 23:59:07', 3);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (2, 'LITECOIN_MAIN', 'Mainnet chain', '2011-10-08', TRUE, '2015-03-20 00:40:26', 3);
+INSERT INTO chain (currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (2, 'LITECOIN_TEST1', 'Testnet1 chain', '2011-10-05', TRUE, '2015-03-20 00:43:41', 3);
 
-INSERT INTO wallet (, , ,) VALUES (, , ,);
-INSERT INTO wallet (, , ,) VALUES (, , ,);
-INSERT INTO wallet (, , ,) VALUES (, , ,);
-INSERT INTO wallet (, , ,) VALUES (, , ,);
-INSERT INTO wallet (, , ,) VALUES (, , ,);
+INSERT INTO wallet (wallet_id, customer_id, name, created_at, updated_at) VALUES (1, 4, 'Garden gnome''s personal wallet', '2015-03-24 00:00:00', '2015-03-24 00:00:00'); '2015-03-24 13:06:51' to '2015-03-24 13:52:38'
+INSERT INTO wallet (wallet_id, customer_id, name, created_at, updated_at) VALUES (2, 4, 'Garden gnome''s merchant wallet', '2015-03-24 00:00:00', '2015-03-24 00:00:00');
+INSERT INTO wallet (wallet_id, customer_id, name, created_at, updated_at) VALUES (3, 5, 'Miłosz''s transactional wallet', '2015-03-24 00:00:00', '2015-03-24 00:00:00');
+INSERT INTO wallet (wallet_id, customer_id, name, created_at, updated_at) VALUES (4, 5, 'Miłosz''s savings (short) wallet', '2015-03-24 00:00:00', '2015-03-24 00:00:00');
+INSERT INTO wallet (wallet_id, customer_id, name, created_at, updated_at) VALUES (5, 5, 'Miłosz''s savings (long) wallet', '2015-03-24 00:00:00', '2015-03-24 00:00:00');
+INSERT INTO wallet (wallet_id, customer_id, name, created_at, updated_at) VALUES (6, 5, 'Miłosz''s donations wallet', '2015-03-24 00:00:00', '2015-03-24 00:00:00');
 
-INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) 
-    VALUES (1, 'BITCOIN_P2PKH_MAIN', 'P2PKH address', '1', 3);
-INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) 
-    VALUES (4, 'BITCOIN_P2PKH_TEST3_1', 'P2PKH address', 'm', 3);
-INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) 
-    VALUES (4, 'BITCOIN_P2PKH_TEST3_2', 'P2PKH address', 'n', 3);
-INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) 
-    VALUES (1, 'BITCOIN_P2SH_MAIN', 'P2SH address', '3', 3);
-INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) 
-    VALUES (4, 'BITCOIN_P2SH_TEST3', 'P2SH address', '2', 3);
-INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) 
-    VALUES (5, 'LITECOIN_P2PKH_MAIN', 'P2PKH address', 'L', 3);
-INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) 
-    VALUES (6, 'LITECOIN_P2PKH_TEST1_1', 'P2PKH address', 'm', 3);
-INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) 
-    VALUES (6, 'LITECOIN_P2PKH_TEST1_2', 'P2PKH address', 'n', 3);
-INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) 
-    VALUES (5, 'LITECOIN_P2SH_MAIN', 'P2SH address', '3', 3);
-INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) 
-    VALUES (6, 'LITECOIN_P2SH_TEST1', 'P2SH address', '2', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) VALUES (1, 'BITCOIN_P2PKH_MAIN', 'P2PKH address', '1', '2015-03-20 00:06:21', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) VALUES (4, 'BITCOIN_P2PKH_TEST3_1', 'P2PKH address', 'm', '2015-03-20 00:13:49', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) VALUES (4, 'BITCOIN_P2PKH_TEST3_2', 'P2PKH address', 'n', '2015-03-20 00:15:16', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) VALUES (1, 'BITCOIN_P2SH_MAIN', 'P2SH address', '3', '2015-03-20 00:22:30', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) VALUES (4, 'BITCOIN_P2SH_TEST3', 'P2SH address', '2', '2015-03-20 00:25:58', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) VALUES (5, 'LITECOIN_P2PKH_MAIN', 'P2PKH address', 'L', '2015-03-20 00:49:04', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) VALUES (6, 'LITECOIN_P2PKH_TEST1_1', 'P2PKH address', 'm', '2015-03-20 00:51:53', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) VALUES (6, 'LITECOIN_P2PKH_TEST1_2', 'P2PKH address', 'n', '2015-03-20 00:55:47', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) VALUES (5, 'LITECOIN_P2SH_MAIN', 'P2SH address', '3', '2015-03-20 01:01:22', 3);
+INSERT INTO address_type (chain_id, code, name, leading_symbol, created_at, created_by) VALUES (6, 'LITECOIN_P2SH_TEST1', 'P2SH address', '2', '2015-03-20 01:07:19', 3);
 
-INSERT INTO address (, , ,) VALUES (, , ,);
-INSERT INTO address (, , ,) VALUES (, , ,);
-INSERT INTO address (, , ,) VALUES (, , ,);
-INSERT INTO address (, , ,) VALUES (, , ,);
-INSERT INTO address (, , ,) VALUES (, , ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (1, 1, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (2, 1, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (3, 1, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (4, 1, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (5, 2,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (6, 2, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (7, 3,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (8, 3, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (9, 3, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (10, 3, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (11, 4, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (12, 4, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (12, 4, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (13, 5, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (13, 5, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (13, 5, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (14, NULL, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (15, NULL, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (16, NULL, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (17, NULL, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (18, NULL, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (19, NULL, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (20, NULL, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (21, NULL, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (22, NULL, ,);
+INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, enocded_form, balance, indexed_at, updated_at) VALUES (23, NULL, ,);
 
-INSERT INTO address_book_entry (, , ,) VALUES (, , ,);
-INSERT INTO address_book_entry (, , ,) VALUES (, , ,);
-INSERT INTO address_book_entry (, , ,) VALUES (, , ,);
-INSERT INTO address_book_entry (, , ,) VALUES (, , ,);
-INSERT INTO address_book_entry (, , ,) VALUES (, , ,);
+INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (1, 4, 14, 'BTC-e (exchange) deposit address', '0000-00-00 00:00:00');
+INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (2, 4, 15, 'Colin Fletcher''s personal address #1', '0000-00-00 00:00:00');
+INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (3, 4, 16, 'Luca Bianchi''s personal address #1', '0000-00-00 00:00:00');
+INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (4, 5, 17, 'Kraken (exchange) deposit address', '0000-00-00 00:00:00');
+INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (5, 5, 18, 'Shapely (gym) membership fee address', '0000-00-00 00:00:00')
+INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (6, 5, 19, 'Aaron Howell''s personal address #1', '0000-00-00 00:00:00');;
+INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (7, 5, 20, 'Clark Poole''s personal address #1', '0000-00-00 00:00:00');
+INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (8, 5, 21, 'Garrett Beck''s personal address #1', '0000-00-00 00:00:00');
 
 INSERT INTO transactions (, , ,) VALUES (, , ,);
 INSERT INTO transactions (, , ,) VALUES (, , ,);
