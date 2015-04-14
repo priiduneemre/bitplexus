@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-04-09 14:16:31*/
+/*Last modified:    2015-04-14 12:52:57*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -317,19 +317,24 @@ CREATE TABLE address (
     label                   VARCHAR(60),
     encoded_form            VARCHAR(35)         NOT NULL,
     balance                 NUMERIC(23, 8),
+    is_change               BOOLEAN,
     indexed_at              TIMESTAMP(0)        NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     updated_at              TIMESTAMP(0),
     
     CONSTRAINT pk_address PRIMARY KEY (address_id),
+    CONSTRAINT ak_address_encoded_form UNIQUE (encoded_form),
     CONSTRAINT fk_address_wallet_id FOREIGN KEY (wallet_id) REFERENCES wallet (wallet_id),
     CONSTRAINT fk_address_address_type_id FOREIGN KEY (address_type_id) REFERENCES address_type (address_type_id),
     CONSTRAINT fk_address_address_state_type_id FOREIGN KEY (address_state_type_id) REFERENCES address_state_type (address_state_type_id) ON UPDATE CASCADE,
-    
+
+    CONSTRAINT ck_address_label_nullness CHECK (label IS NULL = wallet_id IS NULL),
     CONSTRAINT ck_address_encoded_form_length CHECK (length(encoded_form) > 25),
     CONSTRAINT ck_address_balance_in_range CHECK (balance >= 0),
+    CONSTRAINT ck_address_balance_nullness CHECK (balance IS NULL = wallet_id IS NULL),
+    CONSTRAINT ck_address_is_change_nullness CHECK (is_change IS NULL = wallet_id IS NULL),
     CONSTRAINT ck_address_indexed_at_in_range (indexed_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_address_updated_at_in_range (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
-);
+);    
 
 CREATE TABLE address_book_entry (
     address_book_entry_id   BIGSERIAL,
@@ -375,8 +380,10 @@ CREATE TABLE transactions (
     
     CONSTRAINT pk_transactions PRIMARY KEY (transaction_id),
     CONSTRAINT ak_transactions_local_uid UNIQUE (local_uid),
+    CONSTRAINT ak_transactions_network_uid UNIQUE (network_uid),
     CONSTRAINT fk_transactions_transaction_status_type_id FOREIGN KEY (transaction_status_type_id) REFERENCES transaction_status_type (transaction_status_type_id) ON UPDATE CASCADE,
-        
+
+    CONSTRAINT ck_transactions_confirmed_at_nullness CHECK (confirmed_at IS NULL = block_height IS NULL),
     CONSTRAINT ck_transactions_block_height_in_range CHECK (block_height > 0),
     CONSTRAINT ck_transactions_binary_size_in_range CHECK (binary_size > 0),
     CONSTRAINT ck_transactions_fee_in_range CHECK (fee >= 0),
@@ -419,7 +426,7 @@ CREATE TABLE payment_request (
     payment_request_id  BIGSERIAL,
     address_id          BIGINT          NOT NULL,
     amount              NUMERIC(23, 8)  NOT NULL,
-    note                VARCHAR(255),
+    message             VARCHAR(255),
     requested_at        TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
     CONSTRAINT pk_payment_request PRIMARY KEY (payment_request_id),
@@ -433,14 +440,13 @@ CREATE TABLE visit (
     visit_id    BIGSERIAL,
     member_id   INTEGER         NOT NULL,
     ip_address  VARCHAR(45)     NOT NULL,
-    visited_at  TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    login_at    TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
 
     CONSTRAINT pk_visit PRIMARY KEY (visit_id),
-    CONSTRAINT ak_visit_ip_address UNIQUE (ip_address),
     CONSTRAINT fk_visit_member_id FOREIGN KEY (member_id) REFERENCES member (member_id),
     
     CONSTRAINT ck_visit_ip_address_length CHECK (length(ip_address) > 6),
-    CONSTRAINT ck_visit_visited_at_in_range CHECK (visisted_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_visit_login_at_in_range CHECK (login_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 /*3.2 Removal statements*/
@@ -538,7 +544,8 @@ CREATE INDEX idx_member_failed_logins ON member USING btree (failed_logins) WHER
 CREATE INDEX idx_phone_number_subscriber_number ON phone_number USING btree (subscriber_number varchar_pattern_ops);
 CREATE INDEX idx_address_type_leading_symbol ON address_type USING btree (leading_symbol);
 CREATE INDEX idx_transactions_block_height ON transactions USING btree (block_height);
-CREATE INDEX idx_visit_visited_at ON visit USING btree (visited_at);
+CREATE INDEX idx_visit_ip_address ON visit USING btree (ip_address);
+CREATE INDEX idx_visit_login_at ON visit USING btree (login_at);
 
 CREATE INDEX fidx_person_first_name ON person USING btree (lower(first_name) varchar_pattern_ops);
 CREATE INDEX fidx_person_last_name ON person USING btree (lower(last_name) varchar_pattern_ops);
@@ -554,7 +561,8 @@ DROP INDEX IF EXISTS idx_member_failed_logins;
 DROP INDEX IF EXISTS idx_phone_number_subscriber_number;
 DROP INDEX IF EXISTS idx_address_type_leading_symbol;
 DROP INDEX IF EXISTS idx_transactions_block_height;
-DROP INDEX IF EXISTS idx_visit_visited_at;
+DROP INDEX IF EXISTS idx_visit_ip_address;
+DROP INDEX IF EXISTS idx_visit_login_at;
 
 DROP INDEX IF EXISTS fidx_person_first_name;
 DROP INDEX IF EXISTS fidx_person_last_name;
