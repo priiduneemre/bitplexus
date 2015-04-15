@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DML statements for populating the application's database with seed data (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-04-09 14:16:39*/
+/*Last modified:    2015-04-15 12:27:44*/
 
 
 /*1. DML - Regular tables*/
@@ -143,13 +143,13 @@ INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, 
 
 /*Table 'transaction_endpoint': data parsed automatically (via lazy loading) from the block chain.*/
 
-INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (1, 1, '0.2', 'Please note that the emergency loan you have taken (0.15 tBTC + 0.05 tBTC interest) is due for repayment on April 16, 2015.', '2015-03-25 15:41:06');
-INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (2, 3, '0.001', 'Cookie & ice cream fund (donate 0,001 tBTC)', '2015-03-25 15:41:06');
-INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (3, 12, '0.5', 'Academic scholarship payment for April, 2015', '2015-03-25 15:41:06');
-INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (4, 15, '0.003', 'Your share of the restaurant bill (The Dubliner, 10.04.2015)', '2015-03-25 15:41:06');
-INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (5, 17, '0.08', 'Licensing fee for web template (CageyCoalecanth.com)', '2015-03-25 15:41:06');
+INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (1, 1, 0.2, 'Please note that the emergency loan you have requested (0.15 tBTC + 0.05 tBTC interest) is due for repayment on April 16, 2015.', '2015-03-25 15:41:06');
+INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (2, 3, 0.001, 'Cookie & ice cream fund (donate 0,001 tBTC)', '2015-03-25 15:41:06');
+INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (3, 12, 0.35, 'Academic scholarship payment for April, 2015', '2015-03-25 15:41:06');
+INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (4, 15, 0.007, 'Your share of the restaurant bill (The Dubliner, 10.04.2015)', '2015-03-25 15:41:06');
+INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (5, 17, 25, 'Licensing fee for web template (CageyCoalecanth.com)', '2015-03-25 15:41:06');
 
-INSERT INTO visit (visit_id, member_id, ip_address, login_at) VALUES (1, 1, '153.88.169.212', '0000-00-00 00:00:00');
+INSERT INTO visit (visit_id, member_id, ip_address, login_at) VALUES (1, 1, '153.88.169.202', '0000-00-00 00:00:00');
 INSERT INTO visit (visit_id, member_id, ip_address, login_at) VALUES (2, 2, '90.171.250.38', '0000-00-00 00:00:00');
 INSERT INTO visit (visit_id, member_id, ip_address, login_at) VALUES (3, 3, '153.140.76.115', '0000-00-00 00:00:00');
 INSERT INTO visit (visit_id, member_id, ip_address, login_at) VALUES (4, 4, '215.206.32.149', '0000-00-00 00:00:00');
