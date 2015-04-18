@@ -143,7 +143,7 @@ INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, 
 
 /*Table 'transaction_endpoint': data parsed automatically (via lazy loading) from the block chain.*/
 
-INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (1, 1, 0.2, 'Please note that the emergency loan you have requested (0.15 tBTC + 0.05 tBTC interest) is due for repayment on April 16, 2015.', '2015-03-25 15:41:06');
+INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (1, 1, 0.2, 'Please note that the emergency loan you have requested (0.15 tBTC + 0.05 tBTC interest) is due for repayment on April 18, 2015.', '2015-03-25 15:41:06');
 INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (2, 3, 0.001, 'Cookie & ice cream fund (donate 0,001 tBTC)', '2015-03-25 15:41:06');
 INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (3, 12, 0.35, 'Academic scholarship payment for April, 2015', '2015-03-25 15:41:06');
 INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (4, 15, 0.007, 'Your share of the restaurant bill (The Dubliner, 10.04.2015)', '2015-03-25 15:41:06');
@@ -153,7 +153,7 @@ INSERT INTO visit (visit_id, member_id, ip_address, login_at) VALUES (1, 1, '153
 INSERT INTO visit (visit_id, member_id, ip_address, login_at) VALUES (2, 2, '90.171.250.38', '0000-00-00 00:00:00');
 INSERT INTO visit (visit_id, member_id, ip_address, login_at) VALUES (3, 3, '153.140.76.115', '0000-00-00 00:00:00');
 INSERT INTO visit (visit_id, member_id, ip_address, login_at) VALUES (4, 4, '215.206.32.149', '0000-00-00 00:00:00');
-INSERT INTO visit (visit_id, member_id, ip_address, login_at) VALUES (5, 5, '182.45.227.253', '0000-00-00 00:00:00');
+INSERT INTO visit (visit_id, member_id, ip_address, login_at) VALUES (5, 5, '82.45.227.253', '0000-00-00 00:00:00');
 
 /*1.2 Deletion statements*/
 TRUNCATE TABLE member CASCADE;
