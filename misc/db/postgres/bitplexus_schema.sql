@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-04-14 12:52:57*/
+/*Last modified:    2015-06-03 20:16:29*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -55,6 +55,8 @@ CREATE TABLE member (
     member_id       SERIAL,
     username        VARCHAR(20)     NOT NULL,
     password        CHAR(60)        NOT NULL,
+    email_address   VARCHAR(60)     NOT NULL,
+    phone_number    VARCHAR(15)     NOT NULL,
     failed_logins   SMALLINT        NOT NULL    DEFAULT 0,
     is_active       BOOLEAN         NOT NULL    DEFAULT TRUE,
     registered_at   TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
@@ -63,72 +65,15 @@ CREATE TABLE member (
 
     CONSTRAINT pk_member PRIMARY KEY (member_id),
     CONSTRAINT ak_member_username UNIQUE (username),
+    CONSTRAINT ak_member_email_address UNIQUE (email_address),
     CONSTRAINT fk_member_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
 
+    CONSTRAINT ck_member_phone_number_valid CHECK (phone_number ~ '^([0-9])+$'),
+    CONSTRAINT ck_member_phone_number_length CHECK (length(phone_number) > 7),
     CONSTRAINT ck_member_failed_logins_in_range CHECK (failed_logins >= 0),
     CONSTRAINT ck_member_is_active_valid CHECK (NOT (failed_logins > 2 AND is_active = TRUE)),
     CONSTRAINT ck_member_registered_at_in_range CHECK (registered_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_member_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
-);
-
-CREATE TABLE email_address (
-    email_address_id    SERIAL,
-    address             VARCHAR(60)     NOT NULL,
-    created_at          TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
-    
-    CONSTRAINT pk_email_address PRIMARY KEY (email_address_id),
-    CONSTRAINT ak_email_address_address UNIQUE (address),
-    
-    CONSTRAINT ck_email_address_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),    
-);
-
-CREATE TABLE phone_number (
-    phone_number_id     SERIAL,
-    country_code        VARCHAR(3)      NOT NULL,
-    subscriber_number   VARCHAR(14)     NOT NULL,
-    created_at          TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
-    
-    CONSTRAINT pk_phone_number PRIMARY KEY (phone_number_id),
-    CONSTRAINT ak_phone_number_country_code_subscriber_number UNIQUE (country_code, subscriber_number),
-    
-    CONSTRAINT ck_phone_number_country_code_valid CHECK (country_code ~ '^([0-9])+$'),
-    CONSTRAINT ck_phone_number_subscriber_number_valid CHECK (subscriber_number ~ '^([0-9])+$'), 
-    CONSTRAINT ck_phone_number_subscriber_number_length CHECK (length(subscriber_number) > 7),
-    CONSTRAINT ck_phone_number_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),    
-);
-
-CREATE TABLE member_email_address (
-    member_email_address_id     SERIAL,
-    member_id                   INTEGER         NOT NULL,
-    email_address_id            INTEGER         NOT NULL,
-    is_verified                 BOOLEAN         NOT NULL    DEFAULT FALSE,
-    is_active                   BOOLEAN         NOT NULL    DEFAULT TRUE,
-    linked_at,                  TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
-    updated_at                  TIMESTAMP(0),
-    
-    CONSTRAINT pk_member_email_address PRIMARY KEY (member_email_address_id),
-    CONSTRAINT fk_member_email_address_member_id FOREIGN KEY (member_id) REFERENCES member (member_id),
-    CONSTRAINT fk_member_email_address_email_address_id FOREIGN KEY (email_address_id) REFERENCES email_address (email_address_id),
-    
-    CONSTRAINT ck_member_email_address_linked_at_in_range CHECK (linked_at BETWEEN '1900-01-01' AND '2100-01-01'),    
-    CONSTRAINT ck_member_email_address_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')   
-);
-
-CREATE TABLE member_phone_number (
-    member_phone_number_id  SERIAL,
-    member_id               INTEGER         NOT NULL,
-    phone_number_id         INTEGER         NOT NULL,
-    is_verified             BOOLEAN         NOT NULL    DEFAULT FALSE,
-    is_active               BOOLEAN         NOT NULL    DEFAULT TRUE,
-    linked_at               TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
-    updated_at              TIMESTAMP(0),
-    
-    CONSTRAINT pk_member_phone_number PRIMARY KEY (member_phone_number_id),
-    CONSTRAINT fk_member_phone_number_member_id FOREIGN KEY (member_id) REFERENCES member (member_id),
-    CONSTRAINT fk_member_phone_number_phone_number_id FOREIGN KEY (phone_number_id) REFERENCES phone_number (phone_number_id),
-    
-    CONSTRAINT ck_member_phone_number_linked_at_in_range CHECK (linked_at BETWEEN '1900-01-01' AND '2100-01-01'),    
-    CONSTRAINT ck_member_phone_number_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')    
 );
 
 CREATE TABLE person (
@@ -317,7 +262,6 @@ CREATE TABLE address (
     label                   VARCHAR(60),
     encoded_form            VARCHAR(35)         NOT NULL,
     balance                 NUMERIC(23, 8),
-    is_change               BOOLEAN,
     indexed_at              TIMESTAMP(0)        NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     updated_at              TIMESTAMP(0),
     
@@ -331,7 +275,6 @@ CREATE TABLE address (
     CONSTRAINT ck_address_encoded_form_length CHECK (length(encoded_form) > 25),
     CONSTRAINT ck_address_balance_in_range CHECK (balance >= 0),
     CONSTRAINT ck_address_balance_nullness CHECK (balance IS NULL = wallet_id IS NULL),
-    CONSTRAINT ck_address_is_change_nullness CHECK (is_change IS NULL = wallet_id IS NULL),
     CONSTRAINT ck_address_indexed_at_in_range (indexed_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_address_updated_at_in_range (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );    
@@ -451,10 +394,6 @@ CREATE TABLE visit (
 
 /*3.2 Removal statements*/
 DROP TABLE IF EXISTS member CASCADE;
-DROP TABLE IF EXISTS email_address CASCADE;
-DROP TABLE IF EXISTS phone_number CASCADE;
-DROP TABLE IF EXISTS member_email_address CASCADE;
-DROP TABLE IF EXISTS member_phone_number CASCADE;
 DROP TABLE IF EXISTS person CASCADE;
 DROP TABLE IF EXISTS customer CASCADE;
 DROP TABLE IF EXISTS employee CASCADE;
@@ -480,10 +419,6 @@ DROP TABLE IF EXISTS visit CASCADE;
 /*4.1 Primary indices (foreign keys etc.)*/
 /*4.1.1 Creation statements*/
 CREATE INDEX idx_member_updated_by ON member USING btree (updated_by);
-CREATE INDEX idx_member_email_address_member_id ON member_email_address USING btree (member_id);
-CREATE INDEX idx_member_email_address_email_address_id ON member_email_address USING btree (email_address_id);
-CREATE INDEX idx_member_phone_number_member_id ON member_phone_number USING btree (member_id);
-CREATE INDEX idx_member_phone_number_phone_number_id ON member_phone_number USING btree (phone_number_id);
 CREATE INDEX idx_employee_role_employee_id ON employee_role USING btree (employee_id);
 CREATE INDEX idx_employee_role_role_id ON employee_role USING btree (role_id);
 CREATE INDEX idx_currency_created_by ON currency USING btree (created_by);
@@ -510,10 +445,6 @@ CREATE INDEX idx_visit_member_id ON visit USING btree (member_id);
 
 /*4.1.2 Removal statements*/
 DROP INDEX IF EXISTS idx_member_updated_by;
-DROP INDEX IF EXISTS idx_member_email_address_member_id;
-DROP INDEX IF EXISTS idx_member_email_address_email_address_id;
-DROP INDEX IF EXISTS idx_member_phone_number_member_id;
-DROP INDEX IF EXISTS idx_member_phone_number_phone_number_id;
 DROP INDEX IF EXISTS idx_employee_role_employee_id;
 DROP INDEX IF EXISTS idx_employee_role_role_id;
 DROP INDEX IF EXISTS idx_currency_created_by;
@@ -541,7 +472,7 @@ DROP INDEX IF EXISTS idx_visit_member_id;
 /*4.2 Secondary indices (commonly-used filter columns etc.)*/
 /*4.2.1 Creation statements*/
 CREATE INDEX idx_member_failed_logins ON member USING btree (failed_logins) WHERE failed_logins > 2;
-CREATE INDEX idx_phone_number_subscriber_number ON phone_number USING btree (subscriber_number varchar_pattern_ops);
+CREATE INDEX idx_member_phone_number ON member USING btree (phone_number varchar_pattern_ops);
 CREATE INDEX idx_address_type_leading_symbol ON address_type USING btree (leading_symbol);
 CREATE INDEX idx_transactions_block_height ON transactions USING btree (block_height);
 CREATE INDEX idx_visit_ip_address ON visit USING btree (ip_address);
@@ -552,13 +483,11 @@ CREATE INDEX fidx_person_last_name ON person USING btree (lower(last_name) varch
 CREATE INDEX fidx_address_encoded_form ON address USING btree (lower(encoded_form) varchar_pattern_ops);
 CREATE INDEX fidx_transactions_network_uid ON transactions USING btree (lower(network_uid) varchar_pattern_ops);
 
-CREATE UNIQUE INDEX uidx_member_email_address_member_id_email_address_id ON member_email_address USING btree (member_id, email_address_id) WHERE is_active = TRUE;
-CREATE UNIQUE INDEX uidx_member_phone_number_member_id_phone_number_id ON member_phone_number USING btree (member_id, phone_number_id) WHERE is_active = TRUE;
 CREATE UNIQUE INDEX uidx_employee_role_employee_id_role_id ON employee_role USING btree (employee_id, role_id) WHERE is_active = TRUE;
 
 /*4.2.2 Removal statements*/
 DROP INDEX IF EXISTS idx_member_failed_logins;
-DROP INDEX IF EXISTS idx_phone_number_subscriber_number;
+DROP INDEX IF EXISTS idx_member_phone_number;
 DROP INDEX IF EXISTS idx_address_type_leading_symbol;
 DROP INDEX IF EXISTS idx_transactions_block_height;
 DROP INDEX IF EXISTS idx_visit_ip_address;
@@ -569,8 +498,6 @@ DROP INDEX IF EXISTS fidx_person_last_name;
 DROP INDEX IF EXISTS fidx_address_encoded_form;
 DROP INDEX IF EXISTS fidx_transactions_network_uid;
 
-DROP INDEX IF EXISTS uidx_member_email_address_member_id_email_address_id;
-DROP INDEX IF EXISTS uidx_member_phone_number_member_id_phone_number_id;
 DROP INDEX IF EXISTS uidx_employee_role_employee_id_role_id;
 
 
@@ -602,10 +529,6 @@ GRANT CONNECT ON DATABASE bitplexus TO bitplexus_customer, bitplexus_employee, b
 GRANT USAGE ON SCHEMA public TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 
 GRANT SELECT ON TABLE member TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
-GRANT SELECT ON TABLE email_address TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
-GRANT SELECT ON TABLE phone_number TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
-GRANT SELECT ON TABLE member_email_address TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
-GRANT SELECT ON TABLE member_phone_number TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT SELECT ON TABLE person TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT SELECT ON TABLE customer TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT SELECT ON TABLE employee TO bitplexus_employee, bitplexus_dbm;
@@ -627,10 +550,6 @@ GRANT SELECT ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
 GRANT SELECT ON TABLE visit TO bitplexus_employee, bitplexus_dbm;
 
 GRANT INSERT ON TABLE member TO bitplexus_customer, bitplexus_dbm;
-GRANT INSERT ON TABLE email_address TO bitplexus_customer, bitplexus_dbm;
-GRANT INSERT ON TABLE phone_number TO bitplexus_customer, bitplexus_dbm;
-GRANT INSERT ON TABLE member_email_address TO bitplexus_customer, bitplexus_dbm;
-GRANT INSERT ON TABLE member_phone_number TO bitplexus_customer, bitplexus_dbm;
 GRANT INSERT ON TABLE person TO bitplexus_customer, bitplexus_dbm;
 GRANT INSERT ON TABLE customer TO bitplexus_customer, bitplexus_dbm;
 GRANT INSERT ON TABLE employee TO bitplexus_dbm;
@@ -647,10 +566,6 @@ GRANT INSERT ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
 GRANT INSERT ON TABLE visit TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 
 GRANT UPDATE ON TABLE member TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
-GRANT UPDATE ON TABLE email_address TO bitplexus_dbm;
-GRANT UPDATE ON TABLE phone_number TO bitplexus_dbm;
-GRANT UPDATE ON TABLE member_email_address TO bitplexus_customer, bitplexus_dbm;
-GRANT UPDATE ON TABLE member_phone_number TO bitplexus_customer, bitplexus_dbm;
 GRANT UPDATE ON TABLE person TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT UPDATE ON TABLE customer TO bitplexus_dbm;
 GRANT UPDATE ON TABLE employee TO bitplexus_employee, bitplexus_dbm;
@@ -667,10 +582,6 @@ GRANT UPDATE ON TABLE payment_request TO bitplexus_dbm;
 GRANT UPDATE ON TABLE visit TO bitplexus_dbm;
 
 GRANT DELETE ON TABLE member TO bitplexus_dbm;
-GRANT DELETE ON TABLE email_address TO bitplexus_dbm;
-GRANT DELETE ON TABLE phone_number TO bitplexus_dbm;
-GRANT DELETE ON TABLE member_email_address TO bitplexus_dbm;
-GRANT DELETE ON TABLE member_phone_number TO bitplexus_dbm;
 GRANT DELETE ON TABLE person TO bitplexus_dbm;
 GRANT DELETE ON TABLE customer TO bitplexus_dbm;
 GRANT DELETE ON TABLE employee TO bitplexus_dbm;
@@ -687,10 +598,6 @@ GRANT DELETE ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
 GRANT DELETE ON TABLE visit TO bitplexus_dbm;
 
 GRANT USAGE ON SEQUENCE member_id_seq TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE email_address_id_seq TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE phone_number_id_seq TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE member_email_address_id_seq TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE member_phone_number_id_seq TO bitplexus_customer, bitplexus_dbm;
 GRANT USAGE ON SEQUENCE employee_role_id_seq TO bitplexus_dbm;
 GRANT USAGE ON SEQUENCE currency_id_seq TO bitplexus_employee, bitplexus_dbm;
 GRANT USAGE ON SEQUENCE chain_id_seq TO bitplexus_employee, bitplexus_dbm;
