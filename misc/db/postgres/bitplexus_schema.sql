@@ -66,8 +66,7 @@ CREATE TABLE member (
     CONSTRAINT pk_member PRIMARY KEY (member_id),
     CONSTRAINT ak_member_username UNIQUE (username),
     CONSTRAINT ak_member_email_address UNIQUE (email_address),
-    CONSTRAINT fk_member_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
-
+    
     CONSTRAINT ck_member_phone_number_valid CHECK (phone_number ~ '^([0-9])+$'),
     CONSTRAINT ck_member_phone_number_length CHECK (length(phone_number) > 7),
     CONSTRAINT ck_member_failed_logins_in_range CHECK (failed_logins >= 0),
@@ -120,6 +119,8 @@ CREATE TABLE employee (
     CONSTRAINT ck_employee_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
+ALTER TABLE member ADD CONSTRAINT fk_member_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id);
+
 CREATE TABLE role (
     role_id     SMALLINT,
     code        VARCHAR(30)     NOT NULL,
@@ -170,7 +171,7 @@ CREATE TABLE currency (
     CONSTRAINT ck_currency_available_supply_in_range CHECK (available_supply > 0),
     CONSTRAINT ck_currency_website_url_length CHECK (length(website_url) > 2),
     CONSTRAINT ck_currency_launched_on_in_range CHECK (launched_on BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_currency_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01') 
+    CONSTRAINT ck_currency_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_currency_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
@@ -240,8 +241,8 @@ CREATE TABLE address_type (
     CONSTRAINT fk_address_type_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_address_type_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
-    CONSTRAINT ck_address_type_created_at_in_range (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_address_type_updated_at_in_range (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_address_type_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_address_type_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE address_state_type (
@@ -275,8 +276,8 @@ CREATE TABLE address (
     CONSTRAINT ck_address_encoded_form_length CHECK (length(encoded_form) > 25),
     CONSTRAINT ck_address_balance_in_range CHECK (balance >= 0),
     CONSTRAINT ck_address_balance_nullness CHECK (balance IS NULL = wallet_id IS NULL),
-    CONSTRAINT ck_address_indexed_at_in_range (indexed_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_address_updated_at_in_range (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_address_indexed_at_in_range CHECK (indexed_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_address_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );    
 
 CREATE TABLE address_book_entry (
@@ -291,8 +292,8 @@ CREATE TABLE address_book_entry (
     CONSTRAINT fk_address_book_entry_customer_id FOREIGN KEY (customer_id) REFERENCES customer (customer_id),
     CONSTRAINT fk_address_book_entry_address_id FOREIGN KEY (address_id) REFERENCES address (address_id),
     
-    CONSTRAINT ck_address_book_entry_created_at_in_range (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_address_book_entry_updated_at_in_range (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_address_book_entry_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_address_book_entry_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE transaction_status_type (
@@ -334,7 +335,7 @@ CREATE TABLE transactions (
     CONSTRAINT ck_transactions_received_at_in_range CHECK (received_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_confirmed_at_in_range CHECK (confirmed_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_completed_at_in_range CHECK (completed_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_transactions_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transactions_logged_at_in_range CHECK (logged_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
@@ -362,7 +363,7 @@ CREATE TABLE transaction_endpoint (
     CONSTRAINT fk_transaction_endpoint_transaction_endpoint_type_id FOREIGN KEY (transaction_endpoint_type_id) REFERENCES transaction_endpoint_type (transaction_endpoint_type_id) ON UPDATE CASCADE,
     
     CONSTRAINT ck_transaction_endpoint_amount_in_range CHECK (amount > 0),
-    CONSTRAINT ck_transaction_endpoint_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_transaction_endpoint_logged_at_in_range CHECK (logged_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
 CREATE TABLE payment_request (
@@ -508,7 +509,70 @@ DROP INDEX IF EXISTS uidx_employee_role_employee_id_role_id;
 /*6. DDL - Functions*/
 /*6.1 Regular functions*/
 /*6.1.1 Creation statements*/
+CREATE OR REPLACE FUNCTION f_bitcoin_calc_supply(in_block_height INTEGER) RETURNS DECIMAL(23, 8) AS $$
+DECLARE
+    UNITS_PER_COIN CONSTANT BIGINT := 100000000;
+    INITIAL_REWARD CONSTANT BIGINT := 50 * UNITS_PER_COIN;
+    HALVING_INTERVAL CONSTANT INTEGER := 210000;
+    blocks_to_subsidize INTEGER := in_block_height;
+    block_reward BIGINT := INITIAL_REWARD;
+    available_supply BIGINT := 0;
+BEGIN
+    IF (in_block_height < 0) THEN
+        RAISE EXCEPTION 'Expected the block height to be positive (>=0), but was negative (%) instead.',
+            in_block_height USING ERRCODE = '20131';
+    END IF;
+    WHILE blocks_to_subsidize >= HALVING_INTERVAL LOOP
+        available_supply := available_supply + (block_reward * HALVING_INTERVAL);
+        blocks_to_subsidize := blocks_to_subsidize - HALVING_INTERVAL;
+        block_reward := block_reward >> 1;
+    END LOOP;
+    available_supply := available_supply + (block_reward * blocks_to_subsidize);
+    RETURN CAST((CAST(available_supply AS DECIMAL) / UNITS_PER_COIN) AS DECIMAL(23, 8));
+END
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+SET search_path TO public, pg_temp;
+
+COMMENT ON FUNCTION f_bitcoin_calc_supply(in_block_height INTEGER) IS 'Function that returns the total number of bitcoins in circulation given a block height.';
+
+CREATE OR REPLACE FUNCTION f_litecoin_calc_supply(in_block_height INTEGER) RETURNS DECIMAL(23, 8) AS $$
+DECLARE
+    UNITS_PER_COIN CONSTANT BIGINT := 100000000;
+    INITIAL_REWARD CONSTANT BIGINT := 50 * UNITS_PER_COIN;
+    HALVING_INTERVAL CONSTANT INTEGER := 840000;
+    blocks_to_subsidize INTEGER := in_block_height;
+    block_reward BIGINT := INITIAL_REWARD;
+    available_supply BIGINT := 0;
+BEGIN
+    IF (in_block_height < 0) THEN
+        RAISE EXCEPTION 'Expected the block height to be positive (>=0), but was negative (%) instead.',
+            in_block_height USING ERRCODE = '20131';
+    END IF;
+    WHILE blocks_to_subsidize >= HALVING_INTERVAL LOOP
+        available_supply := available_supply + (block_reward * HALVING_INTERVAL);
+        blocks_to_subsidize := blocks_to_subsidize - HALVING_INTERVAL;
+        block_reward := block_reward >> 1;
+    END LOOP;
+    available_supply := available_supply + (block_reward * blocks_to_subsidize);
+    RETURN CAST((CAST(available_supply AS DECIMAL) / UNITS_PER_COIN) AS DECIMAL(23, 8));
+END
+$$ LANGUAGE plpgsql IMMUTABLE STRICT;
+SET search_path TO public, pg_temp;
+
+COMMENT ON FUNCTION f_litecoin_calc_supply(in_block_height INTEGER) IS 'Function that returns the total number of litecoins in circulation given a block height.';
+
+CREATE OR REPLACE FUNCTION f_get_address_type_id(in_chain_id SMALLINT, in_address VARCHAR(35)) RETURNS SMALLINT AS $$
+SELECT address_type_id FROM address_type WHERE chain_id = in_chain_id AND leading_symbol = substr(in_address, 0, 1);
+$$ LANGUAGE sql STABLE LEAKPROOF STRICT SECURITY DEFINER;
+SET search_path TO public, pg_temp;
+
+
+
 /*6.1.2 Removal statements*/
+DROP FUNCTION IF EXISTS f_bitcoin_calc_supply(in_block_height INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_litecoin_calc_supply(in_block_height INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_get_address_type_id(in_chain_id SMALLINT, in_address VARCHAR(35)) CASCADE;
+
 /*6.2 Trigger functions*/
 /*6.2.1 Creation statements*/
 /*6.2.2 Removal statements*/
@@ -597,18 +661,18 @@ GRANT DELETE ON TABLE transaction_endpoint TO bitplexus_dbm;
 GRANT DELETE ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
 GRANT DELETE ON TABLE visit TO bitplexus_dbm;
 
-GRANT USAGE ON SEQUENCE member_id_seq TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE employee_role_id_seq TO bitplexus_dbm;
-GRANT USAGE ON SEQUENCE currency_id_seq TO bitplexus_employee, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE chain_id_seq TO bitplexus_employee, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE wallet_id_seq TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE address_type_id_seq TO bitplexus_employee, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE address_id_seq TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE address_book_entry_id_seq TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE transaction_id_seq TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE transaction_endpoint_id_seq TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE payment_request_id_seq TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE visit_id_seq TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_member_member_id TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_employee_role_employee_role_id TO bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_currency_currency_id TO bitplexus_employee, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_chain_chain_id TO bitplexus_employee, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_wallet_wallet_id TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_address_type_address_type_id TO bitplexus_employee, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_address_address_id TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_address_book_entry_address_book_entry_id TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_transactions_transaction_id TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_transaction_endpoint_transaction_endpoint_id TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_payment_request_payment_request_id TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_visit_visit_id TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 
 GRANT EXECUTE ON FUNCTION gen_salt(TEXT) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION crypt(TEXT, TEXT) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
@@ -623,4 +687,18 @@ REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM bitplexus_customer,
 
 
 /*9. Miscellaneous objects & operations*/
-/*9.1 Anonymous code blocks*/
+/*9.1 Name modification statements (to enforce common naming scheme)*/
+ALTER SEQUENCE IF EXISTS member_member_id_seq RENAME TO seq_member_member_id;
+ALTER SEQUENCE IF EXISTS employee_role_employee_role_id_seq RENAME TO seq_employee_role_employee_role_id;
+ALTER SEQUENCE IF EXISTS currency_currency_id_seq RENAME TO seq_currency_currency_id;
+ALTER SEQUENCE IF EXISTS chain_chain_id_seq RENAME TO seq_chain_chain_id;
+ALTER SEQUENCE IF EXISTS wallet_wallet_id_seq RENAME TO seq_wallet_wallet_id;
+ALTER SEQUENCE IF EXISTS address_type_address_type_id_seq RENAME TO seq_address_type_address_type_id;
+ALTER SEQUENCE IF EXISTS address_address_id_seq RENAME TO seq_address_address_id;
+ALTER SEQUENCE IF EXISTS address_book_entry_address_book_entry_id_seq RENAME TO seq_address_book_entry_address_book_entry_id;
+ALTER SEQUENCE IF EXISTS transactions_transaction_id_seq RENAME TO seq_transactions_transaction_id;
+ALTER SEQUENCE IF EXISTS transaction_endpoint_transaction_endpoint_id_seq RENAME TO seq_transaction_endpoint_transaction_endpoint_id;
+ALTER SEQUENCE IF EXISTS payment_request_payment_request_id_seq RENAME TO seq_payment_request_payment_request_id;
+ALTER SEQUENCE IF EXISTS visit_visit_id_seq RENAME TO seq_visit_visit_id;
+
+/*9.2 Anonymous code blocks*/
