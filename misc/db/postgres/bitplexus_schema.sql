@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-06-04 11:41:16*/
+/*Last modified:    2015-06-11 19:54:45*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -44,10 +44,11 @@ DROP DATABASE IF EXISTS bitplexus;
 /*2. DDL - Database-level objects (schemas, extensions etc.)*/
 /*2.1 Creation statements*/
 CREATE EXTENSION pgcrypto;
+CREATE EXTENSION plpython3u;
 
 /*2.2 Removal statements*/
-DROP EXTENSION IF EXISTS pgcrypto;
-
+DROP EXTENSION IF EXISTS pgcrypto CASCADE;
+DROP EXTENSION IF EXISTS plpython3u CASCADE;
 
 /*3. DDL - Tables*/
 /*3.1 Creation statements*/
@@ -67,7 +68,7 @@ CREATE TABLE member (
     CONSTRAINT ak_member_username UNIQUE (username),
     CONSTRAINT ak_member_email_address UNIQUE (email_address),
     
-    CONSTRAINT ck_member_phone_number_valid CHECK (phone_number ~ '^([0-9])+$'),
+    CONSTRAINT ck_member_phone_number_valid CHECK (phone_number ~ '^[0-9]+$'),
     CONSTRAINT ck_member_phone_number_length CHECK (length(phone_number) > 7),
     CONSTRAINT ck_member_failed_logins_in_range CHECK (failed_logins >= 0),
     CONSTRAINT ck_member_is_active_valid CHECK (NOT (failed_logins > 2 AND is_active = TRUE)),
@@ -509,7 +510,19 @@ DROP INDEX IF EXISTS uidx_employee_role_employee_id_role_id;
 /*6. DDL - Functions*/
 /*6.1 Regular functions*/
 /*6.1.1 Creation statements*/
-CREATE OR REPLACE FUNCTION f_bitcoin_calc_supply(in_block_height INTEGER) RETURNS DECIMAL(23, 8) AS $$
+CREATE OR REPLACE FUNCTION f_encode_uri(in_text TEXT) RETURNS TEXT AS $$
+    from urllib.parse import quote
+    return quote(in_text)
+$$ LANGUAGE plpython3u IMMUTABLE LEAKPROOF STRICT;
+SET search_path TO public, pg_temp;
+
+CREATE OR REPLACE FUNCTION f_decode_uri(in_text TEXT) RETURNS TEXT AS $$
+    from urllib.parse import unquote
+    return unquote(in_text)    
+$$ LANGUAGE plpython3u IMMUTABLE LEAKPROOF STRICT;
+SET search_path TO public, pg_temp;
+
+CREATE OR REPLACE FUNCTION f_calc_bitcoin_supply(in_block_height INTEGER) RETURNS NUMERIC(23, 8) AS $$
 DECLARE
     UNITS_PER_COIN CONSTANT BIGINT := 100000000;
     INITIAL_REWARD CONSTANT BIGINT := 50 * UNITS_PER_COIN;
@@ -528,14 +541,14 @@ BEGIN
         block_reward := block_reward >> 1;
     END LOOP;
     available_supply := available_supply + (block_reward * blocks_to_subsidize);
-    RETURN CAST((CAST(available_supply AS DECIMAL) / UNITS_PER_COIN) AS DECIMAL(23, 8));
+    RETURN CAST((CAST(available_supply AS NUMERIC) / UNITS_PER_COIN) AS NUMERIC(23, 8));
 END
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 SET search_path TO public, pg_temp;
 
-COMMENT ON FUNCTION f_bitcoin_calc_supply(in_block_height INTEGER) IS 'Function that returns the total number of bitcoins in circulation given a block height.';
+COMMENT ON FUNCTION f_calc_bitcoin_supply(in_block_height INTEGER) IS 'Function that returns the total number of bitcoins in circulation given a block height.';
 
-CREATE OR REPLACE FUNCTION f_litecoin_calc_supply(in_block_height INTEGER) RETURNS DECIMAL(23, 8) AS $$
+CREATE OR REPLACE FUNCTION f_calc_litecoin_supply(in_block_height INTEGER) RETURNS NUMERIC(23, 8) AS $$
 DECLARE
     UNITS_PER_COIN CONSTANT BIGINT := 100000000;
     INITIAL_REWARD CONSTANT BIGINT := 50 * UNITS_PER_COIN;
@@ -554,24 +567,90 @@ BEGIN
         block_reward := block_reward >> 1;
     END LOOP;
     available_supply := available_supply + (block_reward * blocks_to_subsidize);
-    RETURN CAST((CAST(available_supply AS DECIMAL) / UNITS_PER_COIN) AS DECIMAL(23, 8));
+    RETURN CAST((CAST(available_supply AS NUMERIC) / UNITS_PER_COIN) AS NUMERIC(23, 8));
 END
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 SET search_path TO public, pg_temp;
 
-COMMENT ON FUNCTION f_litecoin_calc_supply(in_block_height INTEGER) IS 'Function that returns the total number of litecoins in circulation given a block height.';
+COMMENT ON FUNCTION f_calc_litecoin_supply(in_block_height INTEGER) IS 'Function that returns the total number of litecoins in circulation given a block height.';
 
 CREATE OR REPLACE FUNCTION f_get_address_type_id(in_chain_id SMALLINT, in_address VARCHAR(35)) RETURNS SMALLINT AS $$
-SELECT address_type_id FROM address_type WHERE chain_id = in_chain_id AND leading_symbol = substr(in_address, 0, 1);
-$$ LANGUAGE sql STABLE LEAKPROOF STRICT SECURITY DEFINER;
+SELECT address_type_id FROM address_type WHERE chain_id = in_chain_id AND leading_symbol = substr(in_address, 1, 1);
+$$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 SET search_path TO public, pg_temp;
 
+CREATE OR REPLACE FUNCTION f_build_payment_request_uri(in_payment_request_id BIGINT) RETURNS VARCHAR(1024) AS $$ 
+DECLARE
+    AMOUNTPARAM_NAME CONSTANT VARCHAR := 'amount';
+    LABELPARAM_NAME CONSTANT VARCHAR := 'label';
+    MESSAGEPARAM_NAME CONSTANT VARCHAR := 'message';
+    currency_name VARCHAR(25);
+    address VARCHAR(35);
+    amount NUMERIC(23, 8);
+    label VARCHAR(60);
+    message VARCHAR(255);
+    payment_request_uri VARCHAR(1024);
+BEGIN
+    SELECT cu.name, NULLIF(a.encoded_form, ''), pr.amount, NULLIF(a.label, ''), NULLIF(pr.message, '') 
+    INTO STRICT currency_name, address, amount, label, message
+    FROM payment_request AS pr INNER JOIN address AS a ON pr.address_id = a.address_id 
+    INNER JOIN address_type AS at ON a.address_type_id = at.address_type_id 
+    INNER JOIN chain AS ch ON at.chain_id = ch.chain_id 
+    INNER JOIN currency AS cu ON ch.currency_id = cu.currency_id
+    WHERE pr.payment_request_id = in_payment_request_id;
+    IF (address IS NULL) THEN
+        RAISE EXCEPTION 'Expected a non-null destination address, but got ''null'' instead.' USING ERRCODE = '20141';
+    END IF;
+    payment_request_uri = lower(currency_name) || ':' || address || '?';
+    IF (amount IS NOT NULL) THEN
+        payment_request_uri = payment_request_uri || AMOUNTPARAM_NAME || '=' || CAST(to_char(amount, 
+            'FM999999999999990.99999999') AS NUMERIC) || '&';
+    END IF;
+    IF (label IS NOT NULL) THEN
+        payment_request_uri = payment_request_uri || LABELPARAM_NAME || '=' || f_uri_encode(label) || '&';
+    END IF;
+    IF (message IS NOT NULL) THEN
+        payment_request_uri = payment_request_uri || MESSAGEPARAM_NAME || '=' || f_uri_encode(message);
+    END IF;
+    RETURN regexp_replace(payment_request_uri, '[?&]$', '');
+    EXCEPTION 
+    WHEN NO_DATA_FOUND THEN
+        RAISE EXCEPTION 'Unable to read the specified payment request (id = %).', in_payment_request_id
+            USING ERRCODE = '21121';
+END
+$$ LANGUAGE plpgsql STABLE STRICT;
+SET search_path TO public, pg_temp;
 
+CREATE OR REPLACE FUNCTION f_reattach_transactions(in_network_uids INTEGER[]) RETURNS VARCHAR(64)[] AS $$ 
+
+$$ LANGUAGE plpgsql LEAKPROOF STRICT;
+
+CREATE OR REPLACE FUNCTION f_confirm_transactions(in_network_uids INTEGER[]) RETURNS VARCHAR(64)[] AS $$
+
+$$ LANGUAGE plpgsql LEAKPROOF STRICT;
+SET search_path TO public, pg_temp;
+
+CREATE OR REPLACE FUNCTION f_complete_transactions(in_block_height INTEGER) RETURNS VARCHAR(64)[] AS $$
+
+$$ LANGUAGE plpgsql LEAKPROOF STRICT;
+SET search_path TO public, pg_temp;
+
+CREATE OR REPLACE FUNCTION f_fail_transactions() RETURNS VARCHAR(64)[] AS $$
+
+$$ LANGUAGE plpgsql LEAKPROOF STRICT;
+SET search_path TO public, pg_temp;
 
 /*6.1.2 Removal statements*/
-DROP FUNCTION IF EXISTS f_bitcoin_calc_supply(in_block_height INTEGER) CASCADE;
-DROP FUNCTION IF EXISTS f_litecoin_calc_supply(in_block_height INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_encode_uri(in_text TEXT) CASCADE;
+DROP FUNCTION IF EXISTS f_decode_uri(in_text TEXT) CASCADE;
+DROP FUNCTION IF EXISTS f_calc_bitcoin_supply(in_block_height INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_calc_litecoin_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_get_address_type_id(in_chain_id SMALLINT, in_address VARCHAR(35)) CASCADE;
+DROP FUNCTION IF EXISTS f_build_payment_request_uri(in_payment_request_id BIGINT) CASCADE;
+DROP FUNCTION IF EXISTS f_reattach_transactions(in_network_uids INTEGER[]) CASCADE;
+DROP FUNCTION IF EXISTS f_confirm_transactions(in_network_uids INTEGER[]) CASCADE;
+DROP FUNCTION IF EXISTS f_complete_transactions(in_block_height INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_abandon_transactions() CASCADE;
 
 /*6.2 Trigger functions*/
 /*6.2.1 Creation statements*/
