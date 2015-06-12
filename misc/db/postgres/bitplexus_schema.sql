@@ -511,14 +511,14 @@ DROP INDEX IF EXISTS uidx_employee_role_employee_id_role_id;
 /*6.1 Regular functions*/
 /*6.1.1 Creation statements*/
 CREATE OR REPLACE FUNCTION f_encode_uri(in_text TEXT) RETURNS TEXT AS $$
-    from urllib.parse import quote
-    return quote(in_text)
+from urllib.parse import quote
+return quote(in_text)
 $$ LANGUAGE plpython3u IMMUTABLE LEAKPROOF STRICT;
 SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_decode_uri(in_text TEXT) RETURNS TEXT AS $$
-    from urllib.parse import unquote
-    return unquote(in_text)    
+from urllib.parse import unquote
+return unquote(in_text)    
 $$ LANGUAGE plpython3u IMMUTABLE LEAKPROOF STRICT;
 SET search_path TO public, pg_temp;
 
@@ -594,23 +594,23 @@ BEGIN
     SELECT cu.name, NULLIF(a.encoded_form, ''), pr.amount, NULLIF(a.label, ''), NULLIF(pr.message, '') 
     INTO STRICT currency_name, address, amount, label, message
     FROM payment_request AS pr INNER JOIN address AS a ON pr.address_id = a.address_id 
-    INNER JOIN address_type AS at ON a.address_type_id = at.address_type_id 
-    INNER JOIN chain AS ch ON at.chain_id = ch.chain_id 
+    INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id 
+    INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id 
     INNER JOIN currency AS cu ON ch.currency_id = cu.currency_id
     WHERE pr.payment_request_id = in_payment_request_id;
     IF (address IS NULL) THEN
         RAISE EXCEPTION 'Expected a non-null destination address, but got ''null'' instead.' USING ERRCODE = '20141';
     END IF;
-    payment_request_uri = lower(currency_name) || ':' || address || '?';
+    payment_request_uri := lower(currency_name) || ':' || address || '?';
     IF (amount IS NOT NULL) THEN
-        payment_request_uri = payment_request_uri || AMOUNTPARAM_NAME || '=' || CAST(to_char(amount, 
+        payment_request_uri := payment_request_uri || AMOUNTPARAM_NAME || '=' || CAST(to_char(amount, 
             'FM999999999999990.99999999') AS NUMERIC) || '&';
     END IF;
     IF (label IS NOT NULL) THEN
-        payment_request_uri = payment_request_uri || LABELPARAM_NAME || '=' || f_uri_encode(label) || '&';
+        payment_request_uri := payment_request_uri || LABELPARAM_NAME || '=' || f_uri_encode(label) || '&';
     END IF;
     IF (message IS NOT NULL) THEN
-        payment_request_uri = payment_request_uri || MESSAGEPARAM_NAME || '=' || f_uri_encode(message);
+        payment_request_uri := payment_request_uri || MESSAGEPARAM_NAME || '=' || f_uri_encode(message);
     END IF;
     RETURN regexp_replace(payment_request_uri, '[?&]$', '');
     EXCEPTION 
@@ -621,23 +621,61 @@ END
 $$ LANGUAGE plpgsql STABLE STRICT;
 SET search_path TO public, pg_temp;
 
-CREATE OR REPLACE FUNCTION f_reattach_transactions(in_network_uids INTEGER[]) RETURNS VARCHAR(64)[] AS $$ 
-
+CREATE OR REPLACE FUNCTION f_reorganize_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) 
+RETURNS CHAR(64)[] AS $$
+DECLARE
+    
+BEGIN
+    
+END
 $$ LANGUAGE plpgsql LEAKPROOF STRICT;
 
-CREATE OR REPLACE FUNCTION f_confirm_transactions(in_network_uids INTEGER[]) RETURNS VARCHAR(64)[] AS $$
-
-$$ LANGUAGE plpgsql LEAKPROOF STRICT;
+CREATE OR REPLACE FUNCTION f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[])
+RETURNS CHAR(64)[] AS $$
+DECLARE
+    confirmed_network_uids CHAR(64)[];
+BEGIN
+    FOR i IN 1..array_length(in_network_uids, 1) LOOP
+        UPDATE transactions SET transaction_status_type_id = 3, confirmed_at = CURRENT_TIMESTAMP(0), 
+            block_height = in_block_height
+        WHERE network_uid = in_network_uids[i] AND transaction_status_type_id = 2;
+        IF (FOUND) THEN
+            confirmed_network_uids := array_append(confirmed_network_uids, in_network_uids[i]);
+        END IF;
+    END LOOP;
+    RETURN confirmed_network_uids;
+END
+$$ LANGUAGE plpgsql STRICT;
 SET search_path TO public, pg_temp;
 
-CREATE OR REPLACE FUNCTION f_complete_transactions(in_block_height INTEGER) RETURNS VARCHAR(64)[] AS $$
-
-$$ LANGUAGE plpgsql LEAKPROOF STRICT;
+CREATE OR REPLACE FUNCTION f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT)
+RETURNS CHAR(64)[] AS $$
+WITH completed_transactions AS (
+    UPDATE transactions SET transaction_status_type_id = 4, completed_at = CURRENT_TIMESTAMP(0)
+    WHERE block_height <= (in_block_height - in_confirmation_count) AND transaction_status_type_id = 3
+    RETURNING network_uid
+)
+SELECT array_agg(network_uid) FROM completed_transactions;
+$$ LANGUAGE sql STRICT;
 SET search_path TO public, pg_temp;
 
-CREATE OR REPLACE FUNCTION f_fail_transactions() RETURNS VARCHAR(64)[] AS $$
+CREATE OR REPLACE FUNCTION f_drop_transactions(in_transaction_timeout INTEGER) RETURNS CHAR(64)[] AS $$
+WITH dropped_transactions AS (
+    UPDATE transactions SET transaction_status_type_id = 6
+    WHERE EXTRACT(epoch FROM (CURRENT_TIMESTAMP(0) - received_at)) >= in_transaction_timeout 
+        AND transaction_status_type_id = 2
+    RETURNING network_uid
+)
+SELECT array_agg(network_uid) FROM dropped_transactions;
+$$ LANGUAGE sql STRICT;
+SET search_path TO public, pg_temp;
 
-$$ LANGUAGE plpgsql LEAKPROOF STRICT;
+CREATE OR REPLACE FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) RETURNS VARCHAR(35)[] AS $$
+SELECT a.encoded_form AS address
+FROM transactions AS t INNER JOIN transaction_endpoint AS te ON t.transaction_id = te.transaction_id
+INNER JOIN address AS a ON te.address_id = a.address_id
+WHERE t.network_uid = in_network_uid;
+$$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 SET search_path TO public, pg_temp;
 
 /*6.1.2 Removal statements*/
@@ -647,10 +685,11 @@ DROP FUNCTION IF EXISTS f_calc_bitcoin_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_litecoin_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_get_address_type_id(in_chain_id SMALLINT, in_address VARCHAR(35)) CASCADE;
 DROP FUNCTION IF EXISTS f_build_payment_request_uri(in_payment_request_id BIGINT) CASCADE;
-DROP FUNCTION IF EXISTS f_reattach_transactions(in_network_uids INTEGER[]) CASCADE;
-DROP FUNCTION IF EXISTS f_confirm_transactions(in_network_uids INTEGER[]) CASCADE;
-DROP FUNCTION IF EXISTS f_complete_transactions(in_block_height INTEGER) CASCADE;
-DROP FUNCTION IF EXISTS f_abandon_transactions() CASCADE;
+DROP FUNCTION IF EXISTS f_reorganize_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) CASCADE;
+DROP FUNCTION IF EXISTS f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) CASCADE;
+DROP FUNCTION IF EXISTS f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT) CASCADE;
+DROP FUNCTION IF EXISTS f_drop_transactions(in_transaction_timeout INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_get_transaction_addresses(in_network_uid CHAR(64)) CASCADE;
 
 /*6.2 Trigger functions*/
 /*6.2.1 Creation statements*/

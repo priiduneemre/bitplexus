@@ -122,8 +122,20 @@ INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, 
 INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (8, 5, 31, 'Garrett Beck''s personal address #1', '2015-05-31 09:06:13');
 
 /*Table 'transactions': data parsed automatically (via lazy loading) from the block chain.*/
+INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (1, 2, 'd9e9c057-23b1-4b75-a9bc-a3f2dd729123', 'bc3789df89cba9f6f558d4b3dc5cdc93be88c74f5d4f105040ca9ddc767e3f4c', '2015-06-12 11:57:34', NULL, NULL, NULL, 308, 0.00010000, 244.26, 'Sample transaction to my friend Bob.', '2015-06-12 11:57:36', NULL);
+INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (2, 2, '95305bfa-10fb-11e5-9493-1697f925ec7b', '1d16061cea3d07065d34b499681d82251a3c979709156dfc8fe8f90a21ce64c9', '2015-06-12 12:06:19', NULL, NULL, NULL, 259, 0.00010000, 239.51, 'Alimony for that bitch Stacy.', '2015-06-12 12:06:21', NULL);
+INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (3, 2, 'e6fcf9a2-1119-11e5-9493-1697f925ec7b', '3a9e8318c9c0478ba6e892043c31a58335f67d0bde36022fdf2741395e053674', '2015-06-02 23:48:55', NULL, NULL, NULL, 673, 0.00000000, 240.78, 'Payment for the hit on Koolaid Man.', '2015-06-02 23:48:57', NULL);
 
 /*Table 'transaction_endpoint': data parsed automatically (via lazy loading) from the block chain.*/
+INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (1, 1, 16, 1, '0.95', '2015-06-12 11:57:36');
+INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (2, 1, 17, 2, '0.6', '2015-06-12 11:57:36');
+INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (3, 1, 18, 3, '0.34', '2015-06-12 11:57:36');
+INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (4, 2, 19, 1, '50.9', '2015-06-12 12:06:21');
+INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (5, 2, 20, 2, '2', '2015-06-12 12:06:21');
+INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (6, 2, 21, 3, '48.89', '2015-06-12 12:06:21');
+INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (8, 3, 22, 1, '3.8', '2015-06-02 23:48:57');
+INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (9, 3, 23, 2, '3.79', '2015-06-02 23:48:57');
+
 
 INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (1, 1, 0.2, 'Please note that the emergency loan you have requested (0.15 tBTC + 0.05 tBTC interest) is due for repayment on June 3, 2015.', '2015-03-24 16:03:47');
 INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (2, 3, 0.001, 'Cookie & ice cream fund (donate 0,001 tBTC)', '2015-03-24 16:10:22');
