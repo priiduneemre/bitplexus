@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DML statements for populating the application's database with seed data (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-06-11 19:54:53*/
+/*Last modified:    2015-06-15 20:31:55*/
 
 
 /*1. DML - Regular tables*/
@@ -194,8 +194,8 @@ INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VAL
 INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (2, 'UNCONFIRMED', 'Unconfirmed');
 INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (3, 'CONFIRMED', 'Confirmed');
 INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (4, 'COMPLETED', 'Completed');
-INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (5, 'DETACHED', 'Detached');
-INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (6, 'FAILED', 'Failed');
+INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (5, 'FAILED', 'Failed');
+INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (6, 'EXTINCT', 'Extinct');
 
 INSERT INTO transaction_endpoint_type (transaction_endpoint_type_id, code, name) VALUES (1, 'INPUT', 'Input');
 INSERT INTO transaction_endpoint_type (transaction_endpoint_type_id, code, name) VALUES (2, 'OUTPUT_MAIN', 'Output');

@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-06-11 19:54:45*/
+/*Last modified:    2015-06-15 20:32:01*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -518,7 +518,7 @@ SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_decode_uri(in_text TEXT) RETURNS TEXT AS $$
 from urllib.parse import unquote
-return unquote(in_text)    
+return unquote(in_text)
 $$ LANGUAGE plpython3u IMMUTABLE LEAKPROOF STRICT;
 SET search_path TO public, pg_temp;
 
@@ -624,7 +624,7 @@ SET search_path TO public, pg_temp;
 CREATE OR REPLACE FUNCTION f_reorganize_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) 
 RETURNS CHAR(64)[] AS $$
 DECLARE
-    
+    FOR i IN 1..array_length(in_network_uids, 1) LOOP
 BEGIN
     
 END
@@ -652,18 +652,17 @@ CREATE OR REPLACE FUNCTION f_complete_transactions(in_block_height INTEGER, in_c
 RETURNS CHAR(64)[] AS $$
 WITH completed_transactions AS (
     UPDATE transactions SET transaction_status_type_id = 4, completed_at = CURRENT_TIMESTAMP(0)
-    WHERE block_height <= (in_block_height - in_confirmation_count) AND transaction_status_type_id = 3
+    WHERE block_height <= (in_block_height - (in_confirmation_count - 1)) AND transaction_status_type_id = 3
     RETURNING network_uid
 )
 SELECT array_agg(network_uid) FROM completed_transactions;
 $$ LANGUAGE sql STRICT;
 SET search_path TO public, pg_temp;
 
-CREATE OR REPLACE FUNCTION f_drop_transactions(in_transaction_timeout INTEGER) RETURNS CHAR(64)[] AS $$
+CREATE OR REPLACE FUNCTION f_drop_transactions(in_txn_timeout INTEGER) RETURNS CHAR(64)[] AS $$
 WITH dropped_transactions AS (
     UPDATE transactions SET transaction_status_type_id = 6
-    WHERE EXTRACT(epoch FROM (CURRENT_TIMESTAMP(0) - received_at)) >= in_transaction_timeout 
-        AND transaction_status_type_id = 2
+    WHERE EXTRACT(epoch FROM CURRENT_TIMESTAMP(0)) - received_at >= in_tx_timeout AND transaction_status_type_id = 2
     RETURNING network_uid
 )
 SELECT array_agg(network_uid) FROM dropped_transactions;
@@ -671,7 +670,7 @@ $$ LANGUAGE sql STRICT;
 SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) RETURNS VARCHAR(35)[] AS $$
-SELECT a.encoded_form AS address
+SELECT array_agg(a.encoded_form) AS addresses
 FROM transactions AS t INNER JOIN transaction_endpoint AS te ON t.transaction_id = te.transaction_id
 INNER JOIN address AS a ON te.address_id = a.address_id
 WHERE t.network_uid = in_network_uid;
@@ -688,7 +687,7 @@ DROP FUNCTION IF EXISTS f_build_payment_request_uri(in_payment_request_id BIGINT
 DROP FUNCTION IF EXISTS f_reorganize_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) CASCADE;
 DROP FUNCTION IF EXISTS f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) CASCADE;
 DROP FUNCTION IF EXISTS f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT) CASCADE;
-DROP FUNCTION IF EXISTS f_drop_transactions(in_transaction_timeout INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_drop_transactions(in_txn_timeout INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_get_transaction_addresses(in_network_uid CHAR(64)) CASCADE;
 
 /*6.2 Trigger functions*/
