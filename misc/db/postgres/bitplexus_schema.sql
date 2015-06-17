@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-06-15 20:32:01*/
+/*Last modified:    2015-06-17 20:06:59*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -73,7 +73,8 @@ CREATE TABLE member (
     CONSTRAINT ck_member_failed_logins_in_range CHECK (failed_logins >= 0),
     CONSTRAINT ck_member_is_active_valid CHECK (NOT (failed_logins > 2 AND is_active = TRUE)),
     CONSTRAINT ck_member_registered_at_in_range CHECK (registered_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_member_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_member_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_member_updated_at_chrono_order CHECK (updated_at >= registered_at)
 );
 
 CREATE TABLE person (
@@ -87,7 +88,8 @@ CREATE TABLE person (
     CONSTRAINT fk_person_person_id FOREIGN KEY (person_id) REFERENCES member (member_id),
     
     CONSTRAINT ck_person_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_person_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_person_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_person_updated_at_chrono_order CHECK (updated_at >= created_at)
 );
 
 CREATE TABLE customer (
@@ -116,7 +118,9 @@ CREATE TABLE employee (
     CONSTRAINT ck_employee_iban_length CHECK (length(iban) > 4),
     CONSTRAINT ck_employee_born_on_in_range CHECK (born_on BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_employee_employed_on_in_range CHECK (employed_on BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_employee_employed_on_chrono_order CHECK (employed_on >= born_on),
     CONSTRAINT ck_employee_resigned_on_in_range CHECK (resigned_on BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_employee_resigned_on_chrono_order CHECK (resigned_on >= employed_on),
     CONSTRAINT ck_employee_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
@@ -173,7 +177,8 @@ CREATE TABLE currency (
     CONSTRAINT ck_currency_website_url_length CHECK (length(website_url) > 2),
     CONSTRAINT ck_currency_launched_on_in_range CHECK (launched_on BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_currency_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_currency_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_currency_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_currency_updated_at_chrono_order CHECK (updated_at >= created_at)
 );
 
 CREATE TABLE chain (
@@ -196,7 +201,8 @@ CREATE TABLE chain (
     
     CONSTRAINT ck_chain_started_on_in_range CHECK (started_on BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_chain_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_chain_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_chain_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_chain_updated_at_chrono_order CHECK (updated_at >= created_at)
 );
 
 CREATE TABLE wallet_state_type (
@@ -222,7 +228,8 @@ CREATE TABLE wallet (
     CONSTRAINT fk_wallet_wallet_state_type_id FOREIGN KEY (wallet_state_type_id) REFERENCES wallet_state_type (wallet_state_type_id) ON UPDATE CASCADE,
     
     CONSTRAINT ck_wallet_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_wallet_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')    
+    CONSTRAINT ck_wallet_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_wallet_updated_at_chrono_order CHECK (updated_at >= created_at)    
 );
 
 CREATE TABLE address_type (
@@ -243,7 +250,8 @@ CREATE TABLE address_type (
     CONSTRAINT fk_address_type_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
     CONSTRAINT ck_address_type_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_address_type_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_address_type_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_address_type_updated_at_chrono_order CHECK (updated_at >= created_at)
 );
 
 CREATE TABLE address_state_type (
@@ -278,7 +286,8 @@ CREATE TABLE address (
     CONSTRAINT ck_address_balance_in_range CHECK (balance >= 0),
     CONSTRAINT ck_address_balance_nullness CHECK (balance IS NULL = wallet_id IS NULL),
     CONSTRAINT ck_address_indexed_at_in_range CHECK (indexed_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_address_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_address_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_address_updated_at_chrono_order CHECK (updated_at >= indexed_at)
 );    
 
 CREATE TABLE address_book_entry (
@@ -294,7 +303,8 @@ CREATE TABLE address_book_entry (
     CONSTRAINT fk_address_book_entry_address_id FOREIGN KEY (address_id) REFERENCES address (address_id),
     
     CONSTRAINT ck_address_book_entry_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_address_book_entry_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_address_book_entry_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_address_book_entry_updated_at_chrono_order CHECK (updated_at >= created_at)
 );
 
 CREATE TABLE transaction_status_type (
@@ -335,9 +345,12 @@ CREATE TABLE transactions (
     CONSTRAINT ck_transactions_unit_price_in_range CHECK (unit_price > 0),
     CONSTRAINT ck_transactions_received_at_in_range CHECK (received_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_confirmed_at_in_range CHECK (confirmed_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transactions_confirmed_at_chrono_order CHECK (confirmed_at >= received_at),
     CONSTRAINT ck_transactions_completed_at_in_range CHECK (completed_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transactions_completed_at_chrono_order CHECK (completed_at >= confirmed_at),
     CONSTRAINT ck_transactions_logged_at_in_range CHECK (logged_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_transactions_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01')
+    CONSTRAINT ck_transactions_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transactions_updated_at_chrono_order CHECK (updated_at >= logged_at)
 );
 
 CREATE TABLE transaction_endpoint_type (
@@ -476,13 +489,14 @@ DROP INDEX IF EXISTS idx_visit_member_id;
 CREATE INDEX idx_member_failed_logins ON member USING btree (failed_logins) WHERE failed_logins > 2;
 CREATE INDEX idx_member_phone_number ON member USING btree (phone_number varchar_pattern_ops);
 CREATE INDEX idx_address_type_leading_symbol ON address_type USING btree (leading_symbol);
+CREATE INDEX idx_address_encoded_form ON address USING btree (encoded_form varchar_pattern_ops);
 CREATE INDEX idx_transactions_block_height ON transactions USING btree (block_height);
 CREATE INDEX idx_visit_ip_address ON visit USING btree (ip_address);
 CREATE INDEX idx_visit_login_at ON visit USING btree (login_at);
 
 CREATE INDEX fidx_person_first_name ON person USING btree (lower(first_name) varchar_pattern_ops);
 CREATE INDEX fidx_person_last_name ON person USING btree (lower(last_name) varchar_pattern_ops);
-CREATE INDEX fidx_address_encoded_form ON address USING btree (lower(encoded_form) varchar_pattern_ops);
+CREATE INDEX fidx_address_label ON address USING btree (lower(label) varchar_pattern_ops);
 CREATE INDEX fidx_transactions_network_uid ON transactions USING btree (lower(network_uid) varchar_pattern_ops);
 
 CREATE UNIQUE INDEX uidx_employee_role_employee_id_role_id ON employee_role USING btree (employee_id, role_id) WHERE is_active = TRUE;
@@ -491,13 +505,14 @@ CREATE UNIQUE INDEX uidx_employee_role_employee_id_role_id ON employee_role USIN
 DROP INDEX IF EXISTS idx_member_failed_logins;
 DROP INDEX IF EXISTS idx_member_phone_number;
 DROP INDEX IF EXISTS idx_address_type_leading_symbol;
+DROP INDEX IF EXISTS idx_address_encoded_form;
 DROP INDEX IF EXISTS idx_transactions_block_height;
 DROP INDEX IF EXISTS idx_visit_ip_address;
 DROP INDEX IF EXISTS idx_visit_login_at;
 
 DROP INDEX IF EXISTS fidx_person_first_name;
 DROP INDEX IF EXISTS fidx_person_last_name;
-DROP INDEX IF EXISTS fidx_address_encoded_form;
+DROP INDEX IF EXISTS fidx_address_label;
 DROP INDEX IF EXISTS fidx_transactions_network_uid;
 
 DROP INDEX IF EXISTS uidx_employee_role_employee_id_role_id;
@@ -621,14 +636,20 @@ END
 $$ LANGUAGE plpgsql STABLE STRICT;
 SET search_path TO public, pg_temp;
 
-CREATE OR REPLACE FUNCTION f_reorganize_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) 
-RETURNS CHAR(64)[] AS $$
-DECLARE
-    FOR i IN 1..array_length(in_network_uids, 1) LOOP
-BEGIN
-    
-END
-$$ LANGUAGE plpgsql LEAKPROOF STRICT;
+CREATE OR REPLACE FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64)) RETURNS BOOLEAN AS $$
+WITH was_confirmed_transaction AS (
+    UPDATE transactions SET transaction_status_type_id = 2, confirmed_at = NULL, block_height = NULL
+    WHERE network_uid = in_network_uid AND transaction_status_type_id = 3
+    RETURNING network_uid
+), was_completed_transaction AS (
+    UPDATE transactions SET transaction_status_type_id = 2, confirmed_at = NULL, completed_at = NULL,
+        block_height = NULL
+    WHERE network_uid = in_network_uid AND transaction_status_type_id = 4
+    RETURNING network_uid
+)
+SELECT EXISTS (SELECT 1 FROM was_confirmed_transaction UNION ALL SELECT 1 FROM was_completed_transaction);
+$$ LANGUAGE sql STRICT;
+SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[])
 RETURNS CHAR(64)[] AS $$
@@ -636,6 +657,7 @@ DECLARE
     confirmed_network_uids CHAR(64)[];
 BEGIN
     FOR i IN 1..array_length(in_network_uids, 1) LOOP
+        PERFORM f_clean_evicted_transaction(in_network_uids[i]);
         UPDATE transactions SET transaction_status_type_id = 3, confirmed_at = CURRENT_TIMESTAMP(0), 
             block_height = in_block_height
         WHERE network_uid = in_network_uids[i] AND transaction_status_type_id = 2;
@@ -662,7 +684,7 @@ SET search_path TO public, pg_temp;
 CREATE OR REPLACE FUNCTION f_drop_transactions(in_txn_timeout INTEGER) RETURNS CHAR(64)[] AS $$
 WITH dropped_transactions AS (
     UPDATE transactions SET transaction_status_type_id = 6
-    WHERE EXTRACT(epoch FROM CURRENT_TIMESTAMP(0)) - received_at >= in_tx_timeout AND transaction_status_type_id = 2
+    WHERE EXTRACT(epoch FROM CURRENT_TIMESTAMP(0)) - received_at >= in_txn_timeout AND transaction_status_type_id = 2
     RETURNING network_uid
 )
 SELECT array_agg(network_uid) FROM dropped_transactions;
@@ -677,6 +699,15 @@ WHERE t.network_uid = in_network_uid;
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 SET search_path TO public, pg_temp;
 
+CREATE OR REPLACE FUNCTION f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_id SMALLINT, 
+in_label_fragment VARCHAR(60)) RETURNS INTEGER AS $$
+SELECT CAST(Count(*) AS INTEGER) AS address_count
+FROM address AS a INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
+WHERE a.wallet_id = in_wallet_id AND adt.chain_id = in_chain_id AND lower(a.label) LIKE 
+    lower('%' || in_label_fragment || '%');
+$$ LANGUAGE sql STABLE LEAKPROOF STRICT;
+SET search_path TO public, pg_temp;
+
 /*6.1.2 Removal statements*/
 DROP FUNCTION IF EXISTS f_encode_uri(in_text TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_decode_uri(in_text TEXT) CASCADE;
@@ -684,19 +715,92 @@ DROP FUNCTION IF EXISTS f_calc_bitcoin_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_litecoin_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_get_address_type_id(in_chain_id SMALLINT, in_address VARCHAR(35)) CASCADE;
 DROP FUNCTION IF EXISTS f_build_payment_request_uri(in_payment_request_id BIGINT) CASCADE;
-DROP FUNCTION IF EXISTS f_reorganize_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) CASCADE;
+DROP FUNCTION IF EXISTS f_clean_evicted_transaction(in_network_uid CHAR(64)) CASCADE;
 DROP FUNCTION IF EXISTS f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) CASCADE;
 DROP FUNCTION IF EXISTS f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT) CASCADE;
 DROP FUNCTION IF EXISTS f_drop_transactions(in_txn_timeout INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_get_transaction_addresses(in_network_uid CHAR(64)) CASCADE;
+DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_id SMALLINT, in_label_fragment VARCHAR(60)) CASCADE;
 
 /*6.2 Trigger functions*/
 /*6.2.1 Creation statements*/
+CREATE OR REPLACE FUNCTION f_renew_entity_updated_at() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP(0);
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+SET search_path TO public, pg_temp;
+
+CREATE OR REPLACE FUNCTION f_unset_entity_is_active() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.is_active = FALSE;
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+SET search_path TO public, pg_temp;
+
 /*6.2.2 Removal statements*/
+DROP FUNCTION IF EXISTS f_renew_entity_updated_at() CASCADE;
+DROP FUNCTION IF EXISTS f_unset_entity_is_active() CASCADE;
 
 /*7. DDL - Triggers*/
 /*7.1 Creation statements*/
+CREATE TRIGGER tr_member_updated_at_renew BEFORE UPDATE ON member 
+FOR EACH ROW 
+EXECUTE PROCEDURE f_renew_entity_updated_at();
+
+CREATE TRIGGER tr_member_is_active_unset BEFORE UPDATE ON member
+FOR EACH ROW WHEN (NEW.failed_logins > 2)
+EXECUTE PROCEDURE f_unset_entity_is_active();
+
+CREATE TRIGGER tr_person_updated_at_renew BEFORE UPDATE ON person
+FOR EACH ROW 
+EXECUTE PROCEDURE f_renew_entity_updated_at();
+
+CREATE TRIGGER tr_employee_is_active_unset BEFORE UPDATE ON employee
+FOR EACH ROW WHEN (NEW.resigned_on IS NOT NULL)
+EXECUTE PROCEDURE f_unset_entity_is_active();
+
+CREATE TRIGGER tr_currency_updated_at_renew BEFORE UPDATE ON currency
+FOR EACH ROW 
+EXECUTE PROCEDURE f_renew_entity_updated_at();
+
+CREATE TRIGGER tr_chain_updated_at_renew BEFORE UPDATE ON chain
+FOR EACH ROW 
+EXECUTE PROCEDURE f_renew_entity_updated_at();
+
+CREATE TRIGGER tr_wallet_updated_at_renew BEFORE UPDATE ON wallet
+FOR EACH ROW 
+EXECUTE PROCEDURE f_renew_entity_updated_at();
+
+CREATE TRIGGER tr_address_type_updated_at_renew BEFORE UPDATE ON address_type
+FOR EACH ROW 
+EXECUTE PROCEDURE f_renew_entity_updated_at();
+
+CREATE TRIGGER tr_address_updated_at_renew BEFORE UPDATE ON address
+FOR EACH ROW 
+EXECUTE PROCEDURE f_renew_entity_updated_at();
+
+CREATE TRIGGER tr_address_book_entry_updated_at_renew BEFORE UPDATE ON address_book_entry
+FOR EACH ROW 
+EXECUTE PROCEDURE f_renew_entity_updated_at();
+
+CREATE TRIGGER tr_transactions_updated_at_renew BEFORE UPDATE ON transactions
+FOR EACH ROW 
+EXECUTE PROCEDURE f_renew_entity_updated_at();
+
 /*7.2 Removal statements*/
+DROP TRIGGER IF EXISTS tr_member_updated_at_renew ON member CASCADE;
+DROP TRIGGER IF EXISTS tr_member_is_active_unset ON member CASCADE;
+DROP TRIGGER IF EXISTS tr_person_updated_at_renew ON person CASCADE;
+DROP TRIGGER IF EXISTS tr_currency_updated_at_renew ON currency CASCADE;
+DROP TRIGGER IF EXISTS tr_chain_updated_at_renew ON chain CASCADE;
+DROP TRIGGER IF EXISTS tr_wallet_updated_at_renew ON wallet CASCADE;
+DROP TRIGGER IF EXISTS tr_address_type_updated_at_renew ON address_type CASCADE;
+DROP TRIGGER IF EXISTS tr_address_updated_at_renew ON address CASCADE;
+DROP TRIGGER IF EXISTS tr_address_book_entry_updated_at_renew ON address_book_entry CASCADE;
+DROP TRIGGER IF EXISTS tr_transactions_updated_at_renew ON transactions CASCADE;
 
 
 /*8. DCL - Privileges*/
