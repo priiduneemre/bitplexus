@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-06-17 20:06:59*/
+/*Last modified:    2015-06-18 19:05:19*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -529,13 +529,11 @@ CREATE OR REPLACE FUNCTION f_encode_uri(in_text TEXT) RETURNS TEXT AS $$
 from urllib.parse import quote
 return quote(in_text)
 $$ LANGUAGE plpython3u IMMUTABLE LEAKPROOF STRICT;
-SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_decode_uri(in_text TEXT) RETURNS TEXT AS $$
 from urllib.parse import unquote
 return unquote(in_text)
 $$ LANGUAGE plpython3u IMMUTABLE LEAKPROOF STRICT;
-SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_calc_bitcoin_supply(in_block_height INTEGER) RETURNS NUMERIC(23, 8) AS $$
 DECLARE
@@ -559,7 +557,6 @@ BEGIN
     RETURN CAST((CAST(available_supply AS NUMERIC) / UNITS_PER_COIN) AS NUMERIC(23, 8));
 END
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
-SET search_path TO public, pg_temp;
 
 COMMENT ON FUNCTION f_calc_bitcoin_supply(in_block_height INTEGER) IS 'Function that returns the total number of bitcoins in circulation given a block height.';
 
@@ -585,14 +582,12 @@ BEGIN
     RETURN CAST((CAST(available_supply AS NUMERIC) / UNITS_PER_COIN) AS NUMERIC(23, 8));
 END
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
-SET search_path TO public, pg_temp;
 
 COMMENT ON FUNCTION f_calc_litecoin_supply(in_block_height INTEGER) IS 'Function that returns the total number of litecoins in circulation given a block height.';
 
 CREATE OR REPLACE FUNCTION f_get_address_type_id(in_chain_id SMALLINT, in_address VARCHAR(35)) RETURNS SMALLINT AS $$
 SELECT address_type_id FROM address_type WHERE chain_id = in_chain_id AND leading_symbol = substr(in_address, 1, 1);
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
-SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_build_payment_request_uri(in_payment_request_id BIGINT) RETURNS VARCHAR(1024) AS $$ 
 DECLARE
@@ -634,7 +629,6 @@ BEGIN
             USING ERRCODE = '21121';
 END
 $$ LANGUAGE plpgsql STABLE STRICT;
-SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64)) RETURNS BOOLEAN AS $$
 WITH was_confirmed_transaction AS (
@@ -649,7 +643,6 @@ WITH was_confirmed_transaction AS (
 )
 SELECT EXISTS (SELECT 1 FROM was_confirmed_transaction UNION ALL SELECT 1 FROM was_completed_transaction);
 $$ LANGUAGE sql STRICT;
-SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[])
 RETURNS CHAR(64)[] AS $$
@@ -668,7 +661,6 @@ BEGIN
     RETURN confirmed_network_uids;
 END
 $$ LANGUAGE plpgsql STRICT;
-SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT)
 RETURNS CHAR(64)[] AS $$
@@ -679,7 +671,6 @@ WITH completed_transactions AS (
 )
 SELECT array_agg(network_uid) FROM completed_transactions;
 $$ LANGUAGE sql STRICT;
-SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_drop_transactions(in_txn_timeout INTEGER) RETURNS CHAR(64)[] AS $$
 WITH dropped_transactions AS (
@@ -689,7 +680,6 @@ WITH dropped_transactions AS (
 )
 SELECT array_agg(network_uid) FROM dropped_transactions;
 $$ LANGUAGE sql STRICT;
-SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) RETURNS VARCHAR(35)[] AS $$
 SELECT array_agg(a.encoded_form) AS addresses
@@ -697,7 +687,6 @@ FROM transactions AS t INNER JOIN transaction_endpoint AS te ON t.transaction_id
 INNER JOIN address AS a ON te.address_id = a.address_id
 WHERE t.network_uid = in_network_uid;
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
-SET search_path TO public, pg_temp;
 
 CREATE OR REPLACE FUNCTION f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_id SMALLINT, 
 in_label_fragment VARCHAR(60)) RETURNS INTEGER AS $$
@@ -706,7 +695,6 @@ FROM address AS a INNER JOIN address_type AS adt ON a.address_type_id = adt.addr
 WHERE a.wallet_id = in_wallet_id AND adt.chain_id = in_chain_id AND lower(a.label) LIKE 
     lower('%' || in_label_fragment || '%');
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
-SET search_path TO public, pg_temp;
 
 /*6.1.2 Removal statements*/
 DROP FUNCTION IF EXISTS f_encode_uri(in_text TEXT) CASCADE;
@@ -724,83 +712,109 @@ DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_wallet_id INTEGER, in_chai
 
 /*6.2 Trigger functions*/
 /*6.2.1 Creation statements*/
-CREATE OR REPLACE FUNCTION f_renew_entity_updated_at() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION f_refresh_entity_updated_at() RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = CURRENT_TIMESTAMP(0);
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
-SET search_path TO public, pg_temp;
 
-CREATE OR REPLACE FUNCTION f_unset_entity_is_active() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION f_disable_entity_is_active() RETURNS TRIGGER AS $$
 BEGIN
     NEW.is_active = FALSE;
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
-SET search_path TO public, pg_temp;
+
+CREATE OR REPLACE FUNCTION f_disable_employee_is_active() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.is_active = FALSE;
+    IF (TG_OP = 'INSERT') THEN
+        UPDATE employee_role SET is_active = FALSE WHERE employee_id = NEW.employee_id;
+    ELSIF (TG_OP = 'UPDATE') THEN 
+        UPDATE employee_role SET is_active = FALSE WHERE employee_id = OLD.employee_id;
+    END IF;
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION f_disable_chain_is_operational() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.is_operational = FALSE;
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
 
 /*6.2.2 Removal statements*/
-DROP FUNCTION IF EXISTS f_renew_entity_updated_at() CASCADE;
-DROP FUNCTION IF EXISTS f_unset_entity_is_active() CASCADE;
+DROP FUNCTION IF EXISTS f_refresh_entity_updated_at() CASCADE;
+DROP FUNCTION IF EXISTS f_disable_entity_is_active() CASCADE;
+DROP FUNCTION IF EXISTS f_disable_employee_is_active() CASCADE;
+DROP FUNCTION IF EXISTS f_disable_chain_is_operational() CASCADE;
+
 
 /*7. DDL - Triggers*/
 /*7.1 Creation statements*/
-CREATE TRIGGER tr_member_updated_at_renew BEFORE UPDATE ON member 
-FOR EACH ROW 
-EXECUTE PROCEDURE f_renew_entity_updated_at();
-
-CREATE TRIGGER tr_member_is_active_unset BEFORE UPDATE ON member
+CREATE TRIGGER tr_member_is_active_disable BEFORE INSERT OR UPDATE OF failed_logins ON member
 FOR EACH ROW WHEN (NEW.failed_logins > 2)
-EXECUTE PROCEDURE f_unset_entity_is_active();
+EXECUTE PROCEDURE f_disable_entity_is_active();
 
-CREATE TRIGGER tr_person_updated_at_renew BEFORE UPDATE ON person
+CREATE TRIGGER tr_member_updated_at_refresh BEFORE UPDATE ON member 
 FOR EACH ROW 
-EXECUTE PROCEDURE f_renew_entity_updated_at();
+EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
-CREATE TRIGGER tr_employee_is_active_unset BEFORE UPDATE ON employee
+CREATE TRIGGER tr_person_updated_at_refresh BEFORE UPDATE ON person
+FOR EACH ROW 
+EXECUTE PROCEDURE f_refresh_entity_updated_at();
+
+CREATE TRIGGER tr_employee_is_active_disable BEFORE INSERT OR UPDATE OF resigned_on ON employee
 FOR EACH ROW WHEN (NEW.resigned_on IS NOT NULL)
-EXECUTE PROCEDURE f_unset_entity_is_active();
+EXECUTE PROCEDURE f_disable_employee_is_active();
 
-CREATE TRIGGER tr_currency_updated_at_renew BEFORE UPDATE ON currency
+CREATE TRIGGER tr_currency_updated_at_refresh BEFORE UPDATE ON currency
 FOR EACH ROW 
-EXECUTE PROCEDURE f_renew_entity_updated_at();
+EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
-CREATE TRIGGER tr_chain_updated_at_renew BEFORE UPDATE ON chain
-FOR EACH ROW 
-EXECUTE PROCEDURE f_renew_entity_updated_at();
+CREATE TRIGGER tr_chain_is_operational_disable BEFORE INSERT OR UPDATE OF started_on ON chain
+FOR EACH ROW WHEN (NEW.started_on > CURRENT_DATE)
+EXECUTE PROCEDURE f_disable_chain_is_operational();
 
-CREATE TRIGGER tr_wallet_updated_at_renew BEFORE UPDATE ON wallet
+CREATE TRIGGER tr_chain_updated_at_refresh BEFORE UPDATE ON chain
 FOR EACH ROW 
-EXECUTE PROCEDURE f_renew_entity_updated_at();
+EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
-CREATE TRIGGER tr_address_type_updated_at_renew BEFORE UPDATE ON address_type
+CREATE TRIGGER tr_wallet_updated_at_refresh BEFORE UPDATE ON wallet
 FOR EACH ROW 
-EXECUTE PROCEDURE f_renew_entity_updated_at();
+EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
-CREATE TRIGGER tr_address_updated_at_renew BEFORE UPDATE ON address
+CREATE TRIGGER tr_address_type_updated_at_refresh BEFORE UPDATE ON address_type
 FOR EACH ROW 
-EXECUTE PROCEDURE f_renew_entity_updated_at();
+EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
-CREATE TRIGGER tr_address_book_entry_updated_at_renew BEFORE UPDATE ON address_book_entry
+CREATE TRIGGER tr_address_updated_at_refresh BEFORE UPDATE ON address
 FOR EACH ROW 
-EXECUTE PROCEDURE f_renew_entity_updated_at();
+EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
-CREATE TRIGGER tr_transactions_updated_at_renew BEFORE UPDATE ON transactions
+CREATE TRIGGER tr_address_book_entry_updated_at_refresh BEFORE UPDATE ON address_book_entry
 FOR EACH ROW 
-EXECUTE PROCEDURE f_renew_entity_updated_at();
+EXECUTE PROCEDURE f_refresh_entity_updated_at();
+
+CREATE TRIGGER tr_transactions_updated_at_refresh BEFORE UPDATE ON transactions
+FOR EACH ROW 
+EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
 /*7.2 Removal statements*/
-DROP TRIGGER IF EXISTS tr_member_updated_at_renew ON member CASCADE;
-DROP TRIGGER IF EXISTS tr_member_is_active_unset ON member CASCADE;
-DROP TRIGGER IF EXISTS tr_person_updated_at_renew ON person CASCADE;
-DROP TRIGGER IF EXISTS tr_currency_updated_at_renew ON currency CASCADE;
-DROP TRIGGER IF EXISTS tr_chain_updated_at_renew ON chain CASCADE;
-DROP TRIGGER IF EXISTS tr_wallet_updated_at_renew ON wallet CASCADE;
-DROP TRIGGER IF EXISTS tr_address_type_updated_at_renew ON address_type CASCADE;
-DROP TRIGGER IF EXISTS tr_address_updated_at_renew ON address CASCADE;
-DROP TRIGGER IF EXISTS tr_address_book_entry_updated_at_renew ON address_book_entry CASCADE;
-DROP TRIGGER IF EXISTS tr_transactions_updated_at_renew ON transactions CASCADE;
+DROP TRIGGER IF EXISTS tr_member_is_active_disable ON member CASCADE;
+DROP TRIGGER IF EXISTS tr_member_updated_at_refresh ON member CASCADE;
+DROP TRIGGER IF EXISTS tr_person_updated_at_refresh ON person CASCADE;
+DROP TRIGGER IF EXISTS tr_employee_is_active_disable ON employee CASCADE;
+DROP TRIGGER IF EXISTS tr_currency_updated_at_refresh ON currency CASCADE;
+DROP TRIGGER IF EXISTS tr_chain_is_operational_disable ON chain CASCADE;
+DROP TRIGGER IF EXISTS tr_chain_updated_at_refresh ON chain CASCADE;
+DROP TRIGGER IF EXISTS tr_wallet_updated_at_refresh ON wallet CASCADE;
+DROP TRIGGER IF EXISTS tr_address_type_updated_at_refresh ON address_type CASCADE;
+DROP TRIGGER IF EXISTS tr_address_updated_at_refresh ON address CASCADE;
+DROP TRIGGER IF EXISTS tr_address_book_entry_updated_at_refresh ON address_book_entry CASCADE;
+DROP TRIGGER IF EXISTS tr_transactions_updated_at_refresh ON transactions CASCADE;
 
 
 /*8. DCL - Privileges*/
