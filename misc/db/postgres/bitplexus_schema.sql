@@ -2,13 +2,14 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-06-18 19:05:19*/
+/*Last modified:    2015-06-20 16:40:36*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
 /*1.1 Creation statements (platform independent)*/
 CREATE ROLE bitplexus_customer WITH LOGIN ENCRYPTED PASSWORD '5rNiXDiD1L2MJw7trF2V';
 CREATE ROLE bitplexus_employee WITH LOGIN ENCRYPTED PASSWORD 'H8Jw68doiJzUxJUR4jHU';
+CREATE ROLE bitplexus_drone WITH LOGIN ENCRYPTED PASSWORD 'Etj3DmM4FwaUqecKtFL4';
 CREATE ROLE bitplexus_dbm WITH LOGIN ENCRYPTED PASSWORD 'du8Re1YKpte6cfr4Bi9X';
 CREATE ROLE bitplexus_dba WITH SUPERUSER CREATEDB CREATEROLE REPLICATION LOGIN ENCRYPTED PASSWORD 'C4VEammTWUrWmUMddBQZ';
 
@@ -36,6 +37,7 @@ CONNECTION LIMIT 100;
 /*1.3 Removal statements*/
 DROP ROLE IF EXISTS bitplexus_customer;
 DROP ROLE IF EXISTS bitplexus_employee;
+DROP ROLE IF EXISTS bitplexus_drone;
 DROP ROLE IF EXISTS bitplexus_dbm;
 DROP ROLE IF EXISTS bitplexus_dba;
 DROP DATABASE IF EXISTS bitplexus;
@@ -49,6 +51,7 @@ CREATE EXTENSION plpython3u;
 /*2.2 Removal statements*/
 DROP EXTENSION IF EXISTS pgcrypto CASCADE;
 DROP EXTENSION IF EXISTS plpython3u CASCADE;
+
 
 /*3. DDL - Tables*/
 /*3.1 Creation statements*/
@@ -68,8 +71,8 @@ CREATE TABLE member (
     CONSTRAINT ak_member_username UNIQUE (username),
     CONSTRAINT ak_member_email_address UNIQUE (email_address),
     
-    CONSTRAINT ck_member_phone_number_valid CHECK (phone_number ~ '^[0-9]+$'),
     CONSTRAINT ck_member_phone_number_length CHECK (length(phone_number) > 7),
+    CONSTRAINT ck_member_phone_number_valid CHECK (phone_number ~ '^[0-9]+$'),
     CONSTRAINT ck_member_failed_logins_in_range CHECK (failed_logins >= 0),
     CONSTRAINT ck_member_is_active_valid CHECK (NOT (failed_logins > 2 AND is_active = TRUE)),
     CONSTRAINT ck_member_registered_at_in_range CHECK (registered_at BETWEEN '1900-01-01' AND '2100-01-01'),
@@ -115,8 +118,8 @@ CREATE TABLE employee (
     CONSTRAINT ak_employee_iban UNIQUE (iban),
     CONSTRAINT fk_employee_employee_id FOREIGN KEY (employee_id) REFERENCES person (person_id),
     
-    CONSTRAINT ck_employee_iban_length CHECK (length(iban) > 4),
     CONSTRAINT ck_employee_born_on_in_range CHECK (born_on BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_employee_iban_length CHECK (length(iban) > 4),
     CONSTRAINT ck_employee_employed_on_in_range CHECK (employed_on BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_employee_employed_on_chrono_order CHECK (employed_on >= born_on),
     CONSTRAINT ck_employee_resigned_on_in_range CHECK (resigned_on BETWEEN '1900-01-01' AND '2100-01-01'),
@@ -249,6 +252,7 @@ CREATE TABLE address_type (
     CONSTRAINT fk_address_type_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_address_type_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
+    CONSTRAINT ck_address_type_leading_symbol_in_base58 CHECK (leading_symbol ~ '^[1-9a-km-zA-HJ-NP-Z]*$'),
     CONSTRAINT ck_address_type_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_address_type_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_address_type_updated_at_chrono_order CHECK (updated_at >= created_at)
@@ -282,6 +286,7 @@ CREATE TABLE address (
     CONSTRAINT fk_address_address_state_type_id FOREIGN KEY (address_state_type_id) REFERENCES address_state_type (address_state_type_id) ON UPDATE CASCADE,
 
     CONSTRAINT ck_address_label_nullness CHECK (label IS NULL = wallet_id IS NULL),
+    CONSTRAINT ck_address_encoded_form_in_base58 CHECK (encoded_form ~ '^[1-9a-km-zA-HJ-NP-Z]*$'),
     CONSTRAINT ck_address_encoded_form_length CHECK (length(encoded_form) > 25),
     CONSTRAINT ck_address_balance_in_range CHECK (balance >= 0),
     CONSTRAINT ck_address_balance_nullness CHECK (balance IS NULL = wallet_id IS NULL),
@@ -338,16 +343,18 @@ CREATE TABLE transactions (
     CONSTRAINT ak_transactions_network_uid UNIQUE (network_uid),
     CONSTRAINT fk_transactions_transaction_status_type_id FOREIGN KEY (transaction_status_type_id) REFERENCES transaction_status_type (transaction_status_type_id) ON UPDATE CASCADE,
 
-    CONSTRAINT ck_transactions_confirmed_at_nullness CHECK (confirmed_at IS NULL = block_height IS NULL),
-    CONSTRAINT ck_transactions_block_height_in_range CHECK (block_height > 0),
-    CONSTRAINT ck_transactions_binary_size_in_range CHECK (binary_size > 0),
-    CONSTRAINT ck_transactions_fee_in_range CHECK (fee >= 0),
-    CONSTRAINT ck_transactions_unit_price_in_range CHECK (unit_price > 0),
+    CONSTRAINT ck_transactions_local_uid_in_hex CHECK (local_uid ~ '^[0-9a-f-]*$'),
+    CONSTRAINT ck_transactions_network_uid_in_hex CHECK (network_uid ~ '^[0-9a-f]*$'),
     CONSTRAINT ck_transactions_received_at_in_range CHECK (received_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transactions_confirmed_at_nullness CHECK (confirmed_at IS NULL = block_height IS NULL),
     CONSTRAINT ck_transactions_confirmed_at_in_range CHECK (confirmed_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_confirmed_at_chrono_order CHECK (confirmed_at >= received_at),
     CONSTRAINT ck_transactions_completed_at_in_range CHECK (completed_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_completed_at_chrono_order CHECK (completed_at >= confirmed_at),
+    CONSTRAINT ck_transactions_block_height_in_range CHECK (block_height >= 0),
+    CONSTRAINT ck_transactions_binary_size_in_range CHECK (binary_size > 0),
+    CONSTRAINT ck_transactions_fee_in_range CHECK (fee >= 0),
+    CONSTRAINT ck_transactions_unit_price_in_range CHECK (unit_price > 0),
     CONSTRAINT ck_transactions_logged_at_in_range CHECK (logged_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_updated_at_chrono_order CHECK (updated_at >= logged_at)
@@ -404,6 +411,7 @@ CREATE TABLE visit (
     CONSTRAINT fk_visit_member_id FOREIGN KEY (member_id) REFERENCES member (member_id),
     
     CONSTRAINT ck_visit_ip_address_length CHECK (length(ip_address) > 6),
+    CONSTRAINT ck_visit_ip_address_valid CHECK (ip_address ~ '^[0-9a-f:.]*$'),
     CONSTRAINT ck_visit_login_at_in_range CHECK (login_at BETWEEN '1900-01-01' AND '2100-01-01')
 );
 
@@ -522,17 +530,18 @@ DROP INDEX IF EXISTS uidx_employee_role_employee_id_role_id;
 /*5.1 Creation statements*/
 /*5.2 Removal statements*/
 
+
 /*6. DDL - Functions*/
 /*6.1 Regular functions*/
 /*6.1.1 Creation statements*/
-CREATE OR REPLACE FUNCTION f_encode_uri(in_text TEXT) RETURNS TEXT AS $$
-from urllib.parse import quote
-return quote(in_text)
-$$ LANGUAGE plpython3u IMMUTABLE LEAKPROOF STRICT;
-
 CREATE OR REPLACE FUNCTION f_decode_uri(in_text TEXT) RETURNS TEXT AS $$
 from urllib.parse import unquote
 return unquote(in_text)
+$$ LANGUAGE plpython3u IMMUTABLE LEAKPROOF STRICT;
+
+CREATE OR REPLACE FUNCTION f_encode_uri(in_text TEXT) RETURNS TEXT AS $$
+from urllib.parse import quote
+return quote(in_text)
 $$ LANGUAGE plpython3u IMMUTABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_calc_bitcoin_supply(in_block_height INTEGER) RETURNS NUMERIC(23, 8) AS $$
@@ -589,6 +598,76 @@ CREATE OR REPLACE FUNCTION f_get_address_type_id(in_chain_id SMALLINT, in_addres
 SELECT address_type_id FROM address_type WHERE chain_id = in_chain_id AND leading_symbol = substr(in_address, 1, 1);
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
+CREATE OR REPLACE FUNCTION f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_id SMALLINT, 
+in_label_fragment VARCHAR(60)) RETURNS INTEGER AS $$
+SELECT CAST(Count(*) AS INTEGER) AS address_count
+FROM address AS a INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
+WHERE a.wallet_id = in_wallet_id AND adt.chain_id = in_chain_id AND lower(a.label) LIKE 
+    lower('%' || in_label_fragment || '%');
+$$ LANGUAGE sql STABLE LEAKPROOF STRICT;
+
+CREATE OR REPLACE FUNCTION f_calc_transaction_size(in_hex_transaction TEXT) RETURNS INTEGER AS $$
+SELECT octet_length(decode(in_hex_transaction, 'hex')) AS binary_size;
+$$ LANGUAGE sql IMMUTABLE LEAKPROOF STRICT;
+
+CREATE OR REPLACE FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64)) RETURNS BOOLEAN AS $$
+WITH was_confirmed_transaction AS (
+    UPDATE transactions SET transaction_status_type_id = 2, confirmed_at = NULL, block_height = NULL
+    WHERE network_uid = in_network_uid AND transaction_status_type_id = 3
+    RETURNING network_uid
+), was_completed_transaction AS (
+    UPDATE transactions SET transaction_status_type_id = 2, confirmed_at = NULL, completed_at = NULL,
+        block_height = NULL
+    WHERE network_uid = in_network_uid AND transaction_status_type_id = 4
+    RETURNING network_uid
+)
+SELECT EXISTS (SELECT 1 FROM was_confirmed_transaction UNION ALL SELECT 1 FROM was_completed_transaction);
+$$ LANGUAGE sql STRICT;
+
+CREATE OR REPLACE FUNCTION f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT)
+RETURNS CHAR(64)[] AS $$
+WITH completed_transactions AS (
+    UPDATE transactions SET transaction_status_type_id = 4, completed_at = CURRENT_TIMESTAMP(0)
+    WHERE block_height <= (in_block_height - (in_confirmation_count - 1)) AND transaction_status_type_id = 3
+    RETURNING network_uid
+)
+SELECT array_agg(network_uid) FROM completed_transactions;
+$$ LANGUAGE sql STRICT;
+
+CREATE OR REPLACE FUNCTION f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[])
+RETURNS CHAR(64)[] AS $$
+DECLARE
+    confirmed_network_uids CHAR(64)[];
+BEGIN
+    FOR i IN 1..array_length(in_network_uids, 1) LOOP
+        PERFORM f_clean_evicted_transaction(in_network_uids[i]);
+        UPDATE transactions SET transaction_status_type_id = 3, confirmed_at = CURRENT_TIMESTAMP(0), 
+            block_height = in_block_height
+        WHERE network_uid = in_network_uids[i] AND transaction_status_type_id = 2;
+        IF (FOUND) THEN
+            confirmed_network_uids := array_append(confirmed_network_uids, in_network_uids[i]);
+        END IF;
+    END LOOP;
+    RETURN confirmed_network_uids;
+END
+$$ LANGUAGE plpgsql STRICT;
+
+CREATE OR REPLACE FUNCTION f_drop_transactions(in_txn_timeout INTEGER) RETURNS CHAR(64)[] AS $$
+WITH dropped_transactions AS (
+    UPDATE transactions SET transaction_status_type_id = 6
+    WHERE EXTRACT(epoch FROM CURRENT_TIMESTAMP(0)) - received_at >= in_txn_timeout AND transaction_status_type_id = 2
+    RETURNING network_uid
+)
+SELECT array_agg(network_uid) FROM dropped_transactions;
+$$ LANGUAGE sql STRICT;
+
+CREATE OR REPLACE FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) RETURNS VARCHAR(35)[] AS $$
+SELECT array_agg(a.encoded_form) AS addresses
+FROM transactions AS t INNER JOIN transaction_endpoint AS te ON t.transaction_id = te.transaction_id
+INNER JOIN address AS a ON te.address_id = a.address_id
+WHERE t.network_uid = in_network_uid;
+$$ LANGUAGE sql STABLE LEAKPROOF STRICT;
+
 CREATE OR REPLACE FUNCTION f_build_payment_request_uri(in_payment_request_id BIGINT) RETURNS VARCHAR(1024) AS $$ 
 DECLARE
     AMOUNTPARAM_NAME CONSTANT VARCHAR := 'amount';
@@ -630,98 +709,33 @@ BEGIN
 END
 $$ LANGUAGE plpgsql STABLE STRICT;
 
-CREATE OR REPLACE FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64)) RETURNS BOOLEAN AS $$
-WITH was_confirmed_transaction AS (
-    UPDATE transactions SET transaction_status_type_id = 2, confirmed_at = NULL, block_height = NULL
-    WHERE network_uid = in_network_uid AND transaction_status_type_id = 3
-    RETURNING network_uid
-), was_completed_transaction AS (
-    UPDATE transactions SET transaction_status_type_id = 2, confirmed_at = NULL, completed_at = NULL,
-        block_height = NULL
-    WHERE network_uid = in_network_uid AND transaction_status_type_id = 4
-    RETURNING network_uid
-)
-SELECT EXISTS (SELECT 1 FROM was_confirmed_transaction UNION ALL SELECT 1 FROM was_completed_transaction);
-$$ LANGUAGE sql STRICT;
-
-CREATE OR REPLACE FUNCTION f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[])
-RETURNS CHAR(64)[] AS $$
-DECLARE
-    confirmed_network_uids CHAR(64)[];
-BEGIN
-    FOR i IN 1..array_length(in_network_uids, 1) LOOP
-        PERFORM f_clean_evicted_transaction(in_network_uids[i]);
-        UPDATE transactions SET transaction_status_type_id = 3, confirmed_at = CURRENT_TIMESTAMP(0), 
-            block_height = in_block_height
-        WHERE network_uid = in_network_uids[i] AND transaction_status_type_id = 2;
-        IF (FOUND) THEN
-            confirmed_network_uids := array_append(confirmed_network_uids, in_network_uids[i]);
-        END IF;
-    END LOOP;
-    RETURN confirmed_network_uids;
-END
-$$ LANGUAGE plpgsql STRICT;
-
-CREATE OR REPLACE FUNCTION f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT)
-RETURNS CHAR(64)[] AS $$
-WITH completed_transactions AS (
-    UPDATE transactions SET transaction_status_type_id = 4, completed_at = CURRENT_TIMESTAMP(0)
-    WHERE block_height <= (in_block_height - (in_confirmation_count - 1)) AND transaction_status_type_id = 3
-    RETURNING network_uid
-)
-SELECT array_agg(network_uid) FROM completed_transactions;
-$$ LANGUAGE sql STRICT;
-
-CREATE OR REPLACE FUNCTION f_drop_transactions(in_txn_timeout INTEGER) RETURNS CHAR(64)[] AS $$
-WITH dropped_transactions AS (
-    UPDATE transactions SET transaction_status_type_id = 6
-    WHERE EXTRACT(epoch FROM CURRENT_TIMESTAMP(0)) - received_at >= in_txn_timeout AND transaction_status_type_id = 2
-    RETURNING network_uid
-)
-SELECT array_agg(network_uid) FROM dropped_transactions;
-$$ LANGUAGE sql STRICT;
-
-CREATE OR REPLACE FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) RETURNS VARCHAR(35)[] AS $$
-SELECT array_agg(a.encoded_form) AS addresses
-FROM transactions AS t INNER JOIN transaction_endpoint AS te ON t.transaction_id = te.transaction_id
-INNER JOIN address AS a ON te.address_id = a.address_id
-WHERE t.network_uid = in_network_uid;
-$$ LANGUAGE sql STABLE LEAKPROOF STRICT;
-
-CREATE OR REPLACE FUNCTION f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_id SMALLINT, 
-in_label_fragment VARCHAR(60)) RETURNS INTEGER AS $$
-SELECT CAST(Count(*) AS INTEGER) AS address_count
-FROM address AS a INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
-WHERE a.wallet_id = in_wallet_id AND adt.chain_id = in_chain_id AND lower(a.label) LIKE 
-    lower('%' || in_label_fragment || '%');
-$$ LANGUAGE sql STABLE LEAKPROOF STRICT;
-
 /*6.1.2 Removal statements*/
-DROP FUNCTION IF EXISTS f_encode_uri(in_text TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_decode_uri(in_text TEXT) CASCADE;
+DROP FUNCTION IF EXISTS f_encode_uri(in_text TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_bitcoin_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_litecoin_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_get_address_type_id(in_chain_id SMALLINT, in_address VARCHAR(35)) CASCADE;
-DROP FUNCTION IF EXISTS f_build_payment_request_uri(in_payment_request_id BIGINT) CASCADE;
+DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_id SMALLINT, in_label_fragment VARCHAR(60)) CASCADE;
+DROP FUNCTION IF EXISTS f_calc_transaction_size(in_hex_transaction TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_clean_evicted_transaction(in_network_uid CHAR(64)) CASCADE;
-DROP FUNCTION IF EXISTS f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) CASCADE;
 DROP FUNCTION IF EXISTS f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT) CASCADE;
+DROP FUNCTION IF EXISTS f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) CASCADE;
 DROP FUNCTION IF EXISTS f_drop_transactions(in_txn_timeout INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_get_transaction_addresses(in_network_uid CHAR(64)) CASCADE;
-DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_id SMALLINT, in_label_fragment VARCHAR(60)) CASCADE;
+DROP FUNCTION IF EXISTS f_build_payment_request_uri(in_payment_request_id BIGINT) CASCADE;
 
 /*6.2 Trigger functions*/
 /*6.2.1 Creation statements*/
-CREATE OR REPLACE FUNCTION f_refresh_entity_updated_at() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION f_disable_entity_is_active() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP(0);
+    NEW.is_active = FALSE;
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION f_disable_entity_is_active() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION f_refresh_entity_updated_at() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.is_active = FALSE;
+    NEW.updated_at = CURRENT_TIMESTAMP(0);
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
@@ -745,11 +759,28 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION f_lower_transactions_uids() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.local_uid = lower(NEW.local_uid);
+    NEW.network_uid = lower(NEW.network_uid);
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION f_lower_visit_ip_address() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.ip_address = lower(NEW.ip_address);
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
 /*6.2.2 Removal statements*/
-DROP FUNCTION IF EXISTS f_refresh_entity_updated_at() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_entity_is_active() CASCADE;
+DROP FUNCTION IF EXISTS f_refresh_entity_updated_at() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_employee_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_chain_is_operational() CASCADE;
+DROP FUNCTION IF EXISTS f_lower_transactions_uids() CASCADE;
+DROP FUNCTION IF EXISTS f_lower_visit_ip_address() CASCADE;
 
 
 /*7. DDL - Triggers*/
@@ -798,9 +829,17 @@ CREATE TRIGGER tr_address_book_entry_updated_at_refresh BEFORE UPDATE ON address
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
+CREATE TRIGGER tr_transactions_uids_lower BEFORE INSERT OR UPDATE OF local_uid, network_uid ON transactions
+FOR EACH ROW
+EXECUTE PROCEDURE f_lower_transactions_uids();
+
 CREATE TRIGGER tr_transactions_updated_at_refresh BEFORE UPDATE ON transactions
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
+
+CREATE TRIGGER tr_visit_ip_address_lower BEFORE INSERT OR UPDATE OF ip_address ON visit
+FOR EACH ROW
+EXECUTE PROCEDURE f_lower_visit_ip_address();
 
 /*7.2 Removal statements*/
 DROP TRIGGER IF EXISTS tr_member_is_active_disable ON member CASCADE;
@@ -814,7 +853,9 @@ DROP TRIGGER IF EXISTS tr_wallet_updated_at_refresh ON wallet CASCADE;
 DROP TRIGGER IF EXISTS tr_address_type_updated_at_refresh ON address_type CASCADE;
 DROP TRIGGER IF EXISTS tr_address_updated_at_refresh ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_book_entry_updated_at_refresh ON address_book_entry CASCADE;
+DROP TRIGGER IF EXISTS tr_transactions_uids_lower ON transactions CASCADE;
 DROP TRIGGER IF EXISTS tr_transactions_updated_at_refresh ON transactions CASCADE;
+DROP TRIGGER IF EXISTS tr_visit_ip_address_lower ON visit CASCADE;
 
 
 /*8. DCL - Privileges*/
@@ -824,8 +865,8 @@ REVOKE ALL PRIVILEGES ON SCHEMA public FROM public;
 REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM public;
 
 /*8.2 Assignation statements*/
-GRANT CONNECT ON DATABASE bitplexus TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
-GRANT USAGE ON SCHEMA public TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT CONNECT ON DATABASE bitplexus TO bitplexus_customer, bitplexus_employee, bitplexus_drone, bitplexus_dbm;
+GRANT USAGE ON SCHEMA public TO bitplexus_customer, bitplexus_employee, bitplexus_drone, bitplexus_dbm;
 
 GRANT SELECT ON TABLE member TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT SELECT ON TABLE person TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
@@ -842,7 +883,7 @@ GRANT SELECT ON TABLE address_state_type TO bitplexus_dbm;
 GRANT SELECT ON TABLE address TO bitplexus_customer, bitplexus_dbm;
 GRANT SELECT ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
 GRANT SELECT ON TABLE transaction_status_type TO bitplexus_customer, bitplexus_dbm;
-GRANT SELECT ON TABLE transactions TO bitplexus_customer, bitplexus_dbm;
+GRANT SELECT ON TABLE transactions TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT SELECT ON TABLE transaction_endpoint_type TO bitplexus_customer, bitplexus_dbm;
 GRANT SELECT ON TABLE transaction_endpoint TO bitplexus_customer, bitplexus_dbm;
 GRANT SELECT ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
@@ -875,7 +916,7 @@ GRANT UPDATE ON TABLE wallet TO bitplexus_customer, bitplexus_dbm;
 GRANT UPDATE ON TABLE address_type TO bitplexus_employee, bitplexus_dbm;
 GRANT UPDATE ON TABLE address TO bitplexus_customer, bitplexus_dbm;
 GRANT UPDATE ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
-GRANT UPDATE ON TABLE transactions TO bitplexus_customer, bitplexus_dbm;
+GRANT UPDATE ON TABLE transactions TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT UPDATE ON TABLE transaction_endpoint TO bitplexus_dbm;
 GRANT UPDATE ON TABLE payment_request TO bitplexus_dbm;
 GRANT UPDATE ON TABLE visit TO bitplexus_dbm;
@@ -909,16 +950,29 @@ GRANT USAGE ON SEQUENCE seq_transaction_endpoint_transaction_endpoint_id TO bitp
 GRANT USAGE ON SEQUENCE seq_payment_request_payment_request_id TO bitplexus_customer, bitplexus_dbm;
 GRANT USAGE ON SEQUENCE seq_visit_visit_id TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 
-GRANT EXECUTE ON FUNCTION gen_salt(TEXT) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION crypt(TEXT, TEXT) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION gen_salt(TEXT) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_decode_uri(TEXT) TO bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_encode_uri(TEXT) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_calc_bitcoin_supply(INTEGER) TO bitplexus_employee, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_calc_litecoin_supply(INTEGER) TO bitplexus_employee, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_get_address_type_id(SMALLINT, VARCHAR(35)) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_count_addresses_by_label(INTEGER, SMALLINT, VARCHAR(60)) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_calc_transaction_size(TEXT) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_clean_evicted_transaction(CHAR(64)) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_complete_transactions(INTEGER, SMALLINT) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_confirm_transactions(INTEGER, CHAR(64)[]) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_drop_transactions(INTEGER) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_get_transaction_addresses(CHAR(64)) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_build_payment_request_uri(BIGINT) TO bitplexus_customer, bitplexus_dbm;
 
 /*8.3 Revocation statements*/
-REVOKE CONNECT ON DATABASE bitplexus FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
-REVOKE USAGE ON SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+REVOKE CONNECT ON DATABASE bitplexus FROM bitplexus_customer, bitplexus_employee, bitplexus_drone, bitplexus_dbm;
+REVOKE USAGE ON SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_drone, bitplexus_dbm;
 
-REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
-REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
-REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+REVOKE ALL PRIVILEGES ON ALL TABLES IN SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_drone, bitplexus_dbm;
+REVOKE ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_drone, bitplexus_dbm;
+REVOKE ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public FROM bitplexus_customer, bitplexus_employee, bitplexus_drone, bitplexus_dbm;
 
 
 /*9. Miscellaneous objects & operations*/
