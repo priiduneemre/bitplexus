@@ -2,16 +2,16 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DML statements for populating the application's database with seed data (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-06-19 13:36:26*/
+/*Last modified:    2015-06-29 19:39:27*/
 
 
 /*1. DML - Regular tables*/
 /*1.1 Insertion statements*/
-INSERT INTO member (member_id, username, password, email_address, phone_number, registered_at) VALUES (1, 'james.bradford', '$2a$04$xBGWfmsud2aCjG1cXe8FEu8q4e2ZYBb4wigyJHlx/JC1bC9Cdg39q', 'james.bradford@bitplexus.com', '441415836225', '2015-03-19 09:15:37'); -- password (plain text): 'flattire' 
-INSERT INTO member (member_id, username, password, email_address, phone_number, registered_at) VALUES (2, 'ryan.hopkins', '$2a$04$DSkFW1csg6XKQD0Hmhqodu78sSmJOi/Uwi527roE9p5JOYqbgYjqy', 'ryan.hopkins@bitplexus.com', '5511968310447', '2015-03-19 16:52:03'); -- password (plain text): 'burnttoast'
-INSERT INTO member (member_id, username, password, email_address, phone_number, registered_at) VALUES (3, 'adam.wright', '$2a$04$NWxWWDw3kcp6Hfzzuz4WCeEpQ.I7ED4KLh03BBM/dDCvtrX/MxQn2', 'adam.wright@bitplexus.com', '441415193781', '2015-03-19 23:19:57'); -- password (plain text): 'redsharpie'
-INSERT INTO member (member_id, username, password, email_address, phone_number, registered_at) VALUES (4, 'garden_gnome', '$2a$04$hG8zh1OTw8vlcV5NbiTBAuCk.CrxDazF92vSXxt90YpLZ.xR2bvlO', 'g_gnome@mailinator.com', '5073854091', '2015-03-24 13:06:51'); -- password (plain text): 'rustyfork'
-INSERT INTO member (member_id, username, password, email_address, phone_number, registered_at) VALUES (5, 'rebel_sloth', '$2a$04$Mi0tWLM34FwntMj6qovDn.WuzvVSeeLoEKXzaaJo1aCJrlwLFCOIS', 'milosz.szczepanski@wp.pl', '48220862914', '2015-03-26 18:42:39'); -- password (plain text): 'mouldyham'
+INSERT INTO member (member_id, username, password, email_address, phone_number, registered_at) VALUES (1, 'james.bradford', '$2a$12$bZZL4w4y0/KepId3sTkI0u2HJ8.vxY10sjILdqfjIJEDDVH99Qiyq', 'james.bradford@bitplexus.com', '441415836225', '2015-03-19 09:15:37'); -- password (plain text): 'flattire' 
+INSERT INTO member (member_id, username, password, email_address, phone_number, registered_at) VALUES (2, 'ryan.hopkins', '$2a$12$ETDTjZyqZ5QMrVq2KtY0BOLS8G.Vc21wvEeMKH0u7LdrOSix05Ga2', 'ryan.hopkins@bitplexus.com', '5511968310447', '2015-03-19 16:52:03'); -- password (plain text): 'burnttoast'
+INSERT INTO member (member_id, username, password, email_address, phone_number, registered_at) VALUES (3, 'adam.wright', '$2a$12$mq5bU747Db2sB89A2mHwb.UgTs5c8Z69.A.Zgz9ADIPiyw/4L1mwu', 'adam.wright@bitplexus.com', '441415193781', '2015-03-19 23:19:57'); -- password (plain text): 'redsharpie'
+INSERT INTO member (member_id, username, password, email_address, phone_number, registered_at) VALUES (4, 'garden_gnome', '$2a$12$lbTjjpgls62yox192paJpuHxrJJKnQNHzVeLMEX79/koi2c464IOm', 'g_gnome@mailinator.com', '5073854091', '2015-03-24 13:06:51'); -- password (plain text): 'rustyfork'
+INSERT INTO member (member_id, username, password, email_address, phone_number, registered_at) VALUES (5, 'rebel_sloth', '$2a$12$lcfDUZGWXiMyxPXcM2Yiu.pWmzLyU.A3tZkaaUCEF/GQs2kzN/cD2', 'milosz.szczepanski@wp.pl', '48220862914', '2015-03-26 18:42:39'); -- password (plain text): 'mouldyham'
 
 INSERT INTO person (person_id, first_name, last_name, created_at) VALUES (1, 'James', 'Bradford', '2015-03-19 09:15:37');
 INSERT INTO person (person_id, first_name, last_name, created_at) VALUES (2, 'Ryan', 'Hopkins', '2015-03-19 16:52:03');
@@ -35,12 +35,12 @@ INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) 
 INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (4, 3, 1, '2015-03-19 23:22:58');
 INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (5, 3, 2, '2015-03-19 23:22:58');
 
-INSERT INTO currency (currency_id, name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES (1, 'Bitcoin', 'BTC', '฿', 600, f_calc_bitcoin_supply(359529), 'https://bitcoin.org/', '2009-01-03', '2015-03-19 23:48:41', 3);
-INSERT INTO currency (currency_id, name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES (2, 'Litecoin', 'LTC', 'Ł', 150, f_calc_litecoin_supply(792946), 'https://litecoin.org/', '2011-10-08', '2015-03-20 00:34:20', 3);
-INSERT INTO currency (currency_id, name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES (3, 'Dash', 'DASH', NULL, 150, 5261810, 'https://www.dashpay.io/', '2014-01-19', '2015-03-20 01:21:36', 3);
-INSERT INTO currency (currency_id, name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES (4, 'Peercoin', 'PPC', 'Ᵽ', 600, 22212010, 'http://peercoin.net/', '2012-08-20', '2015-03-20 01:57:18', 3);
-INSERT INTO currency (currency_id, name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES (5, 'Monero', 'XMR', NULL, 60, 7079487, 'https://getmonero.org/', '2014-04-18', '2015-03-20 02:30:54', 3);
-INSERT INTO currency (currency_id, name, abbreviation, symbol, block_time, available_supply, website_url, launched_on, created_at, created_by) VALUES (6, 'Namecoin', 'NMC', 'ℕ', 600, 11269000, 'https://namecoin.info/', '2011-04-17', '2015-03-20 02:59:07', 3);
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (1, 'Bitcoin', 'BTC', '฿', '2009-01-03', 600, f_calc_btc_supply(359529), 0.0001, 'https://bitcoin.org/', '2015-03-19 23:48:41');
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (2, 'Litecoin', 'LTC', 'Ł', '2011-10-08', 150, f_calc_litecoin_supply(792946), 0.001, 'https://litecoin.org/', '2015-03-20 00:34:20');
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (3, 'Dash', 'DASH', NULL, '2014-01-19', 150, 5261810, 0.001, 'https://www.dashpay.io/', '2015-03-20 01:21:36');
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (4, 'Peercoin', 'PPC', 'Ᵽ', '2012-08-20', 600, 22212010, 0.01, 'http://peercoin.net/', '2015-03-20 01:57:18');
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (5, 'Monero', 'XMR', NULL, '2014-04-18', 60, 7079487, 0.01, 'https://getmonero.org/', '2015-03-20 02:30:54');
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (6, 'Namecoin', 'NMC', 'ℕ', '2011-04-17', 600, 11269000, 0.005, 'https://namecoin.info/', '2015-03-20 02:59:07');
 
 INSERT INTO chain (chain_id, currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (1, 1, 'BITCOIN_MAIN', 'Mainnet chain', '2009-01-03', TRUE, '2015-03-19 23:52:13', 3);
 INSERT INTO chain (chain_id, currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (2, 1, 'BITCOIN_TEST1', 'Testnet1 chain', '2010-10-19', FALSE, '2015-03-19 23:54:30', 3);
