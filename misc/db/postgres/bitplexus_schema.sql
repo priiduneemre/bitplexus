@@ -73,7 +73,7 @@ CREATE TABLE member (
     
     CONSTRAINT ck_member_password_bcrypt_params CHECK (password ~ '^\$2a\$12\$.{53}$');,
     CONSTRAINT ck_member_phone_number_length CHECK (length(phone_number) > 7),
-    CONSTRAINT ck_member_phone_number_valid CHECK (phone_number ~ '^[0-9]+$'),
+    CONSTRAINT ck_member_phone_number_valid CHECK (phone_number ~ '^[0-9]*$'),
     CONSTRAINT ck_member_failed_logins_in_range CHECK (failed_logins >= 0),
     CONSTRAINT ck_member_is_active_valid CHECK (NOT (failed_logins > 2 AND is_active = TRUE)),
     CONSTRAINT ck_member_registered_at_in_range CHECK (registered_at BETWEEN '1900-01-01' AND '2100-01-01'),
@@ -121,6 +121,7 @@ CREATE TABLE employee (
     
     CONSTRAINT ck_employee_born_on_in_range CHECK (born_on BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_employee_iban_length CHECK (length(iban) > 4),
+    CONSTRAINT ck_employee_iban_valid CHECK (iban ~ '^[0-9A-Z]*$'),
     CONSTRAINT ck_employee_employed_on_in_range CHECK (employed_on BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_employee_employed_on_chrono_order CHECK (employed_on >= born_on),
     CONSTRAINT ck_employee_resigned_on_in_range CHECK (resigned_on BETWEEN '1900-01-01' AND '2100-01-01'),
@@ -178,7 +179,7 @@ CREATE TABLE currency (
     CONSTRAINT ck_currency_launched_on_in_range CHECK (launched_on BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_currency_block_time_in_range CHECK (block_time > 0),
     CONSTRAINT ck_currency_available_supply_in_range CHECK (available_supply > 0),
-    CONSTRAINT ck_currency_standard_fee_in_range CHECK (standard_fee >= 0),
+    CONSTRAINT ck_currency_standard_fee_in_range CHECK (standard_fee >= 0 AND standard_fee <= available_supply),
     CONSTRAINT ck_currency_website_url_length CHECK (length(website_url) > 2),
     CONSTRAINT ck_currency_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_currency_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
@@ -613,14 +614,14 @@ $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_calc_btc_transaction_fee(in_hex_transaction TEXT) RETURNS NUMERIC(23, 8) AS $$
 SELECT GREATEST(standard_fee, (ceiling(CAST(f_calc_transaction_size(in_hex_transaction) AS NUMERIC)/
-CAST(1000 AS NUMERIC)) * standard_fee)) AS recommended_fee 
+    CAST(1000 AS NUMERIC)) * standard_fee)) AS recommended_fee 
 FROM currency 
 WHERE name = 'Bitcoin';
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_calc_ltc_transaction_fee(in_hex_transaction TEXT) RETURNS NUMERIC(23, 8) AS $$
 SELECT GREATEST(standard_fee, (ceiling(CAST(f_calc_transaction_size(in_hex_transaction) AS NUMERIC)/
-CAST(1000 AS NUMERIC)) * standard_fee)) AS recommended_fee
+    CAST(1000 AS NUMERIC)) * standard_fee)) AS recommended_fee
 FROM currency
 WHERE name = 'Litecoin';
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
@@ -761,6 +762,27 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION f_upper_entity_code() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.code = upper(NEW.code);
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION f_sanitize_member_phone_number() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.phone_number = regexp_replace(NEW.phone_number, '[+\s]', '', 'g');
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION f_upper_employee_iban() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.iban = upper(NEW.iban);
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION f_disable_employee_is_active() RETURNS TRIGGER AS $$
 BEGIN
     NEW.is_active = FALSE;
@@ -773,7 +795,17 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION f_
+CREATE OR REPLACE FUNCTION f_disable_duplicate_employee_role_is_active() RETURNS TRIGGER AS $$
+BEGIN
+    IF (TG_OP = 'INSERT') THEN
+        UPDATE employee_role SET is_active = FALSE WHERE employee_id = NEW.employee_id AND role_id = NEW.role_id;
+    ELSIF (TG_OP = 'UPDATE') THEN
+        UPDATE employee_role SET is_active = FALSE WHERE employee_id = NEW.employee_id AND role_id = NEW.role_id
+            AND employee_role_id <> OLD.employee_role_id; 
+    END IF;
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION f_disable_chain_is_operational() RETURNS TRIGGER AS $$
 BEGIN
@@ -800,7 +832,11 @@ $$ LANGUAGE plpgsql;
 /*6.2.2 Removal statements*/
 DROP FUNCTION IF EXISTS f_disable_entity_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_refresh_entity_updated_at() CASCADE;
+DROP FUNCTION IF EXISTS f_upper_entity_code() CASCADE;
+DROP FUNCTION IF EXISTS f_sanitize_member_phone_number() CASCADE;
+DROP FUNCTION IF EXISTS f_upper_employee_iban() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_employee_is_active() CASCADE;
+DROP FUNCTION IF EXISTS f_disable_duplicate_employee_role_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_chain_is_operational() CASCADE;
 DROP FUNCTION IF EXISTS f_lower_transactions_uids() CASCADE;
 DROP FUNCTION IF EXISTS f_lower_visit_ip_address() CASCADE;
@@ -808,6 +844,10 @@ DROP FUNCTION IF EXISTS f_lower_visit_ip_address() CASCADE;
 
 /*7. DDL - Triggers*/
 /*7.1 Creation statements*/
+CREATE TRIGGER tr_member_phone_number_sanitize BEFORE INSERT OR UPDATE OF phone_number ON member
+FOR EACH ROW
+EXECUTE PROCEDURE f_sanitize_member_phone_number();
+
 CREATE TRIGGER tr_member_is_active_disable BEFORE INSERT OR UPDATE OF failed_logins ON member
 FOR EACH ROW WHEN (NEW.failed_logins > 2)
 EXECUTE PROCEDURE f_disable_entity_is_active();
@@ -820,13 +860,25 @@ CREATE TRIGGER tr_person_updated_at_refresh BEFORE UPDATE ON person
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
+CREATE TRIGGER tr_employee_iban_upper BEFORE INSERT OR UPDATE OF iban ON employee
+FOR EACH ROW
+EXECUTE PROCEDURE f_upper_employee_iban();
+
 CREATE TRIGGER tr_employee_is_active_disable BEFORE INSERT OR UPDATE OF resigned_on ON employee
 FOR EACH ROW WHEN (NEW.resigned_on IS NOT NULL)
 EXECUTE PROCEDURE f_disable_employee_is_active();
 
+CREATE TRIGGER tr_employee_role_is_active_disable_duplicate BEFORE INSERT OR UPDATE OF employee_id, role_id, is_active ON employee_role
+FOR EACH ROW WHEN (NEW.is_active = TRUE)
+EXECUTE PROCEDURE f_disable_duplicate_employee_role_is_active();
+
 CREATE TRIGGER tr_currency_updated_at_refresh BEFORE UPDATE ON currency
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
+
+CREATE TRIGGER tr_chain_code_upper BEFORE INSERT OR UPDATE OF code ON chain
+FOR EACH ROW
+EXECUTE PROCEDURE f_upper_entity_code();
 
 CREATE TRIGGER tr_chain_is_operational_disable BEFORE INSERT OR UPDATE OF started_on ON chain
 FOR EACH ROW WHEN (NEW.started_on > CURRENT_DATE)
@@ -839,6 +891,10 @@ EXECUTE PROCEDURE f_refresh_entity_updated_at();
 CREATE TRIGGER tr_wallet_updated_at_refresh BEFORE UPDATE ON wallet
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
+
+CREATE TRIGGER tr_address_type_code_upper BEFORE INSERT OR UPDATE OF code ON address_type
+FOR EACH ROW 
+EXECUTE PROCEDURE f_upper_entity_code();
 
 CREATE TRIGGER tr_address_type_updated_at_refresh BEFORE UPDATE ON address_type
 FOR EACH ROW 
@@ -865,14 +921,19 @@ FOR EACH ROW
 EXECUTE PROCEDURE f_lower_visit_ip_address();
 
 /*7.2 Removal statements*/
+DROP TRIGGER IF EXISTS tr_member_phone_number_sanitize ON member CASCADE;
 DROP TRIGGER IF EXISTS tr_member_is_active_disable ON member CASCADE;
 DROP TRIGGER IF EXISTS tr_member_updated_at_refresh ON member CASCADE;
 DROP TRIGGER IF EXISTS tr_person_updated_at_refresh ON person CASCADE;
+DROP TRIGGER IF EXISTS tr_employee_iban_upper ON employee CASCADE;
 DROP TRIGGER IF EXISTS tr_employee_is_active_disable ON employee CASCADE;
+DROP TRIGGER IF EXISTS tr_employee_role_is_active_disable_duplicate ON employee_role CASCADE;
 DROP TRIGGER IF EXISTS tr_currency_updated_at_refresh ON currency CASCADE;
+DROP TRIGGER IF EXISTS tr_chain_code_upper ON chain CASCADE;
 DROP TRIGGER IF EXISTS tr_chain_is_operational_disable ON chain CASCADE;
 DROP TRIGGER IF EXISTS tr_chain_updated_at_refresh ON chain CASCADE;
 DROP TRIGGER IF EXISTS tr_wallet_updated_at_refresh ON wallet CASCADE;
+DROP TRIGGER IF EXISTS tr_address_type_code_upper ON address_type CASCADE;
 DROP TRIGGER IF EXISTS tr_address_type_updated_at_refresh ON address_type CASCADE;
 DROP TRIGGER IF EXISTS tr_address_updated_at_refresh ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_book_entry_updated_at_refresh ON address_book_entry CASCADE;
@@ -903,12 +964,12 @@ GRANT SELECT ON TABLE wallet_state_type TO bitplexus_dbm;
 GRANT SELECT ON TABLE wallet TO bitplexus_customer, bitplexus_dbm;
 GRANT SELECT ON TABLE address_type TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT SELECT ON TABLE address_state_type TO bitplexus_dbm;
-GRANT SELECT ON TABLE address TO bitplexus_customer, bitplexus_dbm;
+GRANT SELECT ON TABLE address TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT SELECT ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
 GRANT SELECT ON TABLE transaction_status_type TO bitplexus_customer, bitplexus_dbm;
 GRANT SELECT ON TABLE transactions TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT SELECT ON TABLE transaction_endpoint_type TO bitplexus_customer, bitplexus_dbm;
-GRANT SELECT ON TABLE transaction_endpoint TO bitplexus_customer, bitplexus_dbm;
+GRANT SELECT ON TABLE transaction_endpoint TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT SELECT ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
 GRANT SELECT ON TABLE visit TO bitplexus_employee, bitplexus_dbm;
 
@@ -937,7 +998,7 @@ GRANT UPDATE ON TABLE currency TO bitplexus_employee, bitplexus_dbm;
 GRANT UPDATE ON TABLE chain TO bitplexus_employee, bitplexus_dbm;
 GRANT UPDATE ON TABLE wallet TO bitplexus_customer, bitplexus_dbm;
 GRANT UPDATE ON TABLE address_type TO bitplexus_employee, bitplexus_dbm;
-GRANT UPDATE ON TABLE address TO bitplexus_customer, bitplexus_dbm;
+GRANT UPDATE ON TABLE address TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT UPDATE ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
 GRANT UPDATE ON TABLE transactions TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT UPDATE ON TABLE transaction_endpoint TO bitplexus_dbm;
@@ -989,7 +1050,7 @@ GRANT EXECUTE ON FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64)) T
 GRANT EXECUTE ON FUNCTION f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT) TO bitplexus_drone, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) TO bitplexus_drone, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_drop_transactions(in_txn_timeout INTEGER) TO bitplexus_drone, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) TO bitplexus_drone, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_build_payment_request_uri(in_payment_request_id BIGINT) TO bitplexus_customer, bitplexus_dbm;
 
 /*8.3 Revocation statements*/
