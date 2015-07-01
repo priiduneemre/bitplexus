@@ -287,6 +287,7 @@ CREATE TABLE address (
     CONSTRAINT fk_address_address_type_id FOREIGN KEY (address_type_id) REFERENCES address_type (address_type_id),
     CONSTRAINT fk_address_address_state_type_id FOREIGN KEY (address_state_type_id) REFERENCES address_state_type (address_state_type_id) ON UPDATE CASCADE,
 
+    CONSTRAINT ck_address_address_state_type_id_nullness CHECK ((address_state_type_id = 6) = wallet_id IS NULL),
     CONSTRAINT ck_address_label_nullness CHECK (label IS NULL = wallet_id IS NULL),
     CONSTRAINT ck_address_encoded_form_in_base58 CHECK (encoded_form ~ '^[1-9a-km-zA-HJ-NP-Z]*$'),
     CONSTRAINT ck_address_encoded_form_length CHECK (length(encoded_form) > 25),
@@ -571,6 +572,15 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 COMMENT ON FUNCTION f_calc_btc_supply(in_block_height INTEGER) IS 'Function that returns the total number of bitcoins in circulation given a block height.';
 
+CREATE OR REPLACE FUNCTION f_estimate_btc_supply(in_in_circulation_at TIMESTAMP(0)) RETURNS NUMERIC (23, 8) AS $$
+BEGIN
+    IF (in_incirculation_at < EPOCH) THEN
+        RAISE EXCEPTION
+    END IF;
+    SELECT block_tim
+END
+$$ LANGUAGE plpgsql STABLE STRICT;
+
 CREATE OR REPLACE FUNCTION f_calc_ltc_supply(in_block_height INTEGER) RETURNS NUMERIC(23, 8) AS $$
 DECLARE
     UNITS_PER_COIN CONSTANT BIGINT := 100000000;
@@ -725,7 +735,7 @@ BEGIN
     EXCEPTION 
     WHEN NO_DATA_FOUND THEN
         RAISE EXCEPTION 'Unable to read the specified payment request (id = %).', in_payment_request_id
-            USING ERRCODE = '21121';
+            USING ERRCODE = '26021';
 END
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -733,7 +743,9 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 DROP FUNCTION IF EXISTS f_decode_uri(in_text TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_encode_uri(in_text TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_btc_supply(in_block_height INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_estimate_btc_supply(in_in_circulation_at TIMESTAMP(0)) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_ltc_supply(in_block_height INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_estimate_ltc_supply(in_in_circulation_at TIMESTAMP(0)) CASCADE;
 DROP FUNCTION IF EXISTS f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) CASCADE;
 DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_code VARCHAR(30), in_label_fragment VARCHAR(60)) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_btc_transaction_fee(in_hex_transaction TEXT) CASCADE;
@@ -814,11 +826,40 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION f_resolve_address_address_state_type_id() RETURNS TRIGGER AS $$
+BEGIN
+    IF (NEW.wallet_id IS NOT NULL) THEN
+        IF (TG_OP = 'UPDATE' AND OLD.wallet_id IS NOT NULL) THEN 
+            RETURN NEW;
+        END IF;
+        NEW.address_state_type_id = 1;
+    ELSE
+        NEW.address_state_type_id = 6;
+        NEW.label = NULL;
+        NEW.balance = NULL;
+    END IF;        
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION f_lower_transactions_uids() RETURNS TRIGGER AS $$
 BEGIN
     NEW.local_uid = lower(NEW.local_uid);
     NEW.network_uid = lower(NEW.network_uid);
     RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION f_check_payment_request_address_id() RETURNS TRIGGER AS $$
+DECLARE
+    wallet_id INTEGER;
+BEGIN
+    SELECT a.wallet_id INTO STRICT wallet_id FROM address AS a WHERE a.address_id = NEW.address_id;
+    IF (wallet_id IS NULL) THEN
+        RAISE EXCEPTION 'Expected the payment request (id = %) to reference an ''internal'' (wallet) address, but was ''external'' (non-wallet) instead.', 
+            NEW.payment_request_id USING ERRCODE = '26111';
+    END IF;
+    RETURN NULL;
 END
 $$ LANGUAGE plpgsql;
 
@@ -838,9 +879,10 @@ DROP FUNCTION IF EXISTS f_upper_employee_iban() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_employee_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_duplicate_employee_role_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_chain_is_operational() CASCADE;
+DROP FUNCTION IF EXISTS f_resolve_address_address_state_type_id() CASCADE;
 DROP FUNCTION IF EXISTS f_lower_transactions_uids() CASCADE;
+DROP FUNCTION IF EXISTS f_check_payment_request_address_id() CASCADE;
 DROP FUNCTION IF EXISTS f_lower_visit_ip_address() CASCADE;
-
 
 /*7. DDL - Triggers*/
 /*7.1 Creation statements*/
@@ -900,6 +942,10 @@ CREATE TRIGGER tr_address_type_updated_at_refresh BEFORE UPDATE ON address_type
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
+CREATE TRIGGER tr_address_address_state_type_id_resolve BEFORE INSERT OR UPDATE OF wallet_id ON address
+FOR EACH ROW
+EXECUTE PROCEDURE f_resolve_address_address_state_type_id();
+
 CREATE TRIGGER tr_address_updated_at_refresh BEFORE UPDATE ON address
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
@@ -912,9 +958,18 @@ CREATE TRIGGER tr_transactions_uids_lower BEFORE INSERT OR UPDATE OF local_uid, 
 FOR EACH ROW
 EXECUTE PROCEDURE f_lower_transactions_uids();
 
+CREATE TRIGGER tr_transactions_fee_estimate BEFORE INSERT OR UPDATE OF binary_size ON transactions
+FOR EACH ROW
+EXECUTE PROCEDURE f_estimate_transactions_fee();
+
 CREATE TRIGGER tr_transactions_updated_at_refresh BEFORE UPDATE ON transactions
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
+
+CREATE CONSTRAINT TRIGGER tr_payment_request_address_id_check AFTER INSERT OR UPDATE OF address_id ON payment_request
+INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE PROCEDURE f_check_payment_request_address_id();
 
 CREATE TRIGGER tr_visit_ip_address_lower BEFORE INSERT OR UPDATE OF ip_address ON visit
 FOR EACH ROW
@@ -935,10 +990,13 @@ DROP TRIGGER IF EXISTS tr_chain_updated_at_refresh ON chain CASCADE;
 DROP TRIGGER IF EXISTS tr_wallet_updated_at_refresh ON wallet CASCADE;
 DROP TRIGGER IF EXISTS tr_address_type_code_upper ON address_type CASCADE;
 DROP TRIGGER IF EXISTS tr_address_type_updated_at_refresh ON address_type CASCADE;
+DROP TRIGGER IF EXISTS tr_address_address_state_type_id_resolve ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_updated_at_refresh ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_book_entry_updated_at_refresh ON address_book_entry CASCADE;
 DROP TRIGGER IF EXISTS tr_transactions_uids_lower ON transactions CASCADE;
+DROP TRIGGER IF EXISTS tr_transactions_fee_estimate ON transactions CASCADE;
 DROP TRIGGER IF EXISTS tr_transactions_updated_at_refresh ON transactions CASCADE;
+DROP TRIGGER IF EXISTS tr_payment_request_address_id_check ON payment_request CASCADE;
 DROP TRIGGER IF EXISTS tr_visit_ip_address_lower ON visit CASCADE;
 
 
