@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-06-29 19:39:20*/
+/*Last modified:    2015-07-02 19:14:31*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -558,7 +558,7 @@ DECLARE
 BEGIN
     IF (in_block_height < 0) THEN
         RAISE EXCEPTION 'Expected the block height to be positive (>=0), but was negative (%) instead.',
-            in_block_height USING ERRCODE = '20131';
+            in_block_height USING ERRCODE = '30131';
     END IF;
     WHILE blocks_to_subsidize >= HALVING_INTERVAL LOOP
         available_supply := available_supply + (block_reward * HALVING_INTERVAL);
@@ -572,12 +572,30 @@ $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 COMMENT ON FUNCTION f_calc_btc_supply(in_block_height INTEGER) IS 'Function that returns the total number of bitcoins in circulation given a block height.';
 
-CREATE OR REPLACE FUNCTION f_estimate_btc_supply(in_in_circulation_at TIMESTAMP(0)) RETURNS NUMERIC (23, 8) AS $$
+CREATE OR REPLACE FUNCTION f_estimate_btc_supply(in_chain_code VARCHAR(30), in_measured_at TIMESTAMP(0)) 
+RETURNS NUMERIC(23, 8) AS $$
+DECLARE
+    block_time INTEGER;
+    started_on DATE;
+    is_operational BOOLEAN;
 BEGIN
-    IF (in_incirculation_at < EPOCH) THEN
-        RAISE EXCEPTION
+    SELECT cu.block_time, ch.started_on, ch.is_operational INTO STRICT block_time, started_on, is_operational
+    FROM currency AS cu INNER JOIN chain AS ch ON cu.currency_id = ch.currency_id
+    WHERE cu.name = 'Bitcoin' AND ch.code = in_chain_code;
+    IF (is_operational = FALSE) THEN
+        RAISE EXCEPTION 'Expected the target chain (code = %) to be ''operational'', but was ''non-operational'' instead.',
+            in_chain_code USING ERRCODE = '36111';
     END IF;
-    SELECT block_tim
+    IF (in_measured_at < started_on) THEN
+        RETURN f_calc_btc_supply(0);
+    ELSE
+        RETURN f_calc_btc_supply(CAST(trunc(extract(epoch FROM (in_measured_at - started_on)) / block_time) 
+            AS INTEGER));
+    END IF;
+    EXCEPTION 
+        WHEN NO_DATA_FOUND THEN
+            RAISE EXCEPTION 'No matching ''chain'' record(s) found (currency = %, code = %).', 'Bitcoin', in_chain_code
+                USING ERRCODE = '36311';
 END
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -592,7 +610,7 @@ DECLARE
 BEGIN
     IF (in_block_height < 0) THEN
         RAISE EXCEPTION 'Expected the block height to be positive (>=0), but was negative (%) instead.',
-            in_block_height USING ERRCODE = '20131';
+            in_block_height USING ERRCODE = '30131';
     END IF;
     WHILE blocks_to_subsidize >= HALVING_INTERVAL LOOP
         available_supply := available_supply + (block_reward * HALVING_INTERVAL);
@@ -605,6 +623,33 @@ END
 $$ LANGUAGE plpgsql IMMUTABLE STRICT;
 
 COMMENT ON FUNCTION f_calc_ltc_supply(in_block_height INTEGER) IS 'Function that returns the total number of litecoins in circulation given a block height.';
+
+CREATE OR REPLACE FUNCTION f_estimate_ltc_supply(in_chain_code VARCHAR(30), in_measured_at TIMESTAMP(0)) 
+RETURNS NUMERIC(23, 8) AS $$
+DECLARE
+    block_time INTEGER;
+    started_on DATE;
+    is_operational BOOLEAN;
+BEGIN
+    SELECT cu.block_time, ch.started_on, ch.is_operational INTO STRICT block_time, started_on, is_operational
+    FROM currency AS cu INNER JOIN chain AS ch ON cu.currency_id = ch.currency_id
+    WHERE cu.name = 'Litecoin' AND ch.code = in_chain_code;
+    IF (is_operational = FALSE) THEN
+        RAISE EXCEPTION 'Expected the target chain (code = %) to be ''operational'', but was ''non-operational'' instead.',
+            in_chain_code USING ERRCODE = '36111';
+    END IF;
+    IF (in_measured_at < started_on) THEN
+        RETURN f_calc_ltc_supply(0);
+    ELSE
+        RETURN f_calc_ltc_supply(CAST(trunc(extract(epoch FROM (in_measured_at - started_on)) / block_time) 
+            AS INTEGER));
+    END IF;
+    EXCEPTION 
+        WHEN NO_DATA_FOUND THEN
+            RAISE EXCEPTION 'No matching ''chain'' record(s) found (currency = %, code = %).', 'Litecoin', in_chain_code
+                USING ERRCODE = '36311';
+END
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE OR REPLACE FUNCTION f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) 
 RETURNS SMALLINT AS $$
@@ -622,23 +667,21 @@ WHERE a.wallet_id = in_wallet_id AND ch.code = in_chain_code AND lower(a.label) 
     lower('%' || in_label_fragment || '%');
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
-CREATE OR REPLACE FUNCTION f_calc_btc_transaction_fee(in_hex_transaction TEXT) RETURNS NUMERIC(23, 8) AS $$
-SELECT GREATEST(standard_fee, (ceiling(CAST(f_calc_transaction_size(in_hex_transaction) AS NUMERIC)/
-    CAST(1000 AS NUMERIC)) * standard_fee)) AS recommended_fee 
-FROM currency 
+CREATE OR REPLACE FUNCTION f_calc_btc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) 
+RETURNS NUMERIC(23, 8) AS $$
+SELECT CAST((GREATEST(standard_fee, (ceiling(CAST(in_binary_size AS NUMERIC) / CAST(1000 AS NUMERIC)) * standard_fee)) 
+    * GREATEST(in_fee_coefficient, 1)) AS NUMERIC(23, 8)) AS recommended_fee
+FROM currency
 WHERE name = 'Bitcoin';
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
-CREATE OR REPLACE FUNCTION f_calc_ltc_transaction_fee(in_hex_transaction TEXT) RETURNS NUMERIC(23, 8) AS $$
-SELECT GREATEST(standard_fee, (ceiling(CAST(f_calc_transaction_size(in_hex_transaction) AS NUMERIC)/
-    CAST(1000 AS NUMERIC)) * standard_fee)) AS recommended_fee
+CREATE OR REPLACE FUNCTION f_calc_ltc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) 
+RETURNS NUMERIC(23, 8) AS $$
+SELECT CAST((GREATEST(standard_fee, (ceiling(CAST(in_binary_size AS NUMERIC) / CAST(1000 AS NUMERIC)) * standard_fee)) 
+    * GREATEST(in_fee_coefficient, 1)) AS NUMERIC(23, 8)) AS recommended_fee
 FROM currency
 WHERE name = 'Litecoin';
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
-
-CREATE OR REPLACE FUNCTION f_calc_transaction_size(in_hex_transaction TEXT) RETURNS INTEGER AS $$
-SELECT octet_length(decode(in_hex_transaction, 'hex')) AS binary_size;
-$$ LANGUAGE sql IMMUTABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64)) RETURNS BOOLEAN AS $$
 WITH was_confirmed_transaction AS (
@@ -685,7 +728,7 @@ $$ LANGUAGE plpgsql STRICT;
 CREATE OR REPLACE FUNCTION f_drop_transactions(in_txn_timeout INTEGER) RETURNS CHAR(64)[] AS $$
 WITH dropped_transactions AS (
     UPDATE transactions SET transaction_status_type_id = 6
-    WHERE EXTRACT(epoch FROM CURRENT_TIMESTAMP(0)) - received_at >= in_txn_timeout AND transaction_status_type_id = 2
+    WHERE extract(epoch FROM CURRENT_TIMESTAMP(0)) - received_at >= in_txn_timeout AND transaction_status_type_id = 2
     RETURNING network_uid
 )
 SELECT array_agg(network_uid) FROM dropped_transactions;
@@ -718,7 +761,7 @@ BEGIN
     INNER JOIN currency AS cu ON ch.currency_id = cu.currency_id
     WHERE pr.payment_request_id = in_payment_request_id;
     IF (address IS NULL) THEN
-        RAISE EXCEPTION 'Expected a non-null destination address, but got ''null'' instead.' USING ERRCODE = '20141';
+        RAISE EXCEPTION 'Expected a non-null destination address, but got ''null'' instead.' USING ERRCODE = '30141';
     END IF;
     payment_request_uri := lower(currency_name) || ':' || address || '?';
     IF (amount IS NOT NULL) THEN
@@ -733,9 +776,9 @@ BEGIN
     END IF;
     RETURN regexp_replace(payment_request_uri, '[?&]$', '');
     EXCEPTION 
-    WHEN NO_DATA_FOUND THEN
-        RAISE EXCEPTION 'Unable to read the specified payment request (id = %).', in_payment_request_id
-            USING ERRCODE = '26021';
+        WHEN NO_DATA_FOUND THEN
+            RAISE EXCEPTION 'No matching ''payment_request'' record(s) found (id = %).', in_payment_request_id 
+                USING ERRCODE = '36312';
 END
 $$ LANGUAGE plpgsql STABLE STRICT;
 
@@ -743,14 +786,13 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 DROP FUNCTION IF EXISTS f_decode_uri(in_text TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_encode_uri(in_text TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_btc_supply(in_block_height INTEGER) CASCADE;
-DROP FUNCTION IF EXISTS f_estimate_btc_supply(in_in_circulation_at TIMESTAMP(0)) CASCADE;
+DROP FUNCTION IF EXISTS f_estimate_btc_supply(in_chain_code VARCHAR(30), in_measured_at TIMESTAMP(0)) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_ltc_supply(in_block_height INTEGER) CASCADE;
-DROP FUNCTION IF EXISTS f_estimate_ltc_supply(in_in_circulation_at TIMESTAMP(0)) CASCADE;
+DROP FUNCTION IF EXISTS f_estimate_ltc_supply(in_chain_code VARCHAR(30), in_measured_at TIMESTAMP(0)) CASCADE;
 DROP FUNCTION IF EXISTS f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) CASCADE;
 DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_code VARCHAR(30), in_label_fragment VARCHAR(60)) CASCADE;
-DROP FUNCTION IF EXISTS f_calc_btc_transaction_fee(in_hex_transaction TEXT) CASCADE;
-DROP FUNCTION IF EXISTS f_calc_ltc_transaction_fee(in_hex_transaction TEXT) CASCADE;
-DROP FUNCTION IF EXISTS f_calc_transaction_size(in_hex_transaction TEXT) CASCADE;
+DROP FUNCTION IF EXISTS f_calc_btc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) CASCADE;
+DROP FUNCTION IF EXISTS f_calc_ltc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) CASCADE;
 DROP FUNCTION IF EXISTS f_clean_evicted_transaction(in_network_uid CHAR(64)) CASCADE;
 DROP FUNCTION IF EXISTS f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT) CASCADE;
 DROP FUNCTION IF EXISTS f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) CASCADE;
@@ -762,42 +804,42 @@ DROP FUNCTION IF EXISTS f_build_payment_request_uri(in_payment_request_id BIGINT
 /*6.2.1 Creation statements*/
 CREATE OR REPLACE FUNCTION f_disable_entity_is_active() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.is_active = FALSE;
+    NEW.is_active := FALSE;
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION f_refresh_entity_updated_at() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP(0);
+    NEW.updated_at := CURRENT_TIMESTAMP(0);
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION f_upper_entity_code() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.code = upper(NEW.code);
+    NEW.code := upper(NEW.code);
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION f_sanitize_member_phone_number() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.phone_number = regexp_replace(NEW.phone_number, '[+\s]', '', 'g');
+    NEW.phone_number := regexp_replace(NEW.phone_number, '[+\s]', '', 'g');
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION f_upper_employee_iban() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.iban = upper(NEW.iban);
+    NEW.iban := upper(NEW.iban);
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION f_disable_employee_is_active() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.is_active = FALSE;
+    NEW.is_active := FALSE;
     IF (TG_OP = 'INSERT') THEN
         UPDATE employee_role SET is_active = FALSE WHERE employee_id = NEW.employee_id;
     ELSIF (TG_OP = 'UPDATE') THEN 
@@ -821,7 +863,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION f_disable_chain_is_operational() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.is_operational = FALSE;
+    NEW.is_operational := FALSE;
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
@@ -832,11 +874,11 @@ BEGIN
         IF (TG_OP = 'UPDATE' AND OLD.wallet_id IS NOT NULL) THEN 
             RETURN NEW;
         END IF;
-        NEW.address_state_type_id = 1;
+        NEW.address_state_type_id := 1;
     ELSE
-        NEW.address_state_type_id = 6;
-        NEW.label = NULL;
-        NEW.balance = NULL;
+        NEW.address_state_type_id := 6;
+        NEW.label := NULL;
+        NEW.balance := NULL;
     END IF;        
     RETURN NEW;
 END
@@ -844,9 +886,30 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION f_lower_transactions_uids() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.local_uid = lower(NEW.local_uid);
-    NEW.network_uid = lower(NEW.network_uid);
+    NEW.local_uid := lower(NEW.local_uid);
+    NEW.network_uid := lower(NEW.network_uid);
     RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION f_estimate_transactions_fee() RETURNS TRIGGER AS $$
+DECLARE
+    FEE_COEFFICIENT CONSTANT NUMERIC(3, 1) := 2.5;
+    currency_name VARCHAR(25);
+BEGIN
+    SELECT DISTINCT(cu.name) INTO STRICT currency_name
+    FROM transaction_endpoint AS te INNER JOIN address AS a ON te.address_id = a.address_id
+    INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
+    INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id
+    INNER JOIN currency AS cu ON ch.currency_id = cu.currency_id
+    WHERE te.transaction_id = NEW.transaction_id;
+    IF (currency_name = 'Bitcoin') THEN
+        NEW.fee := f_calc_btc_transaction_fee(NEW.binary_size, FEE_COEFFICIENT);
+        RETURN NEW;
+    ELSIF (currency_name = 'Litecoin') THEN
+        NEW.fee := f_calc_ltc_transaction_fee(NEW.binary_size, FEE_COEFFICIENT);
+        RETURN NEW;
+    END IF;
 END
 $$ LANGUAGE plpgsql;
 
@@ -857,7 +920,7 @@ BEGIN
     SELECT a.wallet_id INTO STRICT wallet_id FROM address AS a WHERE a.address_id = NEW.address_id;
     IF (wallet_id IS NULL) THEN
         RAISE EXCEPTION 'Expected the payment request (id = %) to reference an ''internal'' (wallet) address, but was ''external'' (non-wallet) instead.', 
-            NEW.payment_request_id USING ERRCODE = '26111';
+            NEW.payment_request_id USING ERRCODE = '36121';
     END IF;
     RETURN NULL;
 END
@@ -865,7 +928,7 @@ $$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE FUNCTION f_lower_visit_ip_address() RETURNS TRIGGER AS $$
 BEGIN
-    NEW.ip_address = lower(NEW.ip_address);
+    NEW.ip_address := lower(NEW.ip_address);
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
@@ -881,6 +944,7 @@ DROP FUNCTION IF EXISTS f_disable_duplicate_employee_role_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_chain_is_operational() CASCADE;
 DROP FUNCTION IF EXISTS f_resolve_address_address_state_type_id() CASCADE;
 DROP FUNCTION IF EXISTS f_lower_transactions_uids() CASCADE;
+DROP FUNCTION IF EXISTS f_estimate_transactions_fee() CASCADE;
 DROP FUNCTION IF EXISTS f_check_payment_request_address_id() CASCADE;
 DROP FUNCTION IF EXISTS f_lower_visit_ip_address() CASCADE;
 
@@ -1098,12 +1162,13 @@ GRANT EXECUTE ON FUNCTION gen_salt(type TEXT, iter_count INTEGER) TO bitplexus_c
 GRANT EXECUTE ON FUNCTION f_decode_uri(in_text TEXT) TO bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_encode_uri(in_text TEXT) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_btc_supply(in_block_height INTEGER) TO bitplexus_employee, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_estimate_btc_supply(in_chain_code VARCHAR(30), in_measured_at TIMESTAMP(0)) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_ltc_supply(in_block_height INTEGER) TO bitplexus_employee, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_estimate_ltc_supply(in_chain_code VARCHAR(30), in_measured_at TIMESTAMP(0)) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_code VARCHAR(30), in_label_fragment VARCHAR(60)) TO bitplexus_customer, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_calc_btc_transaction_fee(in_hex_transaction TEXT) TO bitplexus_customer, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_calc_ltc_transaction_fee(in_hex_transaction TEXT) TO bitplexus_customer, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_calc_transaction_size(in_hex_transaction TEXT) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_calc_btc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_calc_ltc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64)) TO bitplexus_drone, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT) TO bitplexus_drone, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) TO bitplexus_drone, bitplexus_dbm;
