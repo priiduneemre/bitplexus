@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-07-02 19:14:31*/
+/*Last modified:    2015-07-03 18:41:33*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -23,6 +23,7 @@ ENCODING 'UTF8'
 LC_COLLATE 'en_US.UTF-8'
 LC_CTYPE 'en_US.UTF-8'
 CONNECTION LIMIT 100;
+/*NB! Uncomment the 'timezone' configuration parameter in your 'postgresql.conf' file & set it to 'UTC'.*/
 
 /*(Option #2: for Windows environments)*/
 CREATE DATABASE bitplexus
@@ -33,6 +34,7 @@ ENCODING 'UTF8'
 LC_COLLATE 'English_United states.1252'
 LC_CTYPE 'English_United states.1252'
 CONNECTION LIMIT 100;
+/*NB! Uncomment the 'timezone' configuration parameter in your 'postgresql.conf' file & set it to 'UTC'.*/
 
 /*1.3 Removal statements*/
 DROP ROLE IF EXISTS bitplexus_customer;
@@ -156,18 +158,17 @@ CREATE TABLE employee_role (
 );
 
 CREATE TABLE currency (
-    currency_id         SMALLSERIAL,
-    name                VARCHAR(25)     NOT NULL,
-    abbreviation        VARCHAR(8)      NOT NULL,
-    symbol              VARCHAR(3),
-    launched_on         DATE            NOT NULL,
-    block_time          INTEGER         NOT NULL,
-    available_supply    NUMERIC(23, 8)  NOT NULL,
-    standard_fee        NUMERIC(23, 8)  NOT NULL,
-    website_url         VARCHAR(100)    NOT NULL,
-    created_at          TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
-    updated_at          TIMESTAMP(0),
-    updated_by          INTEGER,
+    currency_id     SMALLSERIAL,
+    name            VARCHAR(25)     NOT NULL,
+    abbreviation    VARCHAR(8)      NOT NULL,
+    symbol          VARCHAR(3),
+    launched_on     DATE            NOT NULL,
+    block_time      INTEGER         NOT NULL,
+    standard_fee    NUMERIC(23, 8)  NOT NULL,
+    website_url     VARCHAR(100)    NOT NULL,
+    created_at      TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    updated_at      TIMESTAMP(0),
+    updated_by      INTEGER,
     
     CONSTRAINT pk_currency PRIMARY KEY (currency_id),
     CONSTRAINT ak_currency_name UNIQUE (name),
@@ -178,7 +179,6 @@ CREATE TABLE currency (
     
     CONSTRAINT ck_currency_launched_on_in_range CHECK (launched_on BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_currency_block_time_in_range CHECK (block_time > 0),
-    CONSTRAINT ck_currency_available_supply_in_range CHECK (available_supply > 0),
     CONSTRAINT ck_currency_standard_fee_in_range CHECK (standard_fee >= 0 AND standard_fee <= available_supply),
     CONSTRAINT ck_currency_website_url_length CHECK (length(website_url) > 2),
     CONSTRAINT ck_currency_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
@@ -187,16 +187,17 @@ CREATE TABLE currency (
 );
 
 CREATE TABLE chain (
-    chain_id        SMALLSERIAL,
-    currency_id     SMALLINT        NOT NULL,
-    code            VARCHAR(30)     NOT NULL,
-    name            VARCHAR(60)     NOT NULL,
-    started_on      DATE            NOT NULL,
-    is_operational  BOOLEAN         NOT NULL    DEFAULT TRUE,
-    created_at      TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
-    created_by      INTEGER         NOT NULL,
-    updated_at      TIMESTAMP(0),
-    updated_by      INTEGER,
+    chain_id            SMALLSERIAL,
+    currency_id         SMALLINT        NOT NULL,
+    code                VARCHAR(30)     NOT NULL,
+    name                VARCHAR(60)     NOT NULL,
+    started_on          DATE            NOT NULL,
+    available_supply    NUMERIC(23, 8)  NOT NULL,
+    is_operational      BOOLEAN         NOT NULL    DEFAULT TRUE,
+    created_at          TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
+    created_by          INTEGER         NOT NULL,
+    updated_at          TIMESTAMP(0),
+    updated_by          INTEGER,
                 
     CONSTRAINT pk_chain PRIMARY KEY (chain_id),
     CONSTRAINT ak_chain_code UNIQUE (code),
@@ -205,6 +206,7 @@ CREATE TABLE chain (
     CONSTRAINT fk_chain_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
     CONSTRAINT ck_chain_started_on_in_range CHECK (started_on BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_chain_available_supply_in_range CHECK (available_supply > 0),
     CONSTRAINT ck_chain_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_chain_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_chain_updated_at_chrono_order CHECK (updated_at >= created_at)
@@ -667,21 +669,23 @@ WHERE a.wallet_id = in_wallet_id AND ch.code = in_chain_code AND lower(a.label) 
     lower('%' || in_label_fragment || '%');
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
-CREATE OR REPLACE FUNCTION f_calc_btc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) 
-RETURNS NUMERIC(23, 8) AS $$
-SELECT CAST((GREATEST(standard_fee, (ceiling(CAST(in_binary_size AS NUMERIC) / CAST(1000 AS NUMERIC)) * standard_fee)) 
-    * GREATEST(in_fee_coefficient, 1)) AS NUMERIC(23, 8)) AS recommended_fee
+CREATE OR REPLACE FUNCTION f_calc_btc_transaction_fee(in_binary_size INTEGER) RETURNS NUMERIC(23, 8) AS $$
+SELECT CAST(GREATEST(standard_fee, ceiling(CAST(in_binary_size AS NUMERIC) / CAST(1000 AS NUMERIC)) * standard_fee)
+    AS NUMERIC(23, 8)) AS recommended_fee
 FROM currency
 WHERE name = 'Bitcoin';
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
-CREATE OR REPLACE FUNCTION f_calc_ltc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) 
-RETURNS NUMERIC(23, 8) AS $$
-SELECT CAST((GREATEST(standard_fee, (ceiling(CAST(in_binary_size AS NUMERIC) / CAST(1000 AS NUMERIC)) * standard_fee)) 
-    * GREATEST(in_fee_coefficient, 1)) AS NUMERIC(23, 8)) AS recommended_fee
+CREATE OR REPLACE FUNCTION f_calc_ltc_transaction_fee(in_binary_size INTEGER) RETURNS NUMERIC(23, 8) AS $$
+SELECT CAST(GREATEST(standard_fee, ceiling(CAST(in_binary_size AS NUMERIC) / CAST(1000 AS NUMERIC)) * standard_fee) 
+    AS NUMERIC(23, 8)) AS recommended_fee
 FROM currency
 WHERE name = 'Litecoin';
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
+
+CREATE OR REPLACE FUNCTION f_calc_transaction_size(in_hex_transaction TEXT) RETURNS INTEGER AS $$
+SELECT octet_length(decode(in_hex_transaction, 'hex')) AS binary_size;
+$$ LANGUAGE sql IMMUTABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64)) RETURNS BOOLEAN AS $$
 WITH was_confirmed_transaction AS (
@@ -697,24 +701,24 @@ WITH was_confirmed_transaction AS (
 SELECT EXISTS (SELECT 1 FROM was_confirmed_transaction UNION ALL SELECT 1 FROM was_completed_transaction);
 $$ LANGUAGE sql STRICT;
 
-CREATE OR REPLACE FUNCTION f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT)
+CREATE OR REPLACE FUNCTION f_complete_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), in_confirmation_count SMALLINT)
 RETURNS CHAR(64)[] AS $$
 WITH completed_transactions AS (
-    UPDATE transactions SET transaction_status_type_id = 4, completed_at = CURRENT_TIMESTAMP(0)
+    UPDATE transactions SET transaction_status_type_id = 4, completed_at = in_block_time
     WHERE block_height <= (in_block_height - (in_confirmation_count - 1)) AND transaction_status_type_id = 3
     RETURNING network_uid
 )
 SELECT array_agg(network_uid) FROM completed_transactions;
 $$ LANGUAGE sql STRICT;
 
-CREATE OR REPLACE FUNCTION f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[])
+CREATE OR REPLACE FUNCTION f_confirm_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), in_network_uids CHAR(64)[])
 RETURNS CHAR(64)[] AS $$
 DECLARE
     confirmed_network_uids CHAR(64)[];
 BEGIN
     FOR i IN 1..array_length(in_network_uids, 1) LOOP
         PERFORM f_clean_evicted_transaction(in_network_uids[i]);
-        UPDATE transactions SET transaction_status_type_id = 3, confirmed_at = CURRENT_TIMESTAMP(0), 
+        UPDATE transactions SET transaction_status_type_id = 3, confirmed_at = in_block_time, 
             block_height = in_block_height
         WHERE network_uid = in_network_uids[i] AND transaction_status_type_id = 2;
         IF (FOUND) THEN
@@ -733,6 +737,22 @@ WITH dropped_transactions AS (
 )
 SELECT array_agg(network_uid) FROM dropped_transactions;
 $$ LANGUAGE sql STRICT;
+
+CREATE OR REPLACE FUNCTION f_estimate_transaction_fee(in_currency_name VARCHAR(25), in_hex_transaction TEXT, in_fee_coefficient NUMERIC(3, 1)) RETURNS NUMERIC(23, 8) AS $$
+DECLARE
+    binary_size INTEGER;
+BEGIN
+    binary_size := f_calc_transaction_size(in_hex_transaction);
+    IF (in_currency_name = 'Bitcoin') THEN
+        RETURN CAST(f_calc_btc_transaction_fee(binary_size) * GREATEST(in_fee_coefficient, 1) AS NUMERIC(23, 8));
+    ELSIF (in_currency_name = 'Litecoin') THEN
+        RETURN CAST(f_calc_ltc_transaction_fee(binary_size) * GREATEST(in_fee_coefficient, 1) AS NUMERIC(23, 8));
+    ELSE 
+        RAISE EXCEPTION 'Unable to estimate txn fee - currency (name = %) invalid/unsupported.', in_currency_name 
+            USING ERRCODE = '36411'; 
+    END IF;
+END
+$$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE OR REPLACE FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) RETURNS VARCHAR(35)[] AS $$
 SELECT array_agg(a.encoded_form) AS addresses
@@ -791,12 +811,14 @@ DROP FUNCTION IF EXISTS f_calc_ltc_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_estimate_ltc_supply(in_chain_code VARCHAR(30), in_measured_at TIMESTAMP(0)) CASCADE;
 DROP FUNCTION IF EXISTS f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) CASCADE;
 DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_code VARCHAR(30), in_label_fragment VARCHAR(60)) CASCADE;
-DROP FUNCTION IF EXISTS f_calc_btc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) CASCADE;
-DROP FUNCTION IF EXISTS f_calc_ltc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) CASCADE;
+DROP FUNCTION IF EXISTS f_calc_btc_transaction_fee(in_binary_size INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_calc_ltc_transaction_fee(in_binary_size INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_calc_transaction_size(in_hex_transaction TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_clean_evicted_transaction(in_network_uid CHAR(64)) CASCADE;
-DROP FUNCTION IF EXISTS f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT) CASCADE;
-DROP FUNCTION IF EXISTS f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) CASCADE;
+DROP FUNCTION IF EXISTS f_complete_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), in_confirmation_count SMALLINT) CASCADE;
+DROP FUNCTION IF EXISTS f_confirm_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), in_network_uids CHAR(64)[]) CASCADE;
 DROP FUNCTION IF EXISTS f_drop_transactions(in_txn_timeout INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_estimate_transaction_fee(in_currency_name VARCHAR(25), in_hex_transaction TEXT, in_fee_coefficient NUMERIC(3, 1)) CASCADE;
 DROP FUNCTION IF EXISTS f_get_transaction_addresses(in_network_uid CHAR(64)) CASCADE;
 DROP FUNCTION IF EXISTS f_build_payment_request_uri(in_payment_request_id BIGINT) CASCADE;
 
@@ -892,27 +914,6 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION f_estimate_transactions_fee() RETURNS TRIGGER AS $$
-DECLARE
-    FEE_COEFFICIENT CONSTANT NUMERIC(3, 1) := 2.5;
-    currency_name VARCHAR(25);
-BEGIN
-    SELECT DISTINCT(cu.name) INTO STRICT currency_name
-    FROM transaction_endpoint AS te INNER JOIN address AS a ON te.address_id = a.address_id
-    INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
-    INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id
-    INNER JOIN currency AS cu ON ch.currency_id = cu.currency_id
-    WHERE te.transaction_id = NEW.transaction_id;
-    IF (currency_name = 'Bitcoin') THEN
-        NEW.fee := f_calc_btc_transaction_fee(NEW.binary_size, FEE_COEFFICIENT);
-        RETURN NEW;
-    ELSIF (currency_name = 'Litecoin') THEN
-        NEW.fee := f_calc_ltc_transaction_fee(NEW.binary_size, FEE_COEFFICIENT);
-        RETURN NEW;
-    END IF;
-END
-$$ LANGUAGE plpgsql;
-
 CREATE OR REPLACE FUNCTION f_check_payment_request_address_id() RETURNS TRIGGER AS $$
 DECLARE
     wallet_id INTEGER;
@@ -944,9 +945,9 @@ DROP FUNCTION IF EXISTS f_disable_duplicate_employee_role_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_chain_is_operational() CASCADE;
 DROP FUNCTION IF EXISTS f_resolve_address_address_state_type_id() CASCADE;
 DROP FUNCTION IF EXISTS f_lower_transactions_uids() CASCADE;
-DROP FUNCTION IF EXISTS f_estimate_transactions_fee() CASCADE;
 DROP FUNCTION IF EXISTS f_check_payment_request_address_id() CASCADE;
 DROP FUNCTION IF EXISTS f_lower_visit_ip_address() CASCADE;
+
 
 /*7. DDL - Triggers*/
 /*7.1 Creation statements*/
@@ -1022,10 +1023,6 @@ CREATE TRIGGER tr_transactions_uids_lower BEFORE INSERT OR UPDATE OF local_uid, 
 FOR EACH ROW
 EXECUTE PROCEDURE f_lower_transactions_uids();
 
-CREATE TRIGGER tr_transactions_fee_estimate BEFORE INSERT OR UPDATE OF binary_size ON transactions
-FOR EACH ROW
-EXECUTE PROCEDURE f_estimate_transactions_fee();
-
 CREATE TRIGGER tr_transactions_updated_at_refresh BEFORE UPDATE ON transactions
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
@@ -1058,7 +1055,6 @@ DROP TRIGGER IF EXISTS tr_address_address_state_type_id_resolve ON address CASCA
 DROP TRIGGER IF EXISTS tr_address_updated_at_refresh ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_book_entry_updated_at_refresh ON address_book_entry CASCADE;
 DROP TRIGGER IF EXISTS tr_transactions_uids_lower ON transactions CASCADE;
-DROP TRIGGER IF EXISTS tr_transactions_fee_estimate ON transactions CASCADE;
 DROP TRIGGER IF EXISTS tr_transactions_updated_at_refresh ON transactions CASCADE;
 DROP TRIGGER IF EXISTS tr_payment_request_address_id_check ON payment_request CASCADE;
 DROP TRIGGER IF EXISTS tr_visit_ip_address_lower ON visit CASCADE;
@@ -1167,12 +1163,14 @@ GRANT EXECUTE ON FUNCTION f_calc_ltc_supply(in_block_height INTEGER) TO bitplexu
 GRANT EXECUTE ON FUNCTION f_estimate_ltc_supply(in_chain_code VARCHAR(30), in_measured_at TIMESTAMP(0)) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_code VARCHAR(30), in_label_fragment VARCHAR(60)) TO bitplexus_customer, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_calc_btc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) TO bitplexus_customer, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_calc_ltc_transaction_fee(in_binary_size INTEGER, in_fee_coefficient NUMERIC(3, 1)) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_calc_btc_transaction_fee(in_binary_size INTEGER) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_calc_ltc_transaction_fee(in_binary_size INTEGER) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_calc_transaction_size(in_hex_transaction TEXT) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64)) TO bitplexus_drone, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_complete_transactions(in_block_height INTEGER, in_confirmation_count SMALLINT) TO bitplexus_drone, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_confirm_transactions(in_block_height INTEGER, in_network_uids CHAR(64)[]) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_complete_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), in_confirmation_count SMALLINT) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_confirm_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), in_network_uids CHAR(64)[]) TO bitplexus_drone, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_drop_transactions(in_txn_timeout INTEGER) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_estimate_transaction_fee(in_currency_name VARCHAR(25), in_hex_transaction TEXT, in_fee_coefficient NUMERIC(3, 1)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) TO bitplexus_drone, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_build_payment_request_uri(in_payment_request_id BIGINT) TO bitplexus_customer, bitplexus_dbm;
 
