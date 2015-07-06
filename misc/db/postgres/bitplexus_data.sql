@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DML statements for populating the application's database with seed data (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-07-03 18:41:38*/
+/*Last modified:    2015-07-06 14:39:04*/
 
 
 /*1. DML - Regular tables*/
@@ -35,20 +35,20 @@ INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) 
 INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (4, 3, 1, '2015-03-19 23:22:58');
 INSERT INTO employee_role (employee_role_id, employee_id, role_id, assigned_at) VALUES (5, 3, 2, '2015-03-19 23:22:58');
 
-INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (1, 'Bitcoin', 'BTC', '฿', '2009-01-03', 600, f_calc_btc_supply(359529), 0.0001, 'https://bitcoin.org/', '2015-03-19 23:48:41');
-INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (2, 'Litecoin', 'LTC', 'Ł', '2011-10-08', 150, f_calc_litecoin_supply(792946), 0.001, 'https://litecoin.org/', '2015-03-20 00:34:20');
-INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (3, 'Dash', 'DASH', NULL, '2014-01-19', 150, 5261810, 0.001, 'https://www.dashpay.io/', '2015-03-20 01:21:36');
-INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (4, 'Peercoin', 'PPC', 'Ᵽ', '2012-08-20', 600, 22212010, 0.01, 'http://peercoin.net/', '2015-03-20 01:57:18');
-INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (5, 'Monero', 'XMR', NULL, '2014-04-18', 60, 7079487, 0.01, 'https://getmonero.org/', '2015-03-20 02:30:54');
-INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, available_supply, standard_fee, website_url, created_at) VALUES (6, 'Namecoin', 'NMC', 'ℕ', '2011-04-17', 600, 11269000, 0.005, 'https://namecoin.info/', '2015-03-20 02:59:07');
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, standard_fee, website_url, created_at) VALUES (1, 'Bitcoin', 'BTC', '฿', '2009-01-03', 600, 0.0001, 'https://bitcoin.org/', '2015-03-19 23:48:41');
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, standard_fee, website_url, created_at) VALUES (2, 'Litecoin', 'LTC', 'Ł', '2011-10-08', 150, 0.001, 'https://litecoin.org/', '2015-03-20 00:34:20');
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, standard_fee, website_url, created_at) VALUES (3, 'Dash', 'DASH', NULL, '2014-01-19', 150, 0.001, 'https://www.dashpay.io/', '2015-03-20 01:21:36');
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, standard_fee, website_url, created_at) VALUES (4, 'Peercoin', 'PPC', 'Ᵽ', '2012-08-20', 600, 0.01, 'http://peercoin.net/', '2015-03-20 01:57:18');
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, standard_fee, website_url, created_at) VALUES (5, 'Monero', 'XMR', NULL, '2014-04-18', 60, 0.01, 'https://getmonero.org/', '2015-03-20 02:30:54');
+INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, standard_fee, website_url, created_at) VALUES (6, 'Namecoin', 'NMC', 'ℕ', '2011-04-17', 600, 0.005, 'https://namecoin.info/', '2015-03-20 02:59:07');
 
-INSERT INTO chain (chain_id, currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (1, 1, 'BITCOIN_MAIN', 'Mainnet chain', '2009-01-03', TRUE, '2015-03-19 23:52:13', 3);
-INSERT INTO chain (chain_id, currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (2, 1, 'BITCOIN_TEST1', 'Testnet1 chain', '2010-10-19', FALSE, '2015-03-19 23:54:30', 3);
-INSERT INTO chain (chain_id, currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (3, 1, 'BITCOIN_TEST2', 'Testnet2 chain', '2011-02-02', FALSE, '2015-03-19 23:56:55', 3);
-INSERT INTO chain (chain_id, currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (4, 1, 'BITCOIN_TEST3', 'Testnet3 chain', '2012-04-13', TRUE, '2015-03-19 23:59:07', 3);
-INSERT INTO chain (chain_id, currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (5, 2, 'LITECOIN_MAIN', 'Mainnet chain', '2011-10-08', TRUE, '2015-03-20 00:40:26', 3);
-INSERT INTO chain (chain_id, currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (6, 2, 'LITECOIN_TEST1', 'Testnet1 chain', '2011-10-05', FALSE, '2015-03-20 00:43:41', 3);
-INSERT INTO chain (chain_id, currency_id, code, name, started_on, is_operational, created_at, created_by) VALUES (7, 2, 'LITECOIN_TEST3', 'Testnet3 chain', '2013-04-08', TRUE, '2015-03-20 00:45:58', 3);
+INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (1, 1, 'BITCOIN_MAIN', 'Mainnet chain', '2009-01-03', f_estimate_btc_supply('2009-01-03', f_to_timestamp(CURRENT_TIMESTAMP(0)), TRUE, '2015-03-19 23:52:13', 3);
+INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (2, 1, 'BITCOIN_TEST1', 'Testnet1 chain', '2010-10-19', f_estimate_btc_supply('2010-10-19', f_to_timestamp(CURRENT_TIMESTAMP(0)), FALSE, '2015-03-19 23:54:30', 3);
+INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (3, 1, 'BITCOIN_TEST2', 'Testnet2 chain', '2011-02-02', f_estimate_btc_supply('2011-02-02', f_to_timestamp(CURRENT_TIMESTAMP(0)), FALSE, '2015-03-19 23:56:55', 3);
+INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (4, 1, 'BITCOIN_TEST3', 'Testnet3 chain', '2012-04-13', f_estimate_btc_supply('2012-04-13', f_to_timestamp(CURRENT_TIMESTAMP(0)), TRUE, '2015-03-19 23:59:07', 3);
+INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (5, 2, 'LITECOIN_MAIN', 'Mainnet chain', '2011-10-08', f_estimate_ltc_supply('2011-10-08', f_to_timestamp(CURRENT_TIMESTAMP(0)), TRUE, '2015-03-20 00:40:26', 3);
+INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (6, 2, 'LITECOIN_TEST1', 'Testnet1 chain', '2011-10-05', f_estimate_ltc_supply('2011-10-05', f_to_timestamp(CURRENT_TIMESTAMP(0)), FALSE, '2015-03-20 00:43:41', 3);
+INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (7, 2, 'LITECOIN_TEST3', 'Testnet3 chain', '2013-04-08', f_estimate_ltc_supply('2013-04-08', f_to_timestamp(CURRENT_TIMESTAMP(0)), TRUE, '2015-03-20 00:45:58', 3);
 
 INSERT INTO wallet (wallet_id, customer_id, wallet_state_type_id, name, created_at, updated_at) VALUES (1, 4, 2, 'Garden gnome''s personal wallet', '2015-03-24 13:58:03', '2015-03-24 14:09:36');
 INSERT INTO wallet (wallet_id, customer_id, wallet_state_type_id, name, created_at, updated_at) VALUES (2, 4, 2, 'Garden gnome''s merchant wallet', '2015-03-24 14:07:52', NULL);
@@ -195,7 +195,7 @@ INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VAL
 INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (3, 'CONFIRMED', 'Confirmed');
 INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (4, 'COMPLETED', 'Completed');
 INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (5, 'FAILED', 'Failed');
-INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (6, 'EXTINCT', 'Extinct');
+INSERT INTO transaction_status_type (transaction_status_type_id, code, name) VALUES (6, 'DROPPED', 'Dropped');
 
 INSERT INTO transaction_endpoint_type (transaction_endpoint_type_id, code, name) VALUES (1, 'INPUT', 'Input');
 INSERT INTO transaction_endpoint_type (transaction_endpoint_type_id, code, name) VALUES (2, 'OUTPUT_MAIN', 'Output');
