@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DML statements for populating the application's database with seed data (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-07-06 14:39:04*/
+/*Last modified:    2015-07-07 20:26:17*/
 
 
 /*1. DML - Regular tables*/

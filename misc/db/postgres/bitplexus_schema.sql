@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-07-06 14:38:58*/
+/*Last modified:    2015-07-07 20:26:10*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -358,7 +358,7 @@ CREATE TABLE transactions (
     CONSTRAINT ck_transactions_completed_at_in_range CHECK (completed_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_completed_at_chrono_order CHECK (completed_at >= confirmed_at),
     CONSTRAINT ck_transactions_block_height_in_range CHECK (block_height >= 0),
-    CONSTRAINT ck_transactions_binary_size_in_range CHECK (binary_size > 0),
+    CONSTRAINT ck_transactions_binary_size_in_range CHECK (binary_size > 0 AND binary_size < 1000000),
     CONSTRAINT ck_transactions_fee_in_range CHECK (fee >= 0),
     CONSTRAINT ck_transactions_unit_price_in_range CHECK (unit_price > 0),
     CONSTRAINT ck_transactions_logged_at_in_range CHECK (logged_at BETWEEN '1900-01-01' AND '2100-01-01'),
@@ -807,6 +807,13 @@ DROP FUNCTION IF EXISTS f_build_payment_request_uri(in_payment_request_id BIGINT
 
 /*6.2 Trigger functions*/
 /*6.2.1 Creation statements*/
+CREATE OR REPLACE FUNCTION f_upper_entity_code() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.code := upper(NEW.code);
+    RETURN NEW;
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION f_disable_entity_is_active() RETURNS TRIGGER AS $$
 BEGIN
     NEW.is_active := FALSE;
@@ -817,13 +824,6 @@ $$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION f_refresh_entity_updated_at() RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at := CURRENT_TIMESTAMP(0);
-    RETURN NEW;
-END
-$$ LANGUAGE plpgsql;
-
-CREATE OR REPLACE FUNCTION f_upper_entity_code() RETURNS TRIGGER AS $$
-BEGIN
-    NEW.code := upper(NEW.code);
     RETURN NEW;
 END
 $$ LANGUAGE plpgsql;
@@ -889,6 +889,22 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION f_check_address_balance() RETURNS TRIGGER AS $$
+DECLARE
+    available_supply NUMERIC(23, 8);
+BEGIN
+    SELECT ch.available_supply INTO STRICT available_supply
+    FROM address AS a INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
+    INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id
+    WHERE a.address_id = NEW.address_id;
+    IF (NEW.balance > available_supply) THEN
+        RAISE EXCEPTION '% failed (table ''%'') - usable balance (balance = %) must be lower than the chain''s total supply (available_supply = %).',
+            TG_OP, TG_TABLE_NAME, NEW.balance, available_supply USING ERRCODE = '36511';
+    END IF;
+    RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION f_lower_transactions_uids() RETURNS TRIGGER AS $$
 BEGIN
     NEW.local_uid := lower(NEW.local_uid);
@@ -911,10 +927,49 @@ BEGIN
     LIMIT 1;    
     IF (NEW.fee < standard_fee) THEN
         RAISE EXCEPTION '% failed (table ''%'') - txn fee (fee = %) must be higher than the standard fee (standard_fee = %).',
-            TG_OP, TG_TABLE_NAME, NEW.fee, standard_fee USING ERRCODE = '36511';
+            TG_OP, TG_TABLE_NAME, NEW.fee, standard_fee USING ERRCODE = '36512';
     ELSIF (NEW.fee > available_supply) THEN
         RAISE EXCEPTION '% failed (table ''%'') - txn fee (fee = %) must be lower than the chain''s total supply (available_supply = %).',
-            TG_OP, TG_TABLE_NAME, NEW.fee, available_supply USING ERRCODE = '36512';
+            TG_OP, TG_TABLE_NAME, NEW.fee, available_supply USING ERRCODE = '36513';
+    END IF;
+    RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION f_check_transaction_endpoint_address_id() RETURNS TRIGGER AS $$
+DECLARE
+    chain_id SMALLINT;
+BEGIN
+    SELECT DISTINCT adt.chain_id INTO STRICT chain_id
+    FROM transaction_endpoint AS te INNER JOIN address AS a ON te.address_id = a.address_id
+    INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
+    WHERE te.transaction_id = NEW.transaction_id;
+    RETURN NULL;
+    EXCEPTION
+        WHEN TOO_MANY_ROWS THEN
+            RAISE EXCEPTION '% failed (table ''%'') - all inputs/outputs of a txn (transaction_id = %) must be bound to the same chain.', 
+                TG_OP, TG_TABLE_NAME, NEW.transaction_id USING ERRCODE = '36514';
+END
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION f_check_transaction_endpoint_transaction_endpoint_type_id() RETURNS TRIGGER AS $$
+DECLARE
+    input_count SMALLINT;
+    output_count SMALLINT;
+    v_transaction_id BIGINT;
+BEGIN
+    v_transaction_id := (CASE TG_OP WHEN 'INSERT' THEN NEW.transaction_id WHEN 'UPDATE' THEN OLD.transaction_id END);
+    SELECT sum(CASE WHEN te.transaction_endpoint_type_id = 1 THEN 1 ELSE 0 END), 
+        sum(CASE WHEN te.transaction_endpoint_type_id = 2 THEN 1 ELSE 0 END) INTO STRICT input_count, output_count
+    FROM transaction_endpoint AS te
+    WHERE te.transaction_id = v_transaction_id;
+    IF (input_count < 1) THEN
+        RAISE EXCEPTION '% failed (table ''%'') - standard txn (transaction_id = %) must have at least 1 input.',
+            TG_OP, TG_TABLE_NAME, v_transaction_id USING ERRCODE = '36515';
+    END IF;
+    IF (output_count < 1) THEN
+        RAISE EXCEPTION '% failed (table ''%'') - standard txn (transaction_id = %) must have at least 1 output.',
+            TG_OP, TG_TABLE_NAME, v_transaction_id USING ERRCODE = '36516';
     END IF;
     RETURN NULL;
 END
@@ -931,7 +986,7 @@ BEGIN
     WHERE te.transaction_endpoint_id = NEW.transaction_endpoint_id;
     IF (NEW.amount > available_supply) THEN
         RAISE EXCEPTION '% failed (table ''%'') - input/output amount (amount = %) must be lower than the chain''s total supply (available_supply = %).',
-            TG_OP, TG_TABLE_NAME, NEW.amount, available_supply USING ERRCODE = '36513';
+            TG_OP, TG_TABLE_NAME, NEW.amount, available_supply USING ERRCODE = '36517';
     END IF;
     RETURN NULL;
 END
@@ -943,8 +998,8 @@ DECLARE
 BEGIN
     SELECT a.wallet_id INTO STRICT wallet_id FROM address AS a WHERE a.address_id = NEW.address_id;
     IF (wallet_id IS NULL) THEN
-        RAISE EXCEPTION '% failed (table ''%'') - the request must reference an ''internal'' (wallet) address, not an ''external'' (non-wallet) one.', 
-            TG_OP, TG_TABLE_NAME USING ERRCODE = '36121';
+        RAISE EXCEPTION '% failed (table ''%'') - the recipient (address_id = %) must be an ''internal'' (wallet) address, not an ''external'' (non-wallet) one.',
+            TG_OP, TG_TABLE_NAME, NEW.address_id USING ERRCODE = '36518';
     END IF;
     RETURN NULL;
 END
@@ -961,7 +1016,7 @@ BEGIN
     WHERE pr.payment_request_id = NEW.payment_request_id;
     IF (NEW.amount > available_supply) THEN
         RAISE EXCEPTION '% failed (table ''%'') - requested amount (amount = %) must be lower than the chain''s total supply (available_supply = %).',
-            TG_OP, TG_TABLE_NAME, NEW.amount, available_supply USING ERRCODE = '36514';
+            TG_OP, TG_TABLE_NAME, NEW.amount, available_supply USING ERRCODE = '36519';
     END IF;
     RETURN NULL;
 END
@@ -975,17 +1030,20 @@ END
 $$ LANGUAGE plpgsql;
 
 /*6.2.2 Removal statements*/
+DROP FUNCTION IF EXISTS f_upper_entity_code() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_entity_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_refresh_entity_updated_at() CASCADE;
-DROP FUNCTION IF EXISTS f_upper_entity_code() CASCADE;
 DROP FUNCTION IF EXISTS f_sanitize_member_phone_number() CASCADE;
 DROP FUNCTION IF EXISTS f_upper_employee_iban() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_employee_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_duplicate_employee_role_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_chain_is_operational() CASCADE;
 DROP FUNCTION IF EXISTS f_resolve_address_address_state_type_id() CASCADE;
+DROP FUNCTION IF EXISTS f_check_address_balance() CASCADE;
 DROP FUNCTION IF EXISTS f_lower_transactions_uids() CASCADE;
 DROP FUNCTION IF EXISTS f_check_transactions_fee() CASCADE;
+DROP FUNCTION IF EXISTS f_check_transaction_endpoint_address_id() CASCADE;
+DROP FUNCTION IF EXISTS f_check_transaction_endpoint_transaction_endpoint_type_id() CASCADE;
 DROP FUNCTION IF EXISTS f_check_transaction_endpoint_amount() CASCADE;
 DROP FUNCTION IF EXISTS f_check_payment_request_address_id() CASCADE;
 DROP FUNCTION IF EXISTS f_check_payment_request_amount() CASCADE;
@@ -1054,6 +1112,11 @@ CREATE TRIGGER tr_address_address_state_type_id_resolve BEFORE INSERT OR UPDATE 
 FOR EACH ROW
 EXECUTE PROCEDURE f_resolve_address_address_state_type_id();
 
+CREATE CONSTRAINT TRIGGER tr_address_balance_check AFTER INSERT OR UPDATE OF balance ON address
+INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE PROCEDURE f_check_address_balance();
+
 CREATE TRIGGER tr_address_updated_at_refresh BEFORE UPDATE ON address
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
@@ -1074,6 +1137,16 @@ EXECUTE PROCEDURE f_check_transactions_fee();
 CREATE TRIGGER tr_transactions_updated_at_refresh BEFORE UPDATE ON transactions
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
+
+CREATE CONSTRAINT TRIGGER tr_transaction_endpoint_address_id_check AFTER INSERT OR UPDATE OF transaction_id, address_id ON transaction_endpoint
+INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE PROCEDURE f_check_transaction_endpoint_address_id();
+
+CREATE CONSTRAINT TRIGGER tr_transaction_endpoint_transaction_endpoint_type_id_check AFTER INSERT OR UPDATE OF transaction_id, transaction_endpoint_type_id ON transaction_endpoint
+INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE PROCEDURE f_check_transaction_endpoint_transaction_endpoint_type_id();
 
 CREATE CONSTRAINT TRIGGER tr_transaction_endpoint_amount_check AFTER INSERT OR UPDATE OF amount ON transaction_endpoint
 INITIALLY DEFERRED
@@ -1110,11 +1183,14 @@ DROP TRIGGER IF EXISTS tr_wallet_updated_at_refresh ON wallet CASCADE;
 DROP TRIGGER IF EXISTS tr_address_type_code_upper ON address_type CASCADE;
 DROP TRIGGER IF EXISTS tr_address_type_updated_at_refresh ON address_type CASCADE;
 DROP TRIGGER IF EXISTS tr_address_address_state_type_id_resolve ON address CASCADE;
+DROP TRIGGER IF EXISTS tr_address_balance_check ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_updated_at_refresh ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_book_entry_updated_at_refresh ON address_book_entry CASCADE;
 DROP TRIGGER IF EXISTS tr_transactions_uids_lower ON transactions CASCADE;
 DROP TRIGGER IF EXISTS tr_transactions_fee_check ON transactions CASCADE;
 DROP TRIGGER IF EXISTS tr_transactions_updated_at_refresh ON transactions CASCADE;
+DROP TRIGGER IF EXISTS tr_transaction_endpoint_address_id_check ON transaction_endpoint CASCADE;
+DROP TRIGGER IF EXISTS tr_transaction_endpoint_transaction_endpoint_type_id_check ON transaction_endpoint CASCADE;
 DROP TRIGGER IF EXISTS tr_transaction_endpoint_amount_check ON transaction_endpoint CASCADE;
 DROP TRIGGER IF EXISTS tr_payment_request_address_id_check ON payment_request CASCADE;
 DROP TRIGGER IF EXISTS tr_payment_request_amount_check ON payment_request CASCADE;
