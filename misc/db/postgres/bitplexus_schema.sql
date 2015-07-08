@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-07-07 20:26:10*/
+/*Last modified:    2015-07-08 14:09:27*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -330,7 +330,7 @@ CREATE TABLE transaction_status_type (
 
 CREATE TABLE transactions (
     transaction_id              BIGSERIAL,
-    transaction_status_type_id  SMALLINT        NOT NULL    DEFAULT 1, 
+    transaction_status_type_id  SMALLINT        NOT NULL    DEFAULT 1,
     local_uid                   CHAR(36)        NOT NULL    DEFAULT CAST(gen_random_uuid() AS CHAR(36)), 
     network_uid                 CHAR(64)        NOT NULL,
     received_at                 TIMESTAMP(0)    NOT NULL,
@@ -550,9 +550,23 @@ from urllib.parse import quote
 return quote(in_text)
 $$ LANGUAGE plpython3u IMMUTABLE LEAKPROOF STRICT;
 
+CREATE OR REPLACE FUNCTION f_to_smallint(in_integer INTEGER) RETURNS SMALLINT AS $$
+SELECT CAST(in_integer AS SMALLINT);
+$$ LANGUAGE sql IMMUTABLE LEAKPROOF STRICT;
+
 CREATE OR REPLACE FUNCTION f_to_timestamp(in_timestamptz TIMESTAMP WITH TIME ZONE) RETURNS TIMESTAMP AS $$
 SELECT CAST(in_timestamptz AS TIMESTAMP);
 $$ LANGUAGE sql IMMUTABLE LEAKPROOF STRICT;
+
+CREATE OR REPLACE FUNCTION f_change_member_password(in_username VARCHAR(20), in_old_password VARCHAR(255), 
+in_new_password VARCHAR(255)) RETURNS BOOLEAN AS $$
+WITH affected_member AS (
+    UPDATE member AS m SET password = crypt(in_new_password, gen_salt('bf', 12)) 
+    WHERE m.username = in_username AND m.password = crypt(in_old_password, m.password)
+    RETURNING in_username
+)
+SELECT EXISTS (SELECT 1 FROM affected_member);
+$$ LANGUAGE sql STRICT;
 
 CREATE OR REPLACE FUNCTION f_calc_btc_supply(in_block_height INTEGER) RETURNS NUMERIC(23, 8) AS $$
 DECLARE
@@ -565,7 +579,7 @@ DECLARE
 BEGIN
     IF (in_block_height < 0) THEN
         RAISE EXCEPTION 'Expected the block height to be positive (>=0), but was negative (%) instead.',
-            in_block_height USING ERRCODE = '30131';
+            in_block_height USING ERRCODE = '30301';
     END IF;
     WHILE blocks_to_subsidize >= HALVING_INTERVAL LOOP
         available_supply := available_supply + (block_reward * HALVING_INTERVAL);
@@ -605,7 +619,7 @@ DECLARE
 BEGIN
     IF (in_block_height < 0) THEN
         RAISE EXCEPTION 'Expected the block height to be positive (>=0), but was negative (%) instead.',
-            in_block_height USING ERRCODE = '30131';
+            in_block_height USING ERRCODE = '30301';
     END IF;
     WHILE blocks_to_subsidize >= HALVING_INTERVAL LOOP
         available_supply := available_supply + (block_reward * HALVING_INTERVAL);
@@ -636,9 +650,9 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE OR REPLACE FUNCTION f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) 
 RETURNS SMALLINT AS $$
-SELECT address_type_id 
+SELECT COALESCE((SELECT address_type_id 
 FROM address_type AS adt INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id
-WHERE ch.code = in_chain_code AND adt.leading_symbol = substr(in_address, 1, 1);
+WHERE ch.code = in_chain_code AND adt.leading_symbol = substr(in_address, 1, 1)), f_to_smallint(-1));
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_code VARCHAR(30), 
@@ -731,7 +745,7 @@ BEGIN
         RETURN CAST(f_calc_ltc_transaction_fee(binary_size) * GREATEST(in_fee_coefficient, 1) AS NUMERIC(23, 8));
     ELSE 
         RAISE EXCEPTION 'Unable to estimate txn fee - currency (name = %) invalid/unsupported.', in_currency_name 
-            USING ERRCODE = '36411'; 
+            USING ERRCODE = '30302'; 
     END IF;
 END
 $$ LANGUAGE plpgsql STABLE STRICT;
@@ -763,7 +777,7 @@ BEGIN
     INNER JOIN currency AS cu ON ch.currency_id = cu.currency_id
     WHERE pr.payment_request_id = in_payment_request_id;
     IF (address IS NULL) THEN
-        RAISE EXCEPTION 'Expected a non-null destination address, but got ''null'' instead.' USING ERRCODE = '30141';
+        RAISE EXCEPTION 'Expected a non-null destination address, but got ''null'' instead.' USING ERRCODE = '30303';
     END IF;
     payment_request_uri := lower(currency_name) || ':' || address || '?';
     IF (amount IS NOT NULL) THEN
@@ -780,14 +794,16 @@ BEGIN
     EXCEPTION 
         WHEN NO_DATA_FOUND THEN
             RAISE EXCEPTION 'No matching ''payment_request'' record(s) found (id = %).', in_payment_request_id 
-                USING ERRCODE = '36312';
+                USING ERRCODE = '30304';
 END
 $$ LANGUAGE plpgsql STABLE STRICT;
 
 /*6.1.2 Removal statements*/
 DROP FUNCTION IF EXISTS f_decode_uri(in_text TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_encode_uri(in_text TEXT) CASCADE;
+DROP FUNCTION IF EXISTS f_to_smallint(in_integer INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_to_timestamp(in_timestamptz TIMESTAMP WITH TIME ZONE) CASCADE;
+DROP FUNCTION IF EXISTS f_change_member_password(in_username VARCHAR(20), in_old_password VARCHAR(255), in_new_password VARCHAR(255)) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_btc_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_estimate_btc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_ltc_supply(in_block_height INTEGER) CASCADE;
@@ -889,6 +905,24 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION f_check_address_encoded_form() RETURNS TRIGGER AS $$
+DECLARE
+    chain_code VARCHAR(30);
+    address_type_id SMALLINT;
+    address_type_code VARCHAR(30);
+BEGIN
+    SELECT ch.code, adt.address_type_id, adt.code INTO STRICT chain_code, address_type_id, address_type_code
+    FROM address AS a INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
+    INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id
+    WHERE address_id = NEW.address_id;
+    IF (f_get_address_type_id(chain_code, NEW.encoded_form) <> address_type_id) THEN
+        RAISE EXCEPTION '% failed (table ''%'') - base58 address (encoded_form = %) must meet the formatting reqs of the specified address type (code = %).', 
+            TG_OP, TG_TABLE_NAME, NEW.encoded_form, address_type_code USING ERRCODE = '30201';
+    END IF;
+    RETURN NULL;
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION f_check_address_balance() RETURNS TRIGGER AS $$
 DECLARE
     available_supply NUMERIC(23, 8);
@@ -899,7 +933,7 @@ BEGIN
     WHERE a.address_id = NEW.address_id;
     IF (NEW.balance > available_supply) THEN
         RAISE EXCEPTION '% failed (table ''%'') - usable balance (balance = %) must be lower than the chain''s total supply (available_supply = %).',
-            TG_OP, TG_TABLE_NAME, NEW.balance, available_supply USING ERRCODE = '36511';
+            TG_OP, TG_TABLE_NAME, NEW.balance, available_supply USING ERRCODE = '30202';
     END IF;
     RETURN NULL;
 END
@@ -927,10 +961,10 @@ BEGIN
     LIMIT 1;    
     IF (NEW.fee < standard_fee) THEN
         RAISE EXCEPTION '% failed (table ''%'') - txn fee (fee = %) must be higher than the standard fee (standard_fee = %).',
-            TG_OP, TG_TABLE_NAME, NEW.fee, standard_fee USING ERRCODE = '36512';
+            TG_OP, TG_TABLE_NAME, NEW.fee, standard_fee USING ERRCODE = '30203';
     ELSIF (NEW.fee > available_supply) THEN
         RAISE EXCEPTION '% failed (table ''%'') - txn fee (fee = %) must be lower than the chain''s total supply (available_supply = %).',
-            TG_OP, TG_TABLE_NAME, NEW.fee, available_supply USING ERRCODE = '36513';
+            TG_OP, TG_TABLE_NAME, NEW.fee, available_supply USING ERRCODE = '30204';
     END IF;
     RETURN NULL;
 END
@@ -948,7 +982,7 @@ BEGIN
     EXCEPTION
         WHEN TOO_MANY_ROWS THEN
             RAISE EXCEPTION '% failed (table ''%'') - all inputs/outputs of a txn (transaction_id = %) must be bound to the same chain.', 
-                TG_OP, TG_TABLE_NAME, NEW.transaction_id USING ERRCODE = '36514';
+                TG_OP, TG_TABLE_NAME, NEW.transaction_id USING ERRCODE = '30205';
 END
 $$ LANGUAGE plpgsql;
 
@@ -965,11 +999,11 @@ BEGIN
     WHERE te.transaction_id = v_transaction_id;
     IF (input_count < 1) THEN
         RAISE EXCEPTION '% failed (table ''%'') - standard txn (transaction_id = %) must have at least 1 input.',
-            TG_OP, TG_TABLE_NAME, v_transaction_id USING ERRCODE = '36515';
+            TG_OP, TG_TABLE_NAME, v_transaction_id USING ERRCODE = '30206';
     END IF;
     IF (output_count < 1) THEN
         RAISE EXCEPTION '% failed (table ''%'') - standard txn (transaction_id = %) must have at least 1 output.',
-            TG_OP, TG_TABLE_NAME, v_transaction_id USING ERRCODE = '36516';
+            TG_OP, TG_TABLE_NAME, v_transaction_id USING ERRCODE = '30207';
     END IF;
     RETURN NULL;
 END
@@ -986,7 +1020,7 @@ BEGIN
     WHERE te.transaction_endpoint_id = NEW.transaction_endpoint_id;
     IF (NEW.amount > available_supply) THEN
         RAISE EXCEPTION '% failed (table ''%'') - input/output amount (amount = %) must be lower than the chain''s total supply (available_supply = %).',
-            TG_OP, TG_TABLE_NAME, NEW.amount, available_supply USING ERRCODE = '36517';
+            TG_OP, TG_TABLE_NAME, NEW.amount, available_supply USING ERRCODE = '30208';
     END IF;
     RETURN NULL;
 END
@@ -999,7 +1033,7 @@ BEGIN
     SELECT a.wallet_id INTO STRICT wallet_id FROM address AS a WHERE a.address_id = NEW.address_id;
     IF (wallet_id IS NULL) THEN
         RAISE EXCEPTION '% failed (table ''%'') - the recipient (address_id = %) must be an ''internal'' (wallet) address, not an ''external'' (non-wallet) one.',
-            TG_OP, TG_TABLE_NAME, NEW.address_id USING ERRCODE = '36518';
+            TG_OP, TG_TABLE_NAME, NEW.address_id USING ERRCODE = '30209';
     END IF;
     RETURN NULL;
 END
@@ -1016,7 +1050,7 @@ BEGIN
     WHERE pr.payment_request_id = NEW.payment_request_id;
     IF (NEW.amount > available_supply) THEN
         RAISE EXCEPTION '% failed (table ''%'') - requested amount (amount = %) must be lower than the chain''s total supply (available_supply = %).',
-            TG_OP, TG_TABLE_NAME, NEW.amount, available_supply USING ERRCODE = '36519';
+            TG_OP, TG_TABLE_NAME, NEW.amount, available_supply USING ERRCODE = '30210';
     END IF;
     RETURN NULL;
 END
@@ -1039,6 +1073,7 @@ DROP FUNCTION IF EXISTS f_disable_employee_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_duplicate_employee_role_is_active() CASCADE;
 DROP FUNCTION IF EXISTS f_disable_chain_is_operational() CASCADE;
 DROP FUNCTION IF EXISTS f_resolve_address_address_state_type_id() CASCADE;
+DROP FUNCTION IF EXISTS f_check_address_encoded_form() CASCADE;
 DROP FUNCTION IF EXISTS f_check_address_balance() CASCADE;
 DROP FUNCTION IF EXISTS f_lower_transactions_uids() CASCADE;
 DROP FUNCTION IF EXISTS f_check_transactions_fee() CASCADE;
@@ -1112,6 +1147,11 @@ CREATE TRIGGER tr_address_address_state_type_id_resolve BEFORE INSERT OR UPDATE 
 FOR EACH ROW
 EXECUTE PROCEDURE f_resolve_address_address_state_type_id();
 
+CREATE CONSTRAINT TRIGGER tr_address_encoded_form_check AFTER INSERT OR UPDATE OF address_type_id, encoded_form ON address
+INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE PROCEDURE f_check_address_encoded_form();
+
 CREATE CONSTRAINT TRIGGER tr_address_balance_check AFTER INSERT OR UPDATE OF balance ON address
 INITIALLY DEFERRED
 FOR EACH ROW
@@ -1183,6 +1223,7 @@ DROP TRIGGER IF EXISTS tr_wallet_updated_at_refresh ON wallet CASCADE;
 DROP TRIGGER IF EXISTS tr_address_type_code_upper ON address_type CASCADE;
 DROP TRIGGER IF EXISTS tr_address_type_updated_at_refresh ON address_type CASCADE;
 DROP TRIGGER IF EXISTS tr_address_address_state_type_id_resolve ON address CASCADE;
+DROP TRIGGER IF EXISTS tr_address_encoded_form_check ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_balance_check ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_updated_at_refresh ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_book_entry_updated_at_refresh ON address_book_entry CASCADE;
@@ -1294,7 +1335,9 @@ GRANT EXECUTE ON FUNCTION gen_random_uuid() TO bitplexus_customer, bitplexus_dbm
 GRANT EXECUTE ON FUNCTION gen_salt(type TEXT, iter_count INTEGER) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_decode_uri(in_text TEXT) TO bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_encode_uri(in_text TEXT) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_to_smallint(in_integer INTEGER) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_to_timestamp(in_timestamptz TIMESTAMP WITH TIME ZONE) TO bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_change_member_password(in_username VARCHAR(20), in_old_password VARCHAR(255), in_new_password VARCHAR(255)) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_btc_supply(in_block_height INTEGER) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_estimate_btc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_ltc_supply(in_block_height INTEGER) TO bitplexus_employee, bitplexus_dbm;
