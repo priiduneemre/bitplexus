@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-07-08 14:09:27*/
+/*Last modified:    2015-07-09 21:59:20*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -540,6 +540,11 @@ DROP INDEX IF EXISTS uidx_employee_role_employee_id_role_id;
 /*6. DDL - Functions*/
 /*6.1 Regular functions*/
 /*6.1.1 Creation statements*/
+CREATE OR REPLACE FUNCTION f_convert_to_usd(in_amount NUMERIC(23, 8), in_unit_price NUMERIC(23, 8), in_scale SMALLINT) 
+RETURNS NUMERIC AS $$
+SELECT round((in_amount * in_unit_price), in_scale) WHERE in_scale >= 0 AND in_scale <= 100;
+$$ LANGUAGE sql IMMUTABLE LEAKPROOF STRICT;
+
 CREATE OR REPLACE FUNCTION f_decode_uri(in_text TEXT) RETURNS TEXT AS $$
 from urllib.parse import unquote
 return unquote(in_text)
@@ -567,6 +572,24 @@ WITH affected_member AS (
 )
 SELECT EXISTS (SELECT 1 FROM affected_member);
 $$ LANGUAGE sql STRICT;
+
+CREATE OR REPLACE FUNCTION f_get_member_roles(in_username VARCHAR(20)) RETURNS VARCHAR(30)[] AS $$
+WITH requested_member AS (
+    SELECT * 
+    FROM member AS m INNER JOIN person AS p ON m.member_id = p.person_id 
+    WHERE m.username = in_username AND m.is_active = TRUE
+), active_roles AS (
+    SELECT 'CUSTOMER' AS role_code 
+    FROM customer AS c WHERE c.customer_id = (SELECT person_id FROM requested_member)
+    UNION ALL SELECT 'EMPLOYEE' AS role_code 
+    FROM employee AS e WHERE e.employee_id = (SELECT person_id FROM requested_member) AND e.is_active = TRUE
+    UNION ALL SELECT r.code AS role_code 
+    FROM employee AS e INNER JOIN employee_role AS er ON e.employee_id = er.employee_id
+    INNER JOIN role AS r ON er.role_id = r.role_id 
+    WHERE e.employee_id = (SELECT person_id FROM requested_member) AND er.is_active = TRUE
+)
+SELECT CAST(array_agg(role_code) AS VARCHAR(30)[]) FROM active_roles;
+$$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_calc_btc_supply(in_block_height INTEGER) RETURNS NUMERIC(23, 8) AS $$
 DECLARE
@@ -647,6 +670,15 @@ BEGIN
     END IF;
 END
 $$ LANGUAGE plpgsql STABLE STRICT;
+
+CREATE OR REPLACE FUNCTION f_get_wallet_subbalance(in_wallet_id INTEGER, in_chain_code VARCHAR(30)) 
+RETURNS NUMERIC(23, 8) AS $$
+SELECT sum(a.balance) AS wallet_balance_by_chain
+FROM wallet AS w INNER JOIN address AS a ON w.wallet_id = a.wallet_id
+INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
+INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id
+WHERE w.wallet_id = in_wallet_id AND ch.code = in_chain_code;
+$$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) 
 RETURNS SMALLINT AS $$
@@ -799,15 +831,18 @@ END
 $$ LANGUAGE plpgsql STABLE STRICT;
 
 /*6.1.2 Removal statements*/
+DROP FUNCTION IF EXISTS f_convert_to_usd(in_amount NUMERIC(23, 8), in_unit_price NUMERIC(23, 8), in_scale SMALLINT) CASCADE;
 DROP FUNCTION IF EXISTS f_decode_uri(in_text TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_encode_uri(in_text TEXT) CASCADE;
 DROP FUNCTION IF EXISTS f_to_smallint(in_integer INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_to_timestamp(in_timestamptz TIMESTAMP WITH TIME ZONE) CASCADE;
 DROP FUNCTION IF EXISTS f_change_member_password(in_username VARCHAR(20), in_old_password VARCHAR(255), in_new_password VARCHAR(255)) CASCADE;
+DROP FUNCTION IF EXISTS f_get_member_roles(in_username VARCHAR(20)) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_btc_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_estimate_btc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_ltc_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_estimate_ltc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) CASCADE;
+DROP FUNCTION IF EXISTS f_get_wallet_subbalance(in_wallet_id INTEGER, in_chain_code VARCHAR(30)) CASCADE;
 DROP FUNCTION IF EXISTS f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) CASCADE;
 DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_code VARCHAR(30), in_label_fragment VARCHAR(60)) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_btc_transaction_fee(in_binary_size INTEGER) CASCADE;
@@ -1333,15 +1368,18 @@ GRANT USAGE ON SEQUENCE seq_visit_visit_id TO bitplexus_customer, bitplexus_empl
 GRANT EXECUTE ON FUNCTION crypt(password TEXT, salt TEXT) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION gen_random_uuid() TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION gen_salt(type TEXT, iter_count INTEGER) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_convert_to_usd(in_amount NUMERIC(23, 8), in_unit_price NUMERIC(23, 8), in_scale SMALLINT) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_decode_uri(in_text TEXT) TO bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_encode_uri(in_text TEXT) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_to_smallint(in_integer INTEGER) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_to_timestamp(in_timestamptz TIMESTAMP WITH TIME ZONE) TO bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_change_member_password(in_username VARCHAR(20), in_old_password VARCHAR(255), in_new_password VARCHAR(255)) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_get_member_roles(in_username VARCHAR(20)) TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_btc_supply(in_block_height INTEGER) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_estimate_btc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_ltc_supply(in_block_height INTEGER) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_estimate_ltc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) TO bitplexus_employee, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_get_wallet_subbalance(in_wallet_id INTEGER, in_chain_code VARCHAR(30)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_code VARCHAR(30), in_label_fragment VARCHAR(60)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_btc_transaction_fee(in_binary_size INTEGER) TO bitplexus_customer, bitplexus_dbm;

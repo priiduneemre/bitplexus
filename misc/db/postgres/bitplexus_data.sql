@@ -2,7 +2,7 @@
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
 /*File description: DML statements for populating the application's database with seed data (optimized for PostgreSQL 9.4.1).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-07-08 14:09:30*/
+/*Last modified:    2015-07-09 21:59:20*/
 
 
 /*1. DML - Regular tables*/
@@ -121,21 +121,30 @@ INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, 
 INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (7, 5, 30, 'Clark Poole''s personal address #1', '2015-05-31 09:00:51');
 INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (8, 5, 31, 'Garrett Beck''s personal address #1', '2015-05-31 09:06:13');
 
-/*Table 'transactions': data parsed automatically (via lazy loading) from the block chain.*/
-INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (1, 2, 'd9e9c057-23b1-4b75-a9bc-a3f2dd729123', 'bc3789df89cba9f6f558d4b3dc5cdc93be88c74f5d4f105040ca9ddc767e3f4c', '2015-06-12 11:57:34', NULL, NULL, NULL, 308, 0.00010000, 244.26, 'Sample transaction to my friend Bob.', '2015-06-12 11:57:36', NULL);
-INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (2, 2, '95305bfa-10fb-11e5-9493-1697f925ec7b', '1d16061cea3d07065d34b499681d82251a3c979709156dfc8fe8f90a21ce64c9', '2015-06-12 12:06:19', NULL, NULL, NULL, 259, 0.00010000, 239.51, 'Alimony for that bitch Stacy.', '2015-06-12 12:06:21', NULL);
-INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (3, 2, 'e6fcf9a2-1119-11e5-9493-1697f925ec7b', '3a9e8318c9c0478ba6e892043c31a58335f67d0bde36022fdf2741395e053674', '2015-06-02 23:48:55', NULL, NULL, NULL, 673, 0.00000000, 240.78, 'Payment for the hit on Koolaid Man.', '2015-06-02 23:48:57', NULL);
+INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (1, 4, '155ab5f1-7d36-485a-a378-f1c007bf6121', '440b19baf347d16586f0aed1355b571cb8241c818aa74da92b1fd8660e7736d2', '2015-06-02 10:21:56', '2015-06-02 11:38:40', '2015-06-02 11:45:44', 446398, 192, 0.0002, 222.40, NULL, '2015-06-02 10:21:56', '2015-06-02 11:45:44');
+INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (2, 4, 'dd06fd59-e94b-4616-b70f-70777a9df88a', '8e1b1faeb35cfb9144e38f0049c5787221494306a080d3a51deec3f1cb8f3109', '2015-06-02 15:30:44', '2015-06-02 16:31:07', '2015-06-02 17:52:53', 446483, 225, 0.0001, 223.61, NULL, '2015-06-02 15:30:44', '2015-06-02 17:52:53');
+INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (3, 4, 'be320f50-d78a-42a5-b5a4-ad9a6ca4b0f6', '26fab599f7cc7477d01347963f26f5a8da120910af7c63720c21e082d8cab10e', '2015-06-02 10:45:04', '2015-06-02 12:16:54', '2015-06-02 12:48:09', 446406, 192, 0.0002, 222.40, NULL, '2015-06-02 10:45:04', '2015-06-02 12:48:09');
+INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (4, 4, '49fb8612-50cf-4e21-8956-243885870a14', '12e210bb33cf953f0f3cbceb40ad1102fcfe7336f917b301a9b787dc81f7ddef', '2015-06-02 10:51:49', '2015-06-02 12:23:59', '2015-06-02 12:33:14', 446409, 192, 0.0002, 222.40, NULL, '2015-06-02 10:51:49', '2015-06-02 12:33:14');
+INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (5, 4, '2d80218d-3a9c-4679-8fb2-e31540c799f2', '8943ca3a7a2475bf84ff054fcc87556a97f88a1b6693c299e66c1733958ec93f', '2015-06-02 17:52:43', '2015-06-02 20:04:58', '2015-06-02 20:23:59', 446503, 192, 0.0002, 224.91, NULL, '2015-06-02 17:52:43', '2015-06-02 20:23:59');
+INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (6, 4, 'c39495b3-e70a-48c3-9056-1f21a47e0441', '39fcab09e65e4c14fd963866f2d5505c8cfdf44f00e7fd0dbfcc883156e40bed', '2015-06-02 17:56:38', '2015-06-02 20:04:58', '2015-06-02 20:23:59', 446503, 225, 0.0001, 224.91, NULL, '2015-06-02 17:56:38', '2015-06-02 20:23:59');
+INSERT INTO transactions (transaction_id, transaction_status_type_id, local_uid, network_uid, received_at, confirmed_at, completed_at, block_height, binary_size, fee, unit_price, note, logged_at, updated_at) VALUES (7, 4, '0d785629-4045-4038-aa02-b59b89269e95', 'dbd27c43be43710d14f20cb95a5d8e77403a3c7bfa8d80f062e41dc6d84b9fed', '2015-06-02 10:59:17', '2015-06-02 12:33:14', '2015-06-02 12:36:09', 446411, 191, 0.0002, 222.40, NULL, '2015-06-02 10:59:17', '2015-06-02 12:36:09');
 
-/*Table 'transaction_endpoint': data parsed automatically (via lazy loading) from the block chain.*/
-INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (1, 1, 16, 1, '0.95', '2015-06-12 11:57:36');
-INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (2, 1, 17, 2, '0.6', '2015-06-12 11:57:36');
-INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (3, 1, 18, 3, '0.34', '2015-06-12 11:57:36');
-INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (4, 2, 19, 1, '50.9', '2015-06-12 12:06:21');
-INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (5, 2, 20, 2, '2', '2015-06-12 12:06:21');
-INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (6, 2, 21, 3, '48.89', '2015-06-12 12:06:21');
-INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (8, 3, 22, 1, '3.8', '2015-06-02 23:48:57');
-INSERT INTO transaction_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (9, 3, 23, 2, '3.79', '2015-06-02 23:48:57');
-
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (1, 1, 32, 1, 0.2002, '2015-06-02 10:21:56');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (2, 1, 1, 2, 0.2, '2015-06-02 10:21:56');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (3, 2, 1, 1, 0.2, '2015-06-02 15:30:44');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (4, 2, 24, 2, 0.13, '2015-06-02 15:30:44');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (5, 2, 2, 3, 0.0699, '2015-06-02 15:30:44');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (6, 3, 33, 1, 0.0012, '2015-06-02 10:45:04');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (7, 3, 3, 2, 0.001, '2015-06-02 10:45:04');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (8, 4, 34, 1, 0.0012, '2015-06-02 10:51:49');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (9, 4, 3, 2, 0.001, '2015-06-02 10:51:49');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (10, 5, 35, 1, 0.3502, '2015-06-02 17:52:43');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (11, 5, 10, 2, 0.35, '2015-06-02 17:52:43');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (12, 6, 10, 1, 0.35, '2015-06-02 17:56:38');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (13, 6, 27, 2, 0.21, '2015-06-02 17:56:38');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (14, 6, 11, 3, 0.1399, '2015-06-02 17:56:38');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (15, 7, 36, 1, 0.0072, '2015-06-02 10:59:17');
+INSERT INTO transcation_endpoint (transaction_endpoint_id, transaction_id, address_id, transaction_endpoint_type_id, amount, logged_at) VALUES (16, 7, 12, 2, 0.007, '2015-06-02 10:59:17');
 
 INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (1, 1, 0.2, 'Please note that the emergency loan you have requested (0.15 tBTC + 0.05 tBTC interest) is due for repayment on June 3, 2015.', '2015-03-24 16:03:47');
 INSERT INTO payment_request (payment_request_id, address_id, amount, message, requested_at) VALUES (2, 3, 0.001, 'Cookie & ice cream fund (donate 0,001 tBTC)', '2015-03-24 16:10:22');
@@ -173,7 +182,7 @@ TRUNCATE TABLE visit CASCADE;
 
 /*2. DML - Reference tables*/
 /*2.1 Insertion statements*/
-INSERT INTO role (role_id, code, name) VALUES (1, 'WEB_EDITOR', 'Web Editor');
+INSERT INTO role (role_id, code, name) VALUES (1, 'WEBSITE_EDITOR', 'Website Editor');
 INSERT INTO role (role_id, code, name) VALUES (2, 'SUPPORT_ENGINEER', 'Customer Support Engineer');
 INSERT INTO role (role_id, code, name) VALUES (3, 'DATABASE_MANAGER', 'Database Manager');
 INSERT INTO role (role_id, code, name) VALUES (4, 'DATABASE_ADMIN', 'Database Administrator');
