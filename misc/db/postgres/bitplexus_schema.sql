@@ -1,8 +1,8 @@
 
 /*Project:          Bitplexus - a proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)*/
-/*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.1).*/
+/*File description: DDL & DCL statements for constructing the application's database (optimized for PostgreSQL 9.4.4).*/
 /*Author:           Priidu Neemre (priidu@neemre.com)*/
-/*Last modified:    2015-07-10 19:55:44*/
+/*Last modified:    2015-07-13 15:17:18*/
 
 
 /*1. DDL - Root-level objects (databases, roles etc.)*/
@@ -789,6 +789,17 @@ INNER JOIN address AS a ON te.address_id = a.address_id
 WHERE t.network_uid = in_network_uid;
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
+CREATE OR REPLACE FUNCTION f_get_transaction_overview(in_transaction_id BIGINT) 
+RETURNS TABLE (input_sum NUMERIC(23, 8), output_sum NUMERIC(23, 8), change_sum NUMERIC(23, 8), fee NUMERIC(23, 8)) AS $$
+SELECT sum(CASE code WHEN 'INPUT' THEN amount ELSE 0 END) AS input_sum, 
+    sum(CASE code WHEN 'OUTPUT_MAIN' THEN amount ELSE 0 END) AS output_sum,
+    sum(CASE code WHEN 'OUTPUT_CHANGE' THEN amount ELSE 0 END) AS change_sum, t.fee
+FROM transactions AS t INNER JOIN transaction_endpoint AS te ON t.transaction_id = te.transaction_id
+INNER JOIN transaction_endpoint_type AS ted ON te.transaction_endpoint_type_id = ted.transaction_endpoint_type_id
+WHERE t.transaction_id = in_transaction_id
+GROUP BY t.fee;
+$$ LANGUAGE sql STABLE LEAKPROOF STRICT;
+
 CREATE OR REPLACE FUNCTION f_build_payment_request_uri(in_payment_request_id BIGINT) RETURNS VARCHAR(1024) AS $$ 
 DECLARE
     AMOUNTPARAM_NAME CONSTANT VARCHAR := 'amount';
@@ -854,6 +865,7 @@ DROP FUNCTION IF EXISTS f_confirm_transactions(in_block_height INTEGER, in_block
 DROP FUNCTION IF EXISTS f_drop_transactions(in_txn_timeout INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_estimate_transaction_fee(in_currency_name VARCHAR(25), in_hex_transaction TEXT, in_fee_coefficient NUMERIC(3, 1)) CASCADE;
 DROP FUNCTION IF EXISTS f_get_transaction_addresses(in_network_uid CHAR(64)) CASCADE;
+DROP FUNCTION IF EXISTS f_get_transaction_overview(in_transaction_id BIGINT) CASCADE;
 DROP FUNCTION IF EXISTS f_build_payment_request_uri(in_payment_request_id BIGINT) CASCADE;
 
 /*6.2 Trigger functions*/
@@ -1061,6 +1073,29 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION f_check_combined_transaction_endpoint_amount() RETURNS TRIGGER AS $$
+DECLARE
+    txn_overview RECORD;
+BEGIN
+    SELECT * INTO STRICT txn_overview FROM f_get_transaction_overview(NEW.transaction_id);
+    IF (txn_overview.input_sum <> txn_overview.output_sum + txn_overview.change_sum + txn_overview.fee) THEN
+        RAISE SQLSTATE '30209';
+    END IF;
+    IF (TG_OP = 'UPDATE' AND OLD.transaction_id <> NEW.transaction_id) THEN
+        SELECT * INTO STRICT txn_overview FROM f_get_transaction_overview(OLD.transaction_id);
+        IF (txn_overview.input_sum <> txn_overview.output_sum + txn_overview.change_sum + txn_overview.fee) THEN
+            RAISE SQLSTATE '30209';
+        END IF;
+    END IF;
+    RETURN NULL;
+    EXCEPTION
+        WHEN SQLSTATE '30209' THEN
+            RAISE EXCEPTION '% failed (table ''%'') - input amount (amount = %) must be equal to the output amount (amount = %) + txn fee (fee = %).',
+                TG_OP, TG_TABLE_NAME, txn_overview.input_sum, txn_overview.output_sum + txn_overview.change_sum, 
+                txn_overview.fee USING ERRCODE = '30209';
+END
+$$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE FUNCTION f_check_payment_request_address_id() RETURNS TRIGGER AS $$
 DECLARE
     wallet_id INTEGER;
@@ -1068,7 +1103,7 @@ BEGIN
     SELECT a.wallet_id INTO STRICT wallet_id FROM address AS a WHERE a.address_id = NEW.address_id;
     IF (wallet_id IS NULL) THEN
         RAISE EXCEPTION '% failed (table ''%'') - the recipient (address_id = %) must be an ''internal'' (wallet) address, not an ''external'' (non-wallet) one.',
-            TG_OP, TG_TABLE_NAME, NEW.address_id USING ERRCODE = '30209';
+            TG_OP, TG_TABLE_NAME, NEW.address_id USING ERRCODE = '30210';
     END IF;
     RETURN NULL;
 END
@@ -1085,7 +1120,7 @@ BEGIN
     WHERE pr.payment_request_id = NEW.payment_request_id;
     IF (NEW.amount > available_supply) THEN
         RAISE EXCEPTION '% failed (table ''%'') - requested amount (amount = %) must be lower than the chain''s total supply (available_supply = %).',
-            TG_OP, TG_TABLE_NAME, NEW.amount, available_supply USING ERRCODE = '30210';
+            TG_OP, TG_TABLE_NAME, NEW.amount, available_supply USING ERRCODE = '30211';
     END IF;
     RETURN NULL;
 END
@@ -1115,6 +1150,7 @@ DROP FUNCTION IF EXISTS f_check_transactions_fee() CASCADE;
 DROP FUNCTION IF EXISTS f_check_transaction_endpoint_address_id() CASCADE;
 DROP FUNCTION IF EXISTS f_check_transaction_endpoint_transaction_endpoint_type_id() CASCADE;
 DROP FUNCTION IF EXISTS f_check_transaction_endpoint_amount() CASCADE;
+DROP FUNCTION IF EXISTS f_check_combined_transaction_endpoint_amount() CASCADE;
 DROP FUNCTION IF EXISTS f_check_payment_request_address_id() CASCADE;
 DROP FUNCTION IF EXISTS f_check_payment_request_amount() CASCADE;
 DROP FUNCTION IF EXISTS f_lower_visit_ip_address() CASCADE;
@@ -1228,6 +1264,11 @@ INITIALLY DEFERRED
 FOR EACH ROW
 EXECUTE PROCEDURE f_check_transaction_endpoint_amount();
 
+CREATE CONSTRAINT TRIGGER tr_transaction_endpoint_amount_check_combined AFTER INSERT OR UPDATE OF transaction_id, transaction_endpoint_type_id, amount ON transaction_endpoint
+INITIALLY DEFERRED
+FOR EACH ROW
+EXECUTE PROCEDURE f_check_combined_transaction_endpoint_amount();
+
 CREATE CONSTRAINT TRIGGER tr_payment_request_address_id_check AFTER INSERT OR UPDATE OF address_id ON payment_request
 INITIALLY DEFERRED
 FOR EACH ROW
@@ -1268,6 +1309,7 @@ DROP TRIGGER IF EXISTS tr_transactions_updated_at_refresh ON transactions CASCAD
 DROP TRIGGER IF EXISTS tr_transaction_endpoint_address_id_check ON transaction_endpoint CASCADE;
 DROP TRIGGER IF EXISTS tr_transaction_endpoint_transaction_endpoint_type_id_check ON transaction_endpoint CASCADE;
 DROP TRIGGER IF EXISTS tr_transaction_endpoint_amount_check ON transaction_endpoint CASCADE;
+DROP TRIGGER IF EXISTS tr_transaction_endpoint_amount_check_combined ON transaction_endpoint CASCADE;
 DROP TRIGGER IF EXISTS tr_payment_request_address_id_check ON payment_request CASCADE;
 DROP TRIGGER IF EXISTS tr_payment_request_amount_check ON payment_request CASCADE;
 DROP TRIGGER IF EXISTS tr_visit_ip_address_lower ON visit CASCADE;
@@ -1391,6 +1433,7 @@ GRANT EXECUTE ON FUNCTION f_confirm_transactions(in_block_height INTEGER, in_blo
 GRANT EXECUTE ON FUNCTION f_drop_transactions(in_txn_timeout INTEGER) TO bitplexus_drone, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_estimate_transaction_fee(in_currency_name VARCHAR(25), in_hex_transaction TEXT, in_fee_coefficient NUMERIC(3, 1)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_get_transaction_overview(in_transaction_id BIGINT) TO bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_build_payment_request_uri(in_payment_request_id BIGINT) TO bitplexus_customer, bitplexus_dbm;
 
 /*8.3 Revocation statements*/
