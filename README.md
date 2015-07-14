@@ -1,2 +1,3 @@
-# bitplexus
-A proof-of-concept online wallet service for multiple cryptocurrencies (Bitcoin, Litecoin etc.)
+##bitplexus
+
+A proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)
