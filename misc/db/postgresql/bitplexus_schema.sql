@@ -73,7 +73,7 @@ CREATE TABLE member (
     CONSTRAINT ak_member_username UNIQUE (username),
     CONSTRAINT ak_member_email_address UNIQUE (email_address),
     
-    CONSTRAINT ck_member_password_bcrypt_params CHECK (password ~ '^\$2a\$12\$.{53}$');,
+    CONSTRAINT ck_member_password_bcrypt_params CHECK (password ~ '^\$2a\$12\$.{53}$'),
     CONSTRAINT ck_member_phone_number_length CHECK (length(phone_number) > 7),
     CONSTRAINT ck_member_phone_number_valid CHECK (phone_number ~ '^[0-9]*$'),
     CONSTRAINT ck_member_failed_logins_in_range CHECK (failed_logins >= 0),
@@ -299,7 +299,7 @@ CREATE TABLE address (
     CONSTRAINT ck_address_indexed_at_in_range CHECK (indexed_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_address_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_address_updated_at_chrono_order CHECK (updated_at >= indexed_at)
-);    
+);
 
 CREATE TABLE address_book_entry (
     address_book_entry_id   BIGSERIAL,
@@ -450,7 +450,6 @@ DROP TABLE IF EXISTS visit CASCADE;
 CREATE INDEX idx_member_updated_by ON member USING btree (updated_by);
 CREATE INDEX idx_employee_role_employee_id ON employee_role USING btree (employee_id);
 CREATE INDEX idx_employee_role_role_id ON employee_role USING btree (role_id);
-CREATE INDEX idx_currency_created_by ON currency USING btree (created_by);
 CREATE INDEX idx_currency_updated_by ON currency USING btree (updated_by);
 CREATE INDEX idx_chain_currency_id ON chain USING btree (currency_id);
 CREATE INDEX idx_chain_created_by ON chain USING btree (created_by);
@@ -476,7 +475,6 @@ CREATE INDEX idx_visit_member_id ON visit USING btree (member_id);
 DROP INDEX IF EXISTS idx_member_updated_by;
 DROP INDEX IF EXISTS idx_employee_role_employee_id;
 DROP INDEX IF EXISTS idx_employee_role_role_id;
-DROP INDEX IF EXISTS idx_currency_created_by;
 DROP INDEX IF EXISTS idx_currency_updated_by;
 DROP INDEX IF EXISTS idx_chain_currency_id;
 DROP INDEX IF EXISTS idx_chain_created_by;
@@ -759,7 +757,7 @@ $$ LANGUAGE plpgsql STRICT;
 CREATE OR REPLACE FUNCTION f_drop_transactions(in_txn_timeout INTEGER) RETURNS CHAR(64)[] AS $$
 WITH dropped_transactions AS (
     UPDATE transactions SET transaction_status_type_id = 6
-    WHERE extract(epoch FROM CURRENT_TIMESTAMP(0)) - received_at >= in_txn_timeout AND transaction_status_type_id = 2
+    WHERE extract(epoch FROM (CURRENT_TIMESTAMP(0) - received_at)) >= in_txn_timeout AND transaction_status_type_id = 2
     RETURNING network_uid
 )
 SELECT array_agg(network_uid) FROM dropped_transactions;
