@@ -1,16 +1,19 @@
 package com.neemre.bitplexus.backend.model.reference;
 
+import javax.persistence.MappedSuperclass;
+
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
-import com.neemre.bitplexus.backend.model.Entity;
+import com.neemre.bitplexus.backend.model.BaseEntity;
 
 @Data
 @NoArgsConstructor
 @ToString(callSuper = true)
 @EqualsAndHashCode(callSuper = false)
-public abstract class ReferenceEntity extends Entity {
+@MappedSuperclass
+public abstract class ReferenceEntity extends BaseEntity {
 
 }
