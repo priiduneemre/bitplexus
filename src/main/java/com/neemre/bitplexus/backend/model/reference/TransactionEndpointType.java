@@ -21,10 +21,10 @@ import lombok.ToString;
 public class TransactionEndpointType extends ReferenceEntity {
 
 	@Id
-	@Column(name = "transaction_endpoint_type_id")
+	@Column(name = "transaction_endpoint_type_id", insertable = false, updatable = false)
 	private Short transactionEndpointTypeId;
-	@Column(name = "code")
+	@Column(name = "code", insertable = false, updatable = false)
 	private String code;
-	@Column(name = "name")
+	@Column(name = "name", insertable = false, updatable = false)
 	private String name;
 }

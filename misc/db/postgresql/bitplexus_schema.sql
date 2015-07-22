@@ -333,7 +333,7 @@ CREATE TABLE transactions (
     transaction_status_type_id  SMALLINT        NOT NULL    DEFAULT 1,
     local_uid                   CHAR(36)        NOT NULL    DEFAULT CAST(gen_random_uuid() AS CHAR(36)), 
     network_uid                 CHAR(64)        NOT NULL,
-    received_at                 TIMESTAMP(0)    NOT NULL,
+    received_at                 TIMESTAMP(0),
     confirmed_at                TIMESTAMP(0),
     completed_at                TIMESTAMP(0),
     block_height                INTEGER,

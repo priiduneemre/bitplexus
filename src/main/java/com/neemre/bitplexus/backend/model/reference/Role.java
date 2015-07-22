@@ -21,10 +21,10 @@ import lombok.ToString;
 public class Role extends ReferenceEntity {
 	
 	@Id
-	@Column(name = "role_id")
+	@Column(name = "role_id", insertable = false, updatable = false)
 	private Short roleId;
-	@Column(name = "code")
+	@Column(name = "code", insertable = false, updatable = false)
 	private String code;
-	@Column(name = "name")
+	@Column(name = "name", insertable = false, updatable = false)
 	private String name;
 }

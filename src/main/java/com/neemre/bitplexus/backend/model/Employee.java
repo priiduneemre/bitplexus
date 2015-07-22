@@ -4,8 +4,10 @@ import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.PrimaryKeyJoinColumn;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,21 +22,25 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "employee", schema = "public")
+@PrimaryKeyJoinColumn(name = "employee_id")
 public class Employee extends Person {
 
-	@Id
-	@Column(name = "employee_id")
+	@Column(name = "employee_id", insertable = false, updatable = false)
 	private Integer employeeId;
-	@Column(name = "born_on")
+	@Temporal(TemporalType.DATE)
+	@Column(name = "born_on", updatable = false)
 	private Date bornOn;
 	@Column(name = "iban")
 	private String iban;
-	@Column(name = "employed_on")
+	@Temporal(TemporalType.DATE)
+	@Column(name = "employed_on", updatable = false)
 	private Date employedOn;
-	@Column(name = "resigned_on")
+	@Temporal(TemporalType.DATE)
+	@Column(name = "resigned_on", insertable = false)
 	private Date resignedOn;
 	@Column(name = "is_active")
 	private Boolean isActive;
-	@Column(name = "created_at")
+	@Temporal(TemporalType.TIMESTAMP)
+	@Column(name = "created_at", insertable = false, updatable = false)
 	private Date createdAt;
 }

@@ -4,8 +4,10 @@ import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.Id;
+import javax.persistence.PrimaryKeyJoinColumn;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,11 +22,12 @@ import lombok.ToString;
 @EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "customer", schema = "public")
+@PrimaryKeyJoinColumn(name = "customer_id")
 public class Customer extends Person {
 	
-	@Id
-	@Column(name = "customer_id")
+	@Column(name = "customer_id", insertable = false, updatable = false)
 	private Integer customerId;
-	@Column(name = "created_at")
+	@Temporal(TemporalType.TIMESTAMP)
+	@Column(name = "created_at", insertable = false, updatable = false)
 	private Date createdAt;
 }

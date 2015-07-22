@@ -21,10 +21,10 @@ import lombok.ToString;
 public class AddressStateType extends ReferenceEntity {
 
 	@Id
-	@Column(name = "address_state_type_id")
+	@Column(name = "address_state_type_id", insertable = false, updatable = false)
 	private Short addressStateTypeId;
-	@Column(name = "code")
+	@Column(name = "code", insertable = false, updatable = false)
 	private String code;
-	@Column(name = "name")
+	@Column(name = "name", insertable = false, updatable = false)
 	private String name;
 }

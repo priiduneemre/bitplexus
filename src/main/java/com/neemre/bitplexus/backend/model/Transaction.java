@@ -5,11 +5,16 @@ import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.ManyToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
+import javax.persistence.Temporal;
+import javax.persistence.TemporalType;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,37 +31,44 @@ import com.neemre.bitplexus.backend.model.reference.TransactionStatusType;
 @EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "transactions", schema = "public")
-@SequenceGenerator(name = "seq_transactions_transaction_id", 
-	sequenceName = "seq_transactions_transaction_id", allocationSize = 1)
+@SequenceGenerator(name = "seq_transaction_id", sequenceName = "seq_transactions_transaction_id", 
+		allocationSize = 1)
 public class Transaction extends BaseEntity {
 	
 	@Id
-	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_transactions_transaction_id")
-	@Column(name = "transaction_id")
+	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_transaction_id")
+	@Column(name = "transaction_id", insertable = false, updatable = false)
 	private Long transactionId;
+	@ManyToOne(fetch = FetchType.LAZY, optional = false)
+	@JoinColumn(name = "transaction_status_type_id")
 	private TransactionStatusType transactionStatusType;
-	@Column(name = "local_uid")
+	@Column(name = "local_uid", insertable = false, updatable = false)
 	private String localUid;
-	@Column(name = "network_uid")
+	@Column(name = "network_uid", updatable = false)
 	private String networkUid;
+	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "received_at")
 	private Date receivedAt;
-	@Column(name = "confirmed_at")
+	@Temporal(TemporalType.TIMESTAMP)
+	@Column(name = "confirmed_at", insertable = false)
 	private Date confirmedAt;
-	@Column(name = "completed_at")
+	@Temporal(TemporalType.TIMESTAMP)
+	@Column(name = "completed_at", insertable = false)
 	private Date completedAt;
-	@Column(name = "block_height")
+	@Column(name = "block_height", insertable = false)
 	private Integer blockHeight;
-	@Column(name = "binary_size")
+	@Column(name = "binary_size", updatable = false)
 	private Integer binarySize;
-	@Column(name = "fee")
+	@Column(name = "fee", updatable = false)
 	private BigDecimal fee;
-	@Column(name = "unit_price")
+	@Column(name = "unit_price", updatable = false)
 	private BigDecimal unitPrice;
-	@Column(name = "note")
+	@Column(name = "note", updatable = false)
 	private String note;
-	@Column(name = "logged_at")
+	@Temporal(TemporalType.TIMESTAMP)
+	@Column(name = "logged_at", insertable = false, updatable = false)
 	private Date loggedAt;
-	@Column(name = "updated_at")
+	@Temporal(TemporalType.TIMESTAMP)
+	@Column(name = "updated_at", insertable = false, updatable = false)
 	private Date updatedAt;
 }
