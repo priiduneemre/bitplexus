@@ -14,6 +14,8 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Past;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,18 +36,22 @@ import com.neemre.bitplexus.backend.model.reference.Role;
 		allocationSize = 1)
 public class EmployeeRole extends BaseEntity {
 	
+	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_employee_role_id")
 	@Column(name = "employee_role_id", insertable = false, updatable = false)
 	private Integer employeeRoleId;
+	@NotNull
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "employee_id", updatable = false)
 	private Employee employee;
+	@NotNull
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "role_id", updatable = false)
 	private Role role;
 	@Column(name = "is_active", insertable = false)
 	private Boolean isActive;
+	@Past
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "assigned_at", insertable = false, updatable = false)
 	private Date assignedAt;

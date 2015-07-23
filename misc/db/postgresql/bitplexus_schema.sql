@@ -178,7 +178,7 @@ CREATE TABLE currency (
     CONSTRAINT fk_currency_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
     CONSTRAINT ck_currency_launched_on_in_range CHECK (launched_on BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_currency_block_time_in_range CHECK (block_time > 0 AND block_time < 86400),
+    CONSTRAINT ck_currency_block_time_in_range CHECK (block_time > 0 AND block_time <= 86400),
     CONSTRAINT ck_currency_standard_fee_in_range CHECK (standard_fee >= 0),
     CONSTRAINT ck_currency_website_url_length CHECK (length(website_url) > 2),
     CONSTRAINT ck_currency_created_at_in_range CHECK (created_at BETWEEN '1900-01-01' AND '2100-01-01'),
@@ -358,7 +358,7 @@ CREATE TABLE transactions (
     CONSTRAINT ck_transactions_completed_at_in_range CHECK (completed_at BETWEEN '1900-01-01' AND '2100-01-01'),
     CONSTRAINT ck_transactions_completed_at_chrono_order CHECK (completed_at >= confirmed_at),
     CONSTRAINT ck_transactions_block_height_in_range CHECK (block_height >= 0),
-    CONSTRAINT ck_transactions_binary_size_in_range CHECK (binary_size > 0 AND binary_size < 1000000),
+    CONSTRAINT ck_transactions_binary_size_in_range CHECK (binary_size > 0 AND binary_size <= 1000000),
     CONSTRAINT ck_transactions_fee_in_range CHECK (fee >= 0),
     CONSTRAINT ck_transactions_unit_price_in_range CHECK (unit_price > 0),
     CONSTRAINT ck_transactions_logged_at_in_range CHECK (logged_at BETWEEN '1900-01-01' AND '2100-01-01'),

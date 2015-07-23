@@ -16,6 +16,11 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Past;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -34,25 +39,40 @@ import lombok.ToString;
 @SequenceGenerator(name = "seq_member_id", sequenceName = "seq_member_member_id", allocationSize = 1)
 public class Member extends BaseEntity {
 	
+	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_member_id")
 	@Column(name = "member_id", insertable = false, updatable = false)
 	private Integer memberId;
+	@NotNull 
+	@Size(max = 20)
 	@Column(name = "username", updatable = false)
 	private String username;
+	@NotNull
+	@Size(min = 60, max = 60)
+	@Pattern(regexp = "^\\$2a\\$12\\$.{53}$")
 	@Column(name = "password", updatable = false)
 	private String password;
+	@NotNull
+	@Size(max = 60)
 	@Column(name = "email_address")
 	private String emailAddress;
+	@NotNull
+	@Size(min = 8, max = 15)
+	@Pattern(regexp = "^[0-9]*$")
 	@Column(name = "phone_number")
 	private String phoneNumber;
+	@Min(0) 
 	@Column(name = "failed_logins", insertable = false)
 	private Short failedLogins;
+	@NotNull
 	@Column(name = "is_active")
 	private Boolean isActive;
+	@Past
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "registered_at", insertable = false, updatable = false)
 	private Date registeredAt;
+	@Past
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "updated_at", insertable = false, updatable = false)
 	private Date updatedAt;

@@ -14,6 +14,10 @@ import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Past;
+import javax.validation.constraints.Pattern;
+import javax.validation.constraints.Size;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -31,15 +35,21 @@ import lombok.ToString;
 @SequenceGenerator(name = "seq_visit_id", sequenceName = "seq_visit_visit_id", allocationSize = 1)
 public class Visit extends BaseEntity {
 	
+	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_visit_id")
 	@Column(name = "visit_id", insertable = false, updatable = false)
 	private Long visitId;
+	@NotNull
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "member_id", updatable = false)
 	private Member member;
+	@NotNull 
+	@Size(min = 7, max = 45)
+	@Pattern(regexp = "^[0-9a-f:.]*$")
 	@Column(name = "ip_address", updatable = false)
 	private String ipAddress;
+	@Past
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "login_at", insertable = false, updatable = false)
 	private Date loginAt;

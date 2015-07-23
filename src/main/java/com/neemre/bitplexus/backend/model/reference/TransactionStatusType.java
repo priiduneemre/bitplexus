@@ -4,6 +4,8 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,11 +22,16 @@ import lombok.ToString;
 @Table(name = "transaction_status_type", schema = "public")
 public class TransactionStatusType extends ReferenceEntity {
 	
+	@NotNull
 	@Id
 	@Column(name = "transaction_status_type_id", insertable = false, updatable = false)
 	private Short transactionStatusTypeId;
+	@NotNull
+	@Size(max = 30)
 	@Column(name = "code", insertable = false, updatable = false)
 	private String code;
+	@NotNull
+	@Size(max = 60)
 	@Column(name = "name", insertable = false, updatable = false)
 	private String name;
 }
