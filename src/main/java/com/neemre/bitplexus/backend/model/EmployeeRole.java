@@ -23,6 +23,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Ordering;
 import com.neemre.bitplexus.backend.model.reference.Role;
 
 @Data
@@ -35,7 +37,12 @@ import com.neemre.bitplexus.backend.model.reference.Role;
 @SequenceGenerator(name = "seq_employee_role_id", sequenceName = "seq_employee_role_employee_role_id",
 		allocationSize = 1)
 public class EmployeeRole extends BaseEntity {
-	
+
+	public static final Ordering<EmployeeRole> ACTIVENESS_ORDERING = Ordering.natural().reverse()
+			.nullsLast().onResultOf(new ActivenessExtractor());
+	public static final Ordering<EmployeeRole> NATURAL_ORDERING = ACTIVENESS_ORDERING;
+	private static final long serialVersionUID = 1L;
+
 	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_employee_role_id")
@@ -55,4 +62,25 @@ public class EmployeeRole extends BaseEntity {
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "assigned_at", insertable = false, updatable = false)
 	private Date assignedAt;
+
+
+	public void setEmployee(Employee employee) {
+		if (this.employee != employee) {
+			if (this.employee != null) {
+				this.employee.removeEmployeeRole(this);
+			}
+			this.employee = employee;
+			if (employee != null) {
+				employee.addEmployeeRole(this);
+			} 
+		} 
+	}
+
+	private static class ActivenessExtractor implements Function<EmployeeRole, Boolean> {
+
+		@Override
+		public Boolean apply(EmployeeRole employeeRole) {
+			return employeeRole.getIsActive();
+		}
+	}
 }

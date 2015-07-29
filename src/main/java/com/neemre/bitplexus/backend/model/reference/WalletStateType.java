@@ -22,6 +22,8 @@ import lombok.ToString;
 @Table(name = "wallet_state_type", schema = "public")
 public class WalletStateType extends ReferenceEntity {
 	
+	private static final long serialVersionUID = 1L;
+	
 	@NotNull
 	@Id
 	@Column(name = "wallet_state_type_id", insertable = false, updatable = false)

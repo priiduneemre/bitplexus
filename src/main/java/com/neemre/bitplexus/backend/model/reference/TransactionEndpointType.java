@@ -22,6 +22,8 @@ import lombok.ToString;
 @Table(name = "transaction_endpoint_type", schema = "public")
 public class TransactionEndpointType extends ReferenceEntity {
 
+	private static final long serialVersionUID = 1L;
+	
 	@NotNull
 	@Id
 	@Column(name = "transaction_endpoint_type_id", insertable = false, updatable = false)

@@ -21,6 +21,9 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 import javax.validation.constraints.Size;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Ordering;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -38,6 +41,11 @@ import lombok.ToString;
 		sequenceName = "seq_payment_request_payment_request_id", allocationSize = 1)
 public class PaymentRequest extends BaseEntity {
 
+	public static final Ordering<PaymentRequest> CREATION_TIME_ORDERING = Ordering.natural().reverse()
+			.nullsLast().onResultOf(new CreationTimeExtractor());
+	public static final Ordering<PaymentRequest> NATURAL_ORDERING = CREATION_TIME_ORDERING;
+	private static final long serialVersionUID = 1L;
+	
 	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_payment_request_id")
@@ -59,4 +67,25 @@ public class PaymentRequest extends BaseEntity {
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "requested_at", insertable = false, updatable = false)
 	private Date requestedAt;
+	
+	
+	public void setAddress(Address address) {
+		if (this.address != address) {
+			if (this.address != null) {
+				this.address.removePaymentRequest(this);
+			}
+			this.address = address;
+			if (address != null) {
+				address.addPaymentRequest(this);
+			} 
+		} 
+	}
+	
+	private static class CreationTimeExtractor implements Function<PaymentRequest, Date> {
+
+		@Override
+		public Date apply(PaymentRequest paymentRequest) {
+			return paymentRequest.getRequestedAt();
+		}
+	}
 }

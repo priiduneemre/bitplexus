@@ -22,6 +22,8 @@ import lombok.ToString;
 @Table(name = "address_state_type", schema = "public")
 public class AddressStateType extends ReferenceEntity {
 
+	private static final long serialVersionUID = 1L;
+	
 	@NotNull
 	@Id
 	@Column(name = "address_state_type_id", insertable = false, updatable = false)

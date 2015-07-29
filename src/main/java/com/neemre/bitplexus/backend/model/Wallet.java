@@ -24,6 +24,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Ordering;
 import com.neemre.bitplexus.backend.model.reference.WalletStateType;
 
 @Data
@@ -36,6 +38,14 @@ import com.neemre.bitplexus.backend.model.reference.WalletStateType;
 @SequenceGenerator(name = "seq_wallet_id", sequenceName = "seq_wallet_wallet_id", allocationSize = 1)
 public class Wallet extends BaseEntity {
 
+	public static final Ordering<Wallet> NAME_ORDERING = Ordering.natural().nullsLast()
+			.onResultOf(new NameExtractor());
+	public static final Ordering<Wallet> WALLET_STATE_TYPE_ORDERING = Ordering.natural()
+			.nullsLast().onResultOf(new WalletStateTypeExtractor());
+	public static final Ordering<Wallet> NATURAL_ORDERING = WALLET_STATE_TYPE_ORDERING
+			.compound(NAME_ORDERING);
+	private static final long serialVersionUID = 1L;
+	
 	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_wallet_id")
@@ -59,5 +69,37 @@ public class Wallet extends BaseEntity {
 	@Past
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "updated_at", insertable = false, updatable = false)
-	private Date updatedAt;   
+	private Date updatedAt;
+	
+
+	public void setCustomer(Customer customer) {
+		if (this.customer != customer) {
+			if (this.customer != null) {
+				this.customer.removeWallet(this);
+			}
+			this.customer = customer;
+			if (customer != null) {
+				customer.addWallet(this);
+			} 
+		} 
+	}
+
+	private static class NameExtractor implements Function<Wallet, String> {
+
+		@Override
+		public String apply(Wallet wallet) {
+			return wallet.getName();
+		}
+	}
+
+	private static class WalletStateTypeExtractor implements Function<Wallet, Short> {
+
+		@Override
+		public Short apply(Wallet wallet) {
+			if (wallet.getWalletStateType() != null) {
+				return wallet.getWalletStateType().getWalletStateTypeId();
+			}
+			return null;
+		}
+	}
 }

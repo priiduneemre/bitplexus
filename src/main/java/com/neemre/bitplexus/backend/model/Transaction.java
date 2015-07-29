@@ -1,8 +1,12 @@
 package com.neemre.bitplexus.backend.model;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
@@ -11,6 +15,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -24,10 +30,12 @@ import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 import com.neemre.bitplexus.backend.model.reference.TransactionStatusType;
@@ -35,13 +43,15 @@ import com.neemre.bitplexus.backend.model.reference.TransactionStatusType;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(callSuper = true)
+@ToString(callSuper = true, exclude = {"transactionEndpoints"})
 @EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "transactions", schema = "public")
 @SequenceGenerator(name = "seq_transaction_id", sequenceName = "seq_transactions_transaction_id", 
 		allocationSize = 1)
 public class Transaction extends BaseEntity {
+	
+	private static final long serialVersionUID = 1L;
 	
 	@NotNull
 	@Id
@@ -99,4 +109,33 @@ public class Transaction extends BaseEntity {
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "updated_at", insertable = false, updatable = false)
 	private Date updatedAt;
+	
+	@Setter(AccessLevel.NONE)
+	@OneToMany(cascade = {CascadeType.PERSIST}, fetch = FetchType.LAZY, mappedBy = "transaction")
+	@OrderBy("transactionEndpointType")
+	private List<TransactionEndpoint> transactionEndpoints = new ArrayList<TransactionEndpoint>();
+	
+	
+	public List<TransactionEndpoint> getTransactionEndpoints() {
+		return Collections.unmodifiableList(transactionEndpoints);
+	}
+	
+	public void addTransactionEndpoint(TransactionEndpoint transactionEndpoint) {
+		if (transactionEndpoint != null) {
+			if (!transactionEndpoints.contains(transactionEndpoint)) {
+				transactionEndpoints.add(transactionEndpoint);
+				Collections.sort(transactionEndpoints, TransactionEndpoint.NATURAL_ORDERING);
+				transactionEndpoint.setTransaction(this);
+			}
+		}
+	}
+
+	public void removeTransactionEndpoint(TransactionEndpoint transactionEndpoint) {
+		if (transactionEndpoint != null) {
+			if (transactionEndpoints.contains(transactionEndpoint)) {
+				transactionEndpoints.remove(transactionEndpoint);
+				transactionEndpoint.setTransaction(null);
+			}
+		}
+	}
 }

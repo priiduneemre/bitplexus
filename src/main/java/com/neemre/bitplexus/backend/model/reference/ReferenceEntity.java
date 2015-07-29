@@ -16,4 +16,5 @@ import com.neemre.bitplexus.backend.model.BaseEntity;
 @MappedSuperclass
 public abstract class ReferenceEntity extends BaseEntity {
 
+	private static final long serialVersionUID = 1L;
 }

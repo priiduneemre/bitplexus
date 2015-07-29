@@ -28,6 +28,8 @@ import lombok.ToString;
 @PrimaryKeyJoinColumn(name = "person_id")
 public class Person extends Member {
 	
+	private static final long serialVersionUID = 1L;
+	
 	@NotNull
 	@Column(name = "person_id", insertable = false, updatable = false)
 	private Integer personId;

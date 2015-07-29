@@ -1,7 +1,10 @@
 package com.neemre.bitplexus.backend.model;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -11,6 +14,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -23,16 +28,18 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 import javax.validation.constraints.Size;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(callSuper = true)
+@ToString(callSuper = true, exclude = {"chains"})
 @EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "currency", schema = "public")
@@ -40,6 +47,8 @@ import lombok.ToString;
 		allocationSize = 1)
 public class Currency extends BaseEntity {
 
+	private static final long serialVersionUID = 1L;
+	
 	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_currency_id")
@@ -85,4 +94,33 @@ public class Currency extends BaseEntity {
 	@ManyToOne(fetch = FetchType.LAZY, optional = true)
 	@JoinColumn(name = "updated_by", insertable = false)
 	private Employee updatedBy;
+	
+	@Setter(AccessLevel.NONE)
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = "currency")
+	@OrderBy("isOperational DESC, name")
+	private List<Chain> chains = new ArrayList<Chain>();
+	
+	
+	public List<Chain> getChains() {
+		return Collections.unmodifiableList(chains);
+	}
+	
+	public void addChain(Chain chain) {
+		if (chain != null) {
+			if (!chains.contains(chain)) {
+				chains.add(chain);
+				Collections.sort(chains, Chain.NATURAL_ORDERING);
+				chain.setCurrency(this);
+			}
+		}
+	}
+
+	public void removeChain(Chain chain) {
+		if (chain != null) {
+			if (chains.contains(chain)) {
+				chains.remove(chain);
+				chain.setCurrency(null);
+			}
+		}
+	}
 }

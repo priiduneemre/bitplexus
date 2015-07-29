@@ -1,7 +1,10 @@
 package com.neemre.bitplexus.backend.model;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -11,6 +14,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.OneToMany;
+import javax.persistence.OrderBy;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -22,10 +27,12 @@ import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 import lombok.ToString;
 
 import com.neemre.bitplexus.backend.model.reference.AddressStateType;
@@ -33,13 +40,15 @@ import com.neemre.bitplexus.backend.model.reference.AddressStateType;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@ToString(callSuper = true)
+@ToString(callSuper = true, exclude = {"paymentRequests"})
 @EqualsAndHashCode(callSuper = false)
 @Entity
 @Table(name = "address", schema = "public")
 @SequenceGenerator(name = "seq_address_id", sequenceName = "seq_address_address_id", 
 		allocationSize = 1)
 public class Address extends BaseEntity {
+	
+	private static final long serialVersionUID = 1L;
 	
 	@NotNull
 	@Id
@@ -76,4 +85,33 @@ public class Address extends BaseEntity {
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "updated_at", insertable = false, updatable = false)
 	private Date updatedAt;
+	
+	@Setter(AccessLevel.NONE)
+	@OneToMany(fetch = FetchType.LAZY, mappedBy = "address")
+	@OrderBy("requested_at DESC")
+	private List<PaymentRequest> paymentRequests = new ArrayList<PaymentRequest>();
+	
+	
+	public List<PaymentRequest> getPaymentRequests() {
+		return Collections.unmodifiableList(paymentRequests);
+	}
+	
+	public void addPaymentRequest(PaymentRequest paymentRequest) {
+		if (paymentRequest != null) {
+			if (!paymentRequests.contains(paymentRequest)) {
+				paymentRequests.add(paymentRequest);
+				Collections.sort(paymentRequests, PaymentRequest.NATURAL_ORDERING);
+				paymentRequest.setAddress(this);
+			}
+		}
+	}
+
+	public void removePaymentRequest(PaymentRequest paymentRequest) {
+		if (paymentRequest != null) {
+			if (paymentRequests.contains(paymentRequest)) {
+				paymentRequests.remove(paymentRequest);
+				paymentRequest.setAddress(null);
+			}
+		}
+	}
 }

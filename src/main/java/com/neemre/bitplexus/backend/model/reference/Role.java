@@ -22,6 +22,8 @@ import lombok.ToString;
 @Table(name = "role", schema = "public")
 public class Role extends ReferenceEntity {
 	
+	private static final long serialVersionUID = 1L;
+	
 	@NotNull
 	@Id
 	@Column(name = "role_id", insertable = false, updatable = false)

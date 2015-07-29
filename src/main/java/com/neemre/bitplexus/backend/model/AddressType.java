@@ -19,6 +19,9 @@ import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Ordering;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -35,6 +38,14 @@ import lombok.ToString;
 @SequenceGenerator(name = "seq_address_type_id", sequenceName = "seq_address_type_address_type_id",
 		allocationSize = 1)
 public class AddressType extends BaseEntity {
+	
+	public static final Ordering<AddressType> LEADING_SYMBOL_ORDERING = Ordering.natural().nullsLast()
+			.onResultOf(new LeadingSymbolExtractor());
+	public static final Ordering<AddressType> NAME_ORDERING = Ordering.natural().nullsLast()
+			.onResultOf(new NameExtractor());
+	public static final Ordering<AddressType> NATURAL_ORDERING = NAME_ORDERING
+			.compound(LEADING_SYMBOL_ORDERING);
+	private static final long serialVersionUID = 1L;
 	
 	@NotNull
 	@Id
@@ -73,4 +84,33 @@ public class AddressType extends BaseEntity {
 	@ManyToOne(fetch = FetchType.LAZY, optional = true)
 	@JoinColumn(name = "updated_by", insertable = false)
 	private Employee updatedBy;
+	
+
+	public void setChain(Chain chain) {
+		if (this.chain != chain) {
+			if (this.chain != null) {
+				this.chain.removeAddressType(this);
+			}
+			this.chain = chain;
+			if (chain != null) {
+				chain.addAddressType(this);
+			} 
+		} 
+	}
+	
+	private static class LeadingSymbolExtractor implements Function<AddressType, String> {
+
+		@Override
+		public String apply(AddressType addressType) {
+			return addressType.getLeadingSymbol();
+		}
+	}
+
+	private static class NameExtractor implements Function<AddressType, String> {
+
+		@Override
+		public String apply(AddressType addressType) {
+			return addressType.getName();
+		}
+	}
 }

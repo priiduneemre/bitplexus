@@ -35,6 +35,8 @@ import lombok.ToString;
 		sequenceName = "seq_address_book_entry_address_book_entry_id", allocationSize = 1)
 public class AddressBookEntry extends BaseEntity {
 	
+	private static final long serialVersionUID = 1L;
+	
 	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_address_book_entry_id")

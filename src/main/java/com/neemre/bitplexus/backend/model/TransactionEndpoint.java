@@ -26,6 +26,8 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import lombok.ToString;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Ordering;
 import com.neemre.bitplexus.backend.model.reference.TransactionEndpointType;
 
 @Data
@@ -38,6 +40,12 @@ import com.neemre.bitplexus.backend.model.reference.TransactionEndpointType;
 @SequenceGenerator(name = "seq_transaction_endpoint_id", 
 		sequenceName = "seq_transaction_endpoint_transaction_endpoint_id", allocationSize = 1)
 public class TransactionEndpoint extends BaseEntity {
+	
+	public static final Ordering<TransactionEndpoint> TRANSACTION_ENDPOINT_TYPE_ORDERING = 
+			Ordering.natural().nullsLast().onResultOf(new TransactionEndpointTypeExtractor());
+	public static final Ordering<TransactionEndpoint> NATURAL_ORDERING = 
+			TRANSACTION_ENDPOINT_TYPE_ORDERING;
+	private static final long serialVersionUID = 1L;
 	
 	@NotNull
 	@Id
@@ -65,4 +73,28 @@ public class TransactionEndpoint extends BaseEntity {
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "logged_at", insertable = false, updatable = false)
 	private Date loggedAt;
+	
+	
+	public void setTransaction(Transaction transaction) {
+		if (this.transaction != transaction) {
+			if (this.transaction != null) {
+				this.transaction.removeTransactionEndpoint(this);
+			}
+			this.transaction = transaction;
+			if (transaction != null) {
+				transaction.addTransactionEndpoint(this);
+			} 
+		} 
+	}
+	
+	private static class TransactionEndpointTypeExtractor implements Function<TransactionEndpoint, Short> {
+
+		@Override
+		public Short apply(TransactionEndpoint transactionEndpoint) {
+			if (transactionEndpoint.getTransactionEndpointType() != null) {
+				return transactionEndpoint.getTransactionEndpointType().getTransactionEndpointTypeId();
+			}
+			return null;
+		}
+	}
 }

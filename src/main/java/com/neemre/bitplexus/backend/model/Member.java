@@ -39,6 +39,8 @@ import lombok.ToString;
 @SequenceGenerator(name = "seq_member_id", sequenceName = "seq_member_member_id", allocationSize = 1)
 public class Member extends BaseEntity {
 	
+	private static final long serialVersionUID = 1L;
+	
 	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_member_id")

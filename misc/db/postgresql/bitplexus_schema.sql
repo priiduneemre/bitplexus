@@ -201,7 +201,7 @@ CREATE TABLE chain (
                 
     CONSTRAINT pk_chain PRIMARY KEY (chain_id),
     CONSTRAINT ak_chain_code UNIQUE (code),
-    CONSTRAINT fk_chain_currency_id FOREIGN KEY (currency_id) REFERENCES currency (currency_id) ON DELETE CASCADE,
+    CONSTRAINT fk_chain_currency_id FOREIGN KEY (currency_id) REFERENCES currency (currency_id),
     CONSTRAINT fk_chain_created_by FOREIGN KEY (created_by) REFERENCES employee (employee_id),
     CONSTRAINT fk_chain_updated_by FOREIGN KEY (updated_by) REFERENCES employee (employee_id),
     
