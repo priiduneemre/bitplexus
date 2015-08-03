@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="
+		http://www.springframework.org/schema/beans
+		http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
+		http://www.springframework.org/schema/data/jpa
+		http://www.springframework.org/schema/data/jpa/spring-jpa-1.8.xsd
+		http://www.springframework.org/schema/tx 
+		http://www.springframework.org/schema/tx/spring-tx-4.1.xsd">
+
+	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="locations">
+			<list>
+				<value>/WEB-INF/classes/data/db.properties</value>
+				<value>/WEB-INF/classes/data/jdbc-pool.properties</value>
+				<value>/WEB-INF/classes/data/jpa.properties</value>
+			</list>
+		</property>
+		<property name="ignoreUnresolvablePlaceholders" value="true"/>
+		<property name="systemPropertiesMode" value="0"/>
+	</bean>
+	
+	<bean id="dataSource" class="com.jolbox.bonecp.BoneCPDataSource" destroy-method="close">
+		<property name="driverClass" value="${db.jdbc.driver}"/>
+		<property name="jdbcUrl" value="#{'${db.jdbc.urlbase}' + '://' + '${db.jdbc.host}' + ':' 
+			+ '${db.jdbc.port}' + '/' + '${db.jdbc.database}'}"/>
+		<property name="username" value="${db.role.dba.username}"/>
+		<property name="password" value="${db.role.dba.password}"/>
+		<property name="idleConnectionTestPeriodInMinutes" 
+			value="${jdbc.pool.idleConnectionTestPeriodInMinutes}"/>
+		<property name="connectionTestStatement" value="${jdbc.pool.connectionTestStatement}"/>
+		<property name="idleMaxAgeInMinutes" value="${jdbc.pool.idleMaxAgeInMinutes}"/>
+		<property name="partitionCount" value="${jdbc.pool.partitionCount}"/>
+		<property name="minConnectionsPerPartition" value="${jdbc.pool.minConnectionsPerPartition}"/>
+		<property name="maxConnectionsPerPartition" value="${jdbc.pool.maxConnectionsPerPartition}"/>
+		<property name="acquireIncrement" value="${jdbc.pool.acquireIncrement}"/>
+		<property name="poolAvailabilityThreshold" value="${jdbc.pool.poolAvailabilityThreshold}"/>
+		<property name="statementsCacheSize" value="${jdbc.pool.statementsCacheSize}"/>
+	</bean>
+	
+	<bean id="entityManagerFactory"
+		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean">
+		<property name="dataSource" ref="dataSource"/>
+		<property name="jpaVendorAdapter">
+			<bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter"/>
+		</property> 
+		<property name="jpaProperties">
+			<props>
+				<prop key="hibernate.dialect">${jpa.provider.dialect}</prop>
+				<prop key="hibernate.show_sql">${jpa.provider.show_sql}</prop>
+				<prop key="hibernate.format_sql">${jpa.provider.format_sql}</prop>
+				<prop key="hibernate.default_schema">${jpa.provider.default_schema}</prop>
+				<prop key="hibernate.max_fetch_depth">${jpa.provider.max_fetch_depth}</prop>
+				<prop key="hibernate.generate_statistics">${jpa.provider.generate_statistics}</prop>
+				<prop key="hibernate.use_sql_comments">${jpa.provider.use_sql_comments}</prop>
+			</props>
+		</property>
+		<property name="packagesToScan" value="com.neemre.bitplexus.backend.model"/>	
+		<property name="sharedCacheMode" value="ENABLE_SELECTIVE"/>
+		<property name="validationMode" value="AUTO"/>
+	</bean>
+	
+	<bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager">
+		<property name="entityManagerFactory" ref="entityManagerFactory"/>
+	</bean>
+	
+	<tx:annotation-driven/>
+	
+	<jpa:repositories base-package="com.neemre.bitplexus.backend.data.jpa"/>
+	
+	<bean class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor"/>
+</beans>

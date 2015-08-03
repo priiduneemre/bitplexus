@@ -3,8 +3,8 @@
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>com.neemre.bitplexus</groupId>
-	<artifactId>bitplexus-core</artifactId>
-	<version>0.0.1</version>
+	<artifactId>bitplexus-webapp</artifactId>
+	<version>0.9.4</version>
 	<packaging>war</packaging>
 
 	<name>Bitplexus</name>
@@ -44,6 +44,16 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-tx</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
 		<dependency>
