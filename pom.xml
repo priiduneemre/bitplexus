@@ -25,7 +25,6 @@
 		<jdk.version>1.7</jdk.version>
 		<spring.version>4.1.5.RELEASE</spring.version>
 		<hibernate.version>5.0.0.CR2</hibernate.version>
-		<jackson.version>2.4.2</jackson.version>
 		<slf4j.version>1.7.10</slf4j.version>
 		<geda.version>3.1.0</geda.version>
 	</properties>
@@ -122,6 +121,21 @@
 			<artifactId>guava</artifactId>
 			<version>18.0</version>
 		</dependency>
+		<dependency>
+			<groupId>com.inspire-software.lib.dto.geda</groupId>
+			<artifactId>geda.core</artifactId>
+			<version>${geda.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.inspire-software.lib.dto.geda</groupId>
+			<artifactId>geda.spring-integration</artifactId>
+			<version>${geda.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.inspire-software.lib.dto.geda</groupId>
+			<artifactId>geda.examples</artifactId>
+			<version>${geda.version}</version>
+		</dependency>	
 	</dependencies>
 
 	<repositories>

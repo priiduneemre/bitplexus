@@ -2,11 +2,11 @@ package com.neemre.bitplexus.backend.service;
 
 import java.util.List;
 
-import com.neemre.bitplexus.backend.model.Visit;
+import com.neemre.bitplexus.common.dto.VisitDto;
 
 public interface VisitService {
 	
-	Visit addVisit(Visit visit);
+	VisitDto addVisit(VisitDto visitDto);
 	
-	List<Visit> getVisitsByUsername(String username);
+	List<VisitDto> getVisitsByUsername(String username);
 }
