@@ -25,6 +25,7 @@
 		<jdk.version>1.7</jdk.version>
 		<spring.version>4.1.5.RELEASE</spring.version>
 		<hibernate.version>5.0.0.CR2</hibernate.version>
+		<btcd-cli4j.version>0.5.1</btcd-cli4j.version>
 		<slf4j.version>1.7.10</slf4j.version>
 		<geda.version>3.1.0</geda.version>
 	</properties>
@@ -63,8 +64,13 @@
 		<dependency>
 			<groupId>com.neemre.btcd-cli4j</groupId>
 			<artifactId>btcd-cli4j-core</artifactId>
-			<version>0.5.1</version>
+			<version>${btcd-cli4j.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>com.neemre.btcd-cli4j</groupId>
+			<artifactId>btcd-cli4j-daemon</artifactId>
+			<version>${btcd-cli4j.version}</version>
+		</dependency>		
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -135,6 +141,11 @@
 			<groupId>com.inspire-software.lib.dto.geda</groupId>
 			<artifactId>geda.examples</artifactId>
 			<version>${geda.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>3.4</version>
 		</dependency>	
 	</dependencies>
 

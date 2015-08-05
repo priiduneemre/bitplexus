@@ -1,13 +1,14 @@
 package com.neemre.bitplexus.common.dto.assembly;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import lombok.Data;
 
+import com.google.common.collect.Iterables;
 import com.inspiresoftware.lib.dto.geda.DTOFactory;
 import com.inspiresoftware.lib.dto.geda.assembler.DTOAssembler;
-import com.neemre.bitplexus.common.Errors;
 
 @Data
 public class DtoAssemblerImpl implements DtoAssembler {
@@ -17,16 +18,7 @@ public class DtoAssemblerImpl implements DtoAssembler {
 	
 	@Override
 	public <T, S> S assemble(T entity, Class<T> entityClazz, Class<S> dtoClazz) {
-		S dto;
-		try {
-			dto = dtoClazz.newInstance();
-		} catch (InstantiationException e) {
-			throw new IllegalArgumentException(Errors.TODO.getDescription(), e);
-		} catch (IllegalAccessException e) {
-			throw new IllegalArgumentException(Errors.TODO.getDescription(), e);
-		}
-		DTOAssembler.newAssembler(dtoClazz, entityClazz).assembleDto(dto, entity, null, 
-				beanFactory);
+		S dto = Iterables.getOnlyElement(assemble(Arrays.asList(entity), entityClazz, dtoClazz));
 		return dto;
 	}
 	
@@ -40,16 +32,7 @@ public class DtoAssemblerImpl implements DtoAssembler {
 	
 	@Override
 	public <T, S> T disassemble(S dto, Class<S> dtoClazz, Class<T> entityClazz) {
-		T entity;
-		try {
-			entity = entityClazz.newInstance();
-		} catch (InstantiationException e) {
-			throw new IllegalArgumentException(Errors.TODO.getDescription(), e);
-		} catch (IllegalAccessException e) {
-			throw new IllegalArgumentException(Errors.TODO.getDescription(), e);
-		}
-		DTOAssembler.newAssembler(dtoClazz, entityClazz).assembleEntity(dto, entity, null, 
-				beanFactory);
+		T entity = Iterables.getOnlyElement(disassemble(Arrays.asList(dto), dtoClazz, entityClazz));
 		return entity;
 	}
 

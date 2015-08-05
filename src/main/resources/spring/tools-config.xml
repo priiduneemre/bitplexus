@@ -6,7 +6,7 @@
 		http://www.springframework.org/schema/beans/spring-beans-4.1.xsd">
 
 	<bean id="dtoAssemblerBeanFactory" class="com.inspiresoftware.lib.dto.geda.impl.DTOFactoryImpl">
-		<constructor-arg>
+		<constructor-arg name="mappingClasses">
 			<map>
 				<entry key="Member" value="com.neemre.bitplexus.backend.model.Member"/>
 				<entry key="Visit" value="com.neemre.bitplexus.backend.model.Visit"/>

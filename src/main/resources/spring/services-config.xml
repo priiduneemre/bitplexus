@@ -2,11 +2,33 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
 	xsi:schemaLocation="
 		http://www.springframework.org/schema/beans
 		http://www.springframework.org/schema/beans/spring-beans-4.1.xsd
 		http://www.springframework.org/schema/context
-		http://www.springframework.org/schema/context/spring-context-4.1.xsd">
-
+		http://www.springframework.org/schema/context/spring-context-4.1.xsd
+		http://www.springframework.org/schema/util
+		http://www.springframework.org/schema/util/spring-util-4.1.xsd">
+	
 	<context:component-scan base-package="com.neemre.bitplexus.backend.service.impl"/>
+	
+	<util:properties id="btcTestnet3NodeConfig"
+		location="/WEB-INF/classes/node/bitcoin/testnet3_config.properties"/>
+	<util:properties id="ltcTestnet3NodeConfig"
+		location="/WEB-INF/classes/node/litecoin/testnet3_config.properties"/>
+		
+	<bean id="btcdTestnet3Client" class="com.neemre.btcdcli4j.core.client.BtcdClientImpl">
+		<constructor-arg name="nodeConfig" ref="btcTestnet3NodeConfig"/>
+	</bean>
+	<!--<bean id="ltcdTestnet3Client" class="com.neemre.btcdcli4j.core.client.BtcdClientImpl">
+		<constructor-arg name="nodeConfig" ref="ltcTestnet3NodeConfig"/>
+	</bean>-->
+	
+	<bean id="btcdTestnet3Daemon" class="com.neemre.btcdcli4j.daemon.BtcdDaemonImpl">
+		<constructor-arg name="btcdProvider" ref="btcdTestnet3Client"/>
+	</bean>
+	<!--<bean id="ltcdTestnet3Daemon" class="com.neemre.btcdcli4j.daemon.BtcdDaemonImpl">
+		<constructor-arg name="btcdProvider" ref="ltcdTestnet3Client"/>
+	</bean>-->
 </beans>
