@@ -17,6 +17,9 @@ import javax.persistence.TemporalType;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -56,9 +59,11 @@ public class EmployeeRole extends BaseEntity {
 	@ManyToOne(fetch = FetchType.LAZY, optional = false)
 	@JoinColumn(name = "role_id", updatable = false)
 	private Role role;
+	@Generated(GenerationTime.INSERT)
 	@Column(name = "is_active", insertable = false)
 	private Boolean isActive;
 	@Past
+	@Generated(GenerationTime.INSERT)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "assigned_at", insertable = false, updatable = false)
 	private Date assignedAt;

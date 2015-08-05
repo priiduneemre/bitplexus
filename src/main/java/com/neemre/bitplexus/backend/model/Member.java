@@ -22,6 +22,9 @@ import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -64,17 +67,20 @@ public class Member extends BaseEntity {
 	@Pattern(regexp = "^[0-9]*$")
 	@Column(name = "phone_number")
 	private String phoneNumber;
-	@Min(0) 
+	@Min(0)
+	@Generated(GenerationTime.INSERT)
 	@Column(name = "failed_logins", insertable = false)
 	private Short failedLogins;
 	@NotNull
 	@Column(name = "is_active")
 	private Boolean isActive;
 	@Past
+	@Generated(GenerationTime.INSERT)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "registered_at", insertable = false, updatable = false)
 	private Date registeredAt;
 	@Past
+	@Generated(GenerationTime.ALWAYS)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "updated_at", insertable = false, updatable = false)
 	private Date updatedAt;

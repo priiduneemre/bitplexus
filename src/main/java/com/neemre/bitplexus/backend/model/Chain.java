@@ -27,6 +27,9 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 import javax.validation.constraints.Size;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
+
 import com.google.common.base.Function;
 import com.google.common.collect.Ordering;
 
@@ -86,6 +89,7 @@ public class Chain extends BaseEntity {
 	@Column(name = "is_operational")
 	private Boolean isOperational;
 	@Past
+	@Generated(GenerationTime.INSERT)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private Date createdAt;
@@ -94,6 +98,7 @@ public class Chain extends BaseEntity {
 	@JoinColumn(name = "created_by", updatable = false)
 	private Employee createdBy;
 	@Past
+	@Generated(GenerationTime.ALWAYS)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "updated_at", insertable = false, updatable = false)
 	private Date updatedAt;

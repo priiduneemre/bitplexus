@@ -27,6 +27,9 @@ import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -78,10 +81,12 @@ public class Address extends BaseEntity {
 	@Column(name = "balance")
 	private BigDecimal balance;
 	@Past
+	@Generated(GenerationTime.INSERT)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "indexed_at", insertable = false, updatable = false)
 	private Date indexedAt;
 	@Past
+	@Generated(GenerationTime.ALWAYS)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "updated_at", insertable = false, updatable = false)
 	private Date updatedAt;

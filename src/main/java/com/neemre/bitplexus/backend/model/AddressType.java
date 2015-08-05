@@ -19,6 +19,9 @@ import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
+
 import com.google.common.base.Function;
 import com.google.common.collect.Ordering;
 
@@ -70,6 +73,7 @@ public class AddressType extends BaseEntity {
 	@Column(name = "leading_symbol", updatable = false)
 	private String leadingSymbol;
 	@Past
+	@Generated(GenerationTime.INSERT)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "created_at", insertable = false, updatable = false)
 	private Date createdAt;
@@ -78,6 +82,7 @@ public class AddressType extends BaseEntity {
 	@JoinColumn(name = "created_by", updatable = false)
 	private Employee createdBy;
 	@Past
+	@Generated(GenerationTime.ALWAYS)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "updated_at", insertable = false, updatable = false)
 	private Date updatedAt;

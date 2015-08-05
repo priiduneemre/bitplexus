@@ -21,6 +21,9 @@ import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 import javax.validation.constraints.Size;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
+
 import com.google.common.base.Function;
 import com.google.common.collect.Ordering;
 
@@ -64,6 +67,7 @@ public class PaymentRequest extends BaseEntity {
 	@Column(name = "message", updatable = false)
 	private String message;
 	@Past
+	@Generated(GenerationTime.INSERT)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "requested_at", insertable = false, updatable = false)
 	private Date requestedAt;

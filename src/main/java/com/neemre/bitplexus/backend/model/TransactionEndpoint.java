@@ -20,6 +20,9 @@ import javax.validation.constraints.Digits;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Past;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -70,6 +73,7 @@ public class TransactionEndpoint extends BaseEntity {
 	@Column(name = "amount", updatable = false)
 	private BigDecimal amount;
 	@Past
+	@Generated(GenerationTime.INSERT)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "logged_at", insertable = false, updatable = false)
 	private Date loggedAt;

@@ -19,6 +19,9 @@ import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -52,6 +55,7 @@ public class Visit extends BaseEntity {
 	@Column(name = "ip_address", updatable = false)
 	private String ipAddress;
 	@Past
+	@Generated(GenerationTime.INSERT)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "login_at", insertable = false, updatable = false)
 	private Date loginAt;

@@ -30,6 +30,9 @@ import javax.validation.constraints.Past;
 import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
+import org.hibernate.annotations.Generated;
+import org.hibernate.annotations.GenerationTime;
+
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -64,6 +67,7 @@ public class Transaction extends BaseEntity {
 	private TransactionStatusType transactionStatusType;
 	@Size(min = 36, max = 36)
 	@Pattern(regexp = "^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$")
+	@Generated(GenerationTime.INSERT)
 	@Column(name = "local_uid", insertable = false, updatable = false)
 	private String localUid;
 	@NotNull
@@ -102,10 +106,12 @@ public class Transaction extends BaseEntity {
 	@Column(name = "note", updatable = false)
 	private String note;
 	@Past
+	@Generated(GenerationTime.INSERT)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "logged_at", insertable = false, updatable = false)
 	private Date loggedAt;
 	@Past
+	@Generated(GenerationTime.ALWAYS)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "updated_at", insertable = false, updatable = false)
 	private Date updatedAt;
