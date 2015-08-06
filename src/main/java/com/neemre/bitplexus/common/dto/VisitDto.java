@@ -20,7 +20,7 @@ public class VisitDto implements Serializable {
 	
 	@DtoField(value = "visitId", readOnly = true)
 	private Long visitId;
-	@DtoField(value = "member.username", entityBeanKeys = {"Member"})
+	@DtoField(value = "member.username", readOnly = true, entityBeanKeys = {"Member"})
 	private String username;
 	@DtoField("ipAddress")
 	private String ipAddress;
