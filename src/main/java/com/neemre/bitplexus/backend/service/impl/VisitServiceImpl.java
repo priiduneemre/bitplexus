@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.neemre.bitplexus.backend.data.MemberRepository;
 import com.neemre.bitplexus.backend.data.VisitRepository;
 import com.neemre.bitplexus.backend.model.Visit;
 import com.neemre.bitplexus.backend.service.VisitService;
@@ -19,6 +20,8 @@ public class VisitServiceImpl implements VisitService {
 	
 	@Autowired
 	private VisitRepository visitRepository;
+	@Autowired
+	private MemberRepository memberRepository;
 	
 	@Resource(name = "dtoAssembler")
 	private DtoAssembler dtoAssembler;
@@ -26,15 +29,16 @@ public class VisitServiceImpl implements VisitService {
 	
 	@Transactional
 	@Override
-	public VisitDto addVisit(VisitDto visitDto) {
+	public VisitDto createNewVisit(VisitDto visitDto) {
 		Visit visit = dtoAssembler.disassemble(visitDto, VisitDto.class, Visit.class);
-		Visit savedVisit = visitRepository.save(visit);
-		return dtoAssembler.assemble(savedVisit, Visit.class, VisitDto.class);
+		visit.setMember(memberRepository.findByUsername(visitDto.getUsername()));
+		Visit createdVisit = visitRepository.saveAndFlush(visit);
+		return dtoAssembler.assemble(createdVisit, Visit.class, VisitDto.class);
 	}
 
-	@Transactional
+	@Transactional(readOnly = true)
 	@Override
-	public List<VisitDto> getVisitsByUsername(String username) {
+	public List<VisitDto> findVisitsByMemberUsername(String username) {
 		List<Visit> visits = visitRepository.findByMemberUsername(username);
 		return dtoAssembler.assemble(visits, Visit.class, VisitDto.class);
 	}

@@ -6,7 +6,7 @@ import com.neemre.bitplexus.common.dto.VisitDto;
 
 public interface VisitService {
 	
-	VisitDto addVisit(VisitDto visitDto);
+	VisitDto createNewVisit(VisitDto visitDto);
 	
-	List<VisitDto> getVisitsByUsername(String username);
+	List<VisitDto> findVisitsByMemberUsername(String username);
 }
