@@ -18,17 +18,21 @@
 	<util:properties id="ltcTestnet3NodeConfig"
 		location="/WEB-INF/classes/node/litecoin/testnet3_config.properties"/>
 		
-	<bean id="btcdTestnet3Client" class="com.neemre.btcdcli4j.core.client.BtcdClientImpl">
+	<bean id="btcdTestnet3Client" name="BITCOIN_TEST3_CLIENT" 
+		class="com.neemre.btcdcli4j.core.client.BtcdClientImpl">
 		<constructor-arg name="nodeConfig" ref="btcTestnet3NodeConfig"/>
 	</bean>
-	<!--<bean id="ltcdTestnet3Client" class="com.neemre.btcdcli4j.core.client.BtcdClientImpl">
+	<!--<bean id="ltcdTestnet3Client" name="LITECOIN_TEST3_CLIENT"
+		class="com.neemre.btcdcli4j.core.client.BtcdClientImpl">
 		<constructor-arg name="nodeConfig" ref="ltcTestnet3NodeConfig"/>
 	</bean>-->
 	
-	<bean id="btcdTestnet3Daemon" class="com.neemre.btcdcli4j.daemon.BtcdDaemonImpl">
+	<bean id="btcdTestnet3Daemon" name="BITCOIN_TEST3_DAEMON" 
+		class="com.neemre.btcdcli4j.daemon.BtcdDaemonImpl">
 		<constructor-arg name="btcdProvider" ref="btcdTestnet3Client"/>
 	</bean>
-	<!--<bean id="ltcdTestnet3Daemon" class="com.neemre.btcdcli4j.daemon.BtcdDaemonImpl">
+	<!--<bean id="ltcdTestnet3Daemon" name="LITECOIN_TEST3_DAEMON"
+		class="com.neemre.btcdcli4j.daemon.BtcdDaemonImpl">
 		<constructor-arg name="btcdProvider" ref="ltcdTestnet3Client"/>
 	</bean>-->
 </beans>

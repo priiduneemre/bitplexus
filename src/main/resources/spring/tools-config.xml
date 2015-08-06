@@ -8,10 +8,41 @@
 	<bean id="dtoAssemblerBeanFactory" class="com.inspiresoftware.lib.dto.geda.impl.DTOFactoryImpl">
 		<constructor-arg name="mappingClasses">
 			<map>
+				<entry key="Address" value="com.neemre.bitplexus.backend.model.Address"/>
+				<entry key="AddressBookEntry" 
+					value="com.neemre.bitplexus.backend.model.AddressBookEntry"/>
+				<entry key="AddressStateType" 
+					value="com.neemre.bitplexus.backend.model.reference.AddressStateType"/>
+				<entry key="AddressType" value="com.neemre.bitplexus.backend.model.AddressType"/>
+				<entry key="Chain" value="com.neemre.bitplexus.backend.model.Chain"/>
+				<entry key="Currency" value="com.neemre.bitplexus.backend.model.Currency"/>
+				<entry key="Customer" value="com.neemre.bitplexus.backend.model.Customer"/>
+				<entry key="Employee" value="com.neemre.bitplexus.backend.model.Employee"/>
+				<entry key="EmployeeRole" value="com.neemre.bitplexus.backend.model.EmployeeRole"/>
 				<entry key="Member" value="com.neemre.bitplexus.backend.model.Member"/>
+				<entry key="PaymentRequest" value="com.neemre.bitplexus.backend.model.PaymentRequest"/>
+				<entry key="Person" value="com.neemre.bitplexus.backend.model.Person"/>
+				<entry key="Role" value="com.neemre.bitplexus.backend.model.reference.Role"/>
+				<entry key="Transaction" value="com.neemre.bitplexus.backend.model.Transaction"/>
+				<entry key="TransactionEndpoint" 
+					value="com.neemre.bitplexus.backend.model.TransactionEndpoint"/>
+				<entry key="TransactionEndpointType"
+					value="com.neemre.bitplexus.backend.model.reference.TransactionEndpointType"/>
+				<entry key="TransactionStatusType"
+					value="com.neemre.bitplexus.backend.model.reference.TransactionStatusType"/>
 				<entry key="Visit" value="com.neemre.bitplexus.backend.model.Visit"/>
-
+				<entry key="Wallet" value="com.neemre.bitplexus.backend.model.Wallet"/>
+				<entry key="WalletStateType" 
+					value="com.neemre.bitplexus.backend.model.reference.WalletStateType"/>
+				
+				<entry key="AddressDto" value="com.neemre.bitplexus.common.dto.AddressDto"/>
+				<entry key="AddressStateTypeDto" 
+					value="com.neemre.bitplexus.common.dto.AddressStateTypeDto"/>
+				<entry key="CustomerDto" value="com.neemre.bitplexus.common.dto.CustomerDto"/>
 				<entry key="VisitDto" value="com.neemre.bitplexus.common.dto.VisitDto"/>
+				<entry key="WalletDto" value="com.neemre.bitplexus.common.dto.WalletDto"/>
+				<entry key="WalletStateTypeDto" 
+					value="com.neemre.bitplexus.common.dto.WalletStateTypeDto"/>
 			</map>
 		</constructor-arg>
 	</bean>
