@@ -42,11 +42,11 @@ INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, bloc
 INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, standard_fee, website_url, created_at) VALUES (5, 'Monero', 'XMR', NULL, '2014-04-18', 60, 0.01, 'https://getmonero.org/', '2015-03-20 02:30:54');
 INSERT INTO currency (currency_id, name, abbreviation, symbol, launched_on, block_time, standard_fee, website_url, created_at) VALUES (6, 'Namecoin', 'NMC', 'ℕ', '2011-04-17', 600, 0.005, 'https://namecoin.info/', '2015-03-20 02:59:07');
 
-INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (1, 1, 'BITCOIN_MAIN', 'Mainnet chain', '2009-01-03', f_estimate_btc_supply('2009-01-03', f_to_timestamp(CURRENT_TIMESTAMP(0))), TRUE, '2015-03-19 23:52:13', 3);
+INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (1, 1, 'BITCOIN_MAIN', 'Mainnet chain', '2009-01-03', f_estimate_btc_supply('2009-01-03', f_to_timestamp(CURRENT_TIMESTAMP(0))), FALSE, '2015-03-19 23:52:13', 3);
 INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (2, 1, 'BITCOIN_TEST1', 'Testnet1 chain', '2010-10-19', f_estimate_btc_supply('2010-10-19', f_to_timestamp(CURRENT_TIMESTAMP(0))), FALSE, '2015-03-19 23:54:30', 3);
 INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (3, 1, 'BITCOIN_TEST2', 'Testnet2 chain', '2011-02-02', f_estimate_btc_supply('2011-02-02', f_to_timestamp(CURRENT_TIMESTAMP(0))), FALSE, '2015-03-19 23:56:55', 3);
 INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (4, 1, 'BITCOIN_TEST3', 'Testnet3 chain', '2012-04-13', f_estimate_btc_supply('2012-04-13', f_to_timestamp(CURRENT_TIMESTAMP(0))), TRUE, '2015-03-19 23:59:07', 3);
-INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (5, 2, 'LITECOIN_MAIN', 'Mainnet chain', '2011-10-08', f_estimate_ltc_supply('2011-10-08', f_to_timestamp(CURRENT_TIMESTAMP(0))), TRUE, '2015-03-20 00:40:26', 3);
+INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (5, 2, 'LITECOIN_MAIN', 'Mainnet chain', '2011-10-08', f_estimate_ltc_supply('2011-10-08', f_to_timestamp(CURRENT_TIMESTAMP(0))), FALSE, '2015-03-20 00:40:26', 3);
 INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (6, 2, 'LITECOIN_TEST1', 'Testnet1 chain', '2011-10-05', f_estimate_ltc_supply('2011-10-05', f_to_timestamp(CURRENT_TIMESTAMP(0))), FALSE, '2015-03-20 00:43:41', 3);
 INSERT INTO chain (chain_id, currency_id, code, name, started_on, available_supply, is_operational, created_at, created_by) VALUES (7, 2, 'LITECOIN_TEST3', 'Testnet3 chain', '2013-04-08', f_estimate_ltc_supply('2013-04-08', f_to_timestamp(CURRENT_TIMESTAMP(0))), TRUE, '2015-03-20 00:45:58', 3);
 
@@ -66,6 +66,8 @@ INSERT INTO address_type (address_type_id, chain_id, code, name, leading_symbol,
 INSERT INTO address_type (address_type_id, chain_id, code, name, leading_symbol, created_at, created_by) VALUES (8, 7, 'LITECOIN_P2PKH_TEST3_2', 'P2PKH address', 'n', '2015-03-20 00:55:47', 3);
 INSERT INTO address_type (address_type_id, chain_id, code, name, leading_symbol, created_at, created_by) VALUES (9, 5, 'LITECOIN_P2SH_MAIN', 'P2SH address', '3', '2015-03-20 01:01:22', 3);
 INSERT INTO address_type (address_type_id, chain_id, code, name, leading_symbol, created_at, created_by) VALUES (10, 7, 'LITECOIN_P2SH_TEST3', 'P2SH address', '2', '2015-03-20 01:07:19', 3);
+
+ALTER TABLE IF EXISTS address DISABLE TRIGGER tr_address_address_state_type_id_resolve;
 
 INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, encoded_form, balance, indexed_at, updated_at) VALUES (1, 1, 2, 3, 'Loan repayments address #1', 'mvnAeskyHgLdx22xv8asRUnUdsguAiPZa5', 0, '2015-03-24 14:13:29', '2015-06-02 15:30:44');
 INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, encoded_form, balance, indexed_at, updated_at) VALUES (2, 1, 2, 2, 'Change address #1', 'mq4gQZwpzW9fr4vhoPoANz7eMZKwTqx8rT', 0.0699, '2015-06-02 15:30:44', '2015-06-02 17:52:53');
@@ -111,6 +113,8 @@ INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_
 INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, encoded_form, balance, indexed_at, updated_at) VALUES (42, NULL, 7, 6, NULL, 'mkkahgv3E44dxyfx3UMiEaciavTjxLQph6', NULL, '2015-06-02 13:07:05', NULL);
 INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, encoded_form, balance, indexed_at, updated_at) VALUES (43, NULL, 7, 6, NULL, 'mvZc7N9hMi27dx3WHDWv7sZL34MyR9MmJ2', NULL, '2015-06-02 13:14:25', NULL);
 INSERT INTO address (address_id, wallet_id, address_type_id, address_state_type_id, label, encoded_form, balance, indexed_at, updated_at) VALUES (44, NULL, 8, 6, NULL, 'n3BEh2hmryedNfvAywqd6eUZthqDYEqrXP', NULL, '2015-06-02 13:18:16', NULL);
+
+ALTER TABLE IF EXISTS address ENABLE TRIGGER tr_address_address_state_type_id_resolve;
 
 INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (1, 4, 24, 'BTC-e (exchange) deposit address #1', '2015-03-24 15:28:01');
 INSERT INTO address_book_entry (address_book_entry_id, customer_id, address_id, label, created_at) VALUES (2, 4, 25, 'Colin Fletcher''s personal address #1', '2015-03-24 15:33:57');
