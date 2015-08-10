@@ -11,6 +11,8 @@
 		http://www.springframework.org/schema/tx 
 		http://www.springframework.org/schema/tx/spring-tx-4.1.xsd">
 
+	<jpa:repositories base-package="com.neemre.bitplexus.backend.data.jpa"/>
+	
 	<bean class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="locations">
 			<list>
@@ -68,8 +70,6 @@
 	</bean>
 	
 	<tx:annotation-driven/>
-	
-	<jpa:repositories base-package="com.neemre.bitplexus.backend.data.jpa"/>
 	
 	<bean class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor"/>
 </beans>
