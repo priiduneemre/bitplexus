@@ -38,6 +38,13 @@ public class VisitServiceImpl implements VisitService {
 
 	@Transactional(readOnly = true)
 	@Override
+	public VisitDto findVisitById(Long visitId) {
+		Visit visit = visitRepository.findOne(visitId);
+		return dtoAssembler.assemble(visit, Visit.class, VisitDto.class);
+	}
+	
+	@Transactional(readOnly = true)
+	@Override
 	public List<VisitDto> findVisitsByMemberUsername(String username) {
 		List<Visit> visits = visitRepository.findByMemberUsername(username);
 		return dtoAssembler.assemble(visits, Visit.class, VisitDto.class);

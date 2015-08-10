@@ -2,15 +2,23 @@ package com.neemre.bitplexus.backend.service;
 
 import java.util.List;
 
+import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
 import com.neemre.bitplexus.common.dto.AddressDto;
+
 
 public interface AddressService {
 
-	AddressDto createNewAddress(AddressDto addressDto);
+	Integer countSubwalletAddressesByLabel(String labelFragment, Integer walletId, String chainCode);
+	
+	AddressDto createNewAddress(AddressDto addressDto, String chainCode) throws NodeWrapperException;
+
+	AddressDto findAddressById(Long addressId);
 	
 	List<AddressDto> findSubwalletAddresses(Integer walletId, String chainCode);
-	
+
 	AddressDto updateAddress(AddressDto addressDto);
+	
+	AddressDto updateAddressBalance(Long addressId) throws NodeWrapperException;
 	
 	AddressDto updateAddressState(AddressDto addressDto);
 }

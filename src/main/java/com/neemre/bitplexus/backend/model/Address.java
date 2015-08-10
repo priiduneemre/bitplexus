@@ -14,9 +14,12 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedStoredProcedureQuery;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
+import javax.persistence.ParameterMode;
 import javax.persistence.SequenceGenerator;
+import javax.persistence.StoredProcedureParameter;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -49,6 +52,11 @@ import com.neemre.bitplexus.backend.model.reference.AddressStateType;
 @Table(name = "address", schema = "public")
 @SequenceGenerator(name = "seq_address_id", sequenceName = "seq_address_address_id", 
 		allocationSize = 1)
+@NamedStoredProcedureQuery(name = "countByLabelAndWalletIdAndChainCode",
+		procedureName = "f_count_addresses_by_label", parameters = {
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_wallet_id", type = Integer.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_label_fragment", type = String.class)})
 public class Address extends BaseEntity {
 	
 	private static final long serialVersionUID = 1L;

@@ -8,5 +8,7 @@ public interface VisitRepository {
 	
 	List<Visit> findByMemberUsername(String username);
 
+	Visit findOne(Long visitId);
+	
 	Visit saveAndFlush(Visit visit);
 }

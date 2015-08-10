@@ -8,5 +8,7 @@ public interface VisitService {
 	
 	VisitDto createNewVisit(VisitDto visitDto);
 	
+	VisitDto findVisitById(Long visitId);
+	
 	List<VisitDto> findVisitsByMemberUsername(String username);
 }

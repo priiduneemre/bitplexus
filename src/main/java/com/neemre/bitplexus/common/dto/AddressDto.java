@@ -32,7 +32,7 @@ public class AddressDto implements Serializable {
 	private String label;
 	@DtoField(value = "encodedForm", readOnly = true)
 	private String encodedForm;
-	@DtoField("balance")
+	@DtoField(value = "balance", readOnly = true)
 	private BigDecimal balance;
 	@DtoField(value = "indexedAt", readOnly = true)
 	private Date indexedAt;

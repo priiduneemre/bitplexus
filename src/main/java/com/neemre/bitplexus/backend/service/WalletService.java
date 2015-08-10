@@ -8,6 +8,8 @@ public interface WalletService {
 
 	WalletDto createNewWallet(WalletDto walletDto);
 	
+	WalletDto findWalletById(Integer walletId);
+	
 	List<WalletDto> findWalletsByCustomerUsername(String username);
 
 	WalletDto updateWallet(WalletDto walletDto);

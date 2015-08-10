@@ -10,7 +10,10 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedStoredProcedureQuery;
+import javax.persistence.ParameterMode;
 import javax.persistence.SequenceGenerator;
+import javax.persistence.StoredProcedureParameter;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -40,6 +43,10 @@ import lombok.ToString;
 @Table(name = "address_type", schema = "public")
 @SequenceGenerator(name = "seq_address_type_id", sequenceName = "seq_address_type_address_type_id",
 		allocationSize = 1)
+@NamedStoredProcedureQuery(name = "findIdByAddressAndChainCode", 
+		procedureName = "f_get_address_type_id", parameters = {
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_address", type = String.class)})
 public class AddressType extends BaseEntity {
 	
 	public static final Ordering<AddressType> LEADING_SYMBOL_ORDERING = Ordering.natural().nullsLast()

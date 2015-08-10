@@ -41,6 +41,13 @@ public class WalletServiceImpl implements WalletService {
 	
 	@Transactional(readOnly = true)
 	@Override
+	public WalletDto findWalletById(Integer walletId) {
+		Wallet wallet = walletRepository.findOne(walletId);
+		return dtoAssembler.assemble(wallet, Wallet.class, WalletDto.class);
+	}
+	
+	@Transactional(readOnly = true)
+	@Override
 	public List<WalletDto> findWalletsByCustomerUsername(String username) {
 		List<Wallet> wallets = walletRepository.findByCustomerUsername(username);
 		return dtoAssembler.assemble(wallets, Wallet.class, WalletDto.class);
