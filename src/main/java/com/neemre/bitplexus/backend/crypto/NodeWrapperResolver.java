@@ -7,6 +7,9 @@ import org.springframework.stereotype.Component;
 
 import com.neemre.btcdcli4j.core.client.BtcdClient;
 import com.neemre.btcdcli4j.daemon.BtcdDaemon;
+import com.neemre.ltcdcli4j.core.client.LtcdClient;
+import com.neemre.ltcdcli4j.daemon.LtcdDaemon;
+
 
 @Component
 public class NodeWrapperResolver {
@@ -34,17 +37,17 @@ public class NodeWrapperResolver {
 		}
 	}
 
-	public BtcdClient getLtcdClient(String chainCode) {
+	public LtcdClient getLtcdClient(String chainCode) {
 		try {
-			return (BtcdClient)context.getBean(chainCode + CLIENT_BEAN_SUFFIX);
+			return (LtcdClient)context.getBean(chainCode + CLIENT_BEAN_SUFFIX);
 		} catch (NoSuchBeanDefinitionException e) {
 			return null;
 		}
 	}
 
-	public BtcdDaemon getLtcdDaemon(String chainCode) {
+	public LtcdDaemon getLtcdDaemon(String chainCode) {
 		try {
-			return (BtcdDaemon)context.getBean(chainCode + DAEMON_BEAN_SUFFIX);
+			return (LtcdDaemon)context.getBean(chainCode + DAEMON_BEAN_SUFFIX);
 		} catch (NoSuchBeanDefinitionException e) {
 			return null;
 		}

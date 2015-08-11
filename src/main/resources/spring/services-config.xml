@@ -25,7 +25,7 @@
 		<constructor-arg name="nodeConfig" ref="btcTestnet3NodeConfig"/>
 	</bean>
 	<bean id="ltcdTestnet3Client" name="LITECOIN_TEST3_CLIENT"
-		class="com.neemre.btcdcli4j.core.client.BtcdClientImpl">
+		class="com.neemre.ltcdcli4j.core.client.LtcdClientImpl">
 		<constructor-arg name="nodeConfig" ref="ltcTestnet3NodeConfig"/>
 	</bean>
 	
@@ -34,7 +34,7 @@
 		<constructor-arg name="btcdProvider" ref="btcdTestnet3Client"/>
 	</bean>
 	<bean id="ltcdTestnet3Daemon" name="LITECOIN_TEST3_DAEMON"
-		class="com.neemre.btcdcli4j.daemon.BtcdDaemonImpl">
-		<constructor-arg name="btcdProvider" ref="ltcdTestnet3Client"/>
+		class="com.neemre.ltcdcli4j.daemon.LtcdDaemonImpl">
+		<constructor-arg name="ltcdProvider" ref="ltcdTestnet3Client"/>
 	</bean>
 </beans>

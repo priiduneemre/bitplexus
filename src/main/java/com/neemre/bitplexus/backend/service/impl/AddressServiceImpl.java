@@ -25,8 +25,7 @@ import com.neemre.bitplexus.common.Errors;
 import com.neemre.bitplexus.common.dto.AddressDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
 import com.neemre.btcdcli4j.core.BitcoindException;
-import com.neemre.btcdcli4j.core.CommunicationException;
-import com.neemre.btcdcli4j.core.domain.Output;
+import com.neemre.ltcdcli4j.core.LitecoindException;
 
 @Service
 public class AddressServiceImpl implements AddressService {
@@ -41,7 +40,7 @@ public class AddressServiceImpl implements AddressService {
 	@Autowired
 	private NodeWrapperResolver clientResolver;
 
-	
+
 	@Transactional(readOnly = true)
 	@Override
 	public Integer countSubwalletAddressesByLabel(String labelFragment, Integer walletId, 
@@ -69,7 +68,7 @@ public class AddressServiceImpl implements AddressService {
 		Address createdAddress = addressRepository.saveAndFlush(address);
 		return dtoAssembler.assemble(createdAddress, Address.class, AddressDto.class);
 	}
-	
+
 	@Transactional(readOnly = true)
 	@Override
 	public AddressDto findAddressById(Long addressId) {
@@ -121,16 +120,17 @@ public class AddressServiceImpl implements AddressService {
 	private BigDecimal getBtcAddressUnspent(String encodedForm, String chainCode) 
 			throws BitcoinWrapperException {
 		try {
-			List<Output> unspentOutputs = clientResolver.getBtcdClient(chainCode).listUnspent(
-					Defaults.UNCONFIRMED_CONF_COUNT, Integer.MAX_VALUE, Arrays.asList(encodedForm));
+			List<com.neemre.btcdcli4j.core.domain.Output> unspentOutputs = clientResolver
+					.getBtcdClient(chainCode).listUnspent(Defaults.UNCONFIRMED_CONF_COUNT, 
+							Integer.MAX_VALUE, Arrays.asList(encodedForm));
 			BigDecimal balance = BigDecimal.ZERO;
-			for (Output output : unspentOutputs) {
-				balance = balance.add(output.getAmount());
+			for (int i = 0; i < unspentOutputs.size(); i++) {
+				balance = balance.add(unspentOutputs.get(i).getAmount());
 			}
 			return balance;
 		} catch (BitcoindException e) {
 			throw new BitcoinWrapperException(Errors.TODO, e);
-		} catch (CommunicationException e) {
+		} catch (com.neemre.btcdcli4j.core.CommunicationException e) {
 			throw new BitcoinWrapperException(Errors.TODO, e);
 		}
 	}
@@ -139,16 +139,17 @@ public class AddressServiceImpl implements AddressService {
 	private BigDecimal getLtcAddressUnspent(String encodedForm, String chainCode) 
 			throws LitecoinWrapperException {
 		try {
-			List<Output> unspentOutputs = clientResolver.getLtcdClient(chainCode).listUnspent(
-					Defaults.UNCONFIRMED_CONF_COUNT, Integer.MAX_VALUE, Arrays.asList(encodedForm));
+			List<com.neemre.ltcdcli4j.core.domain.Output> unspentOutputs = clientResolver
+					.getLtcdClient(chainCode).listUnspent(Defaults.UNCONFIRMED_CONF_COUNT, 
+							Integer.MAX_VALUE, Arrays.asList(encodedForm));
 			BigDecimal balance = BigDecimal.ZERO;
-			for (Output output : unspentOutputs) {
-				balance = balance.add(output.getAmount());
+			for (int i = 0; i < unspentOutputs.size(); i++) {
+				balance = balance.add(unspentOutputs.get(i).getAmount());
 			}
 			return balance;
-		} catch (BitcoindException e) {
+		} catch (LitecoindException e) {
 			throw new LitecoinWrapperException(Errors.TODO, e);
-		} catch (CommunicationException e) {
+		} catch (com.neemre.ltcdcli4j.core.CommunicationException e) {
 			throw new LitecoinWrapperException(Errors.TODO, e);
 		}
 	}
@@ -159,7 +160,7 @@ public class AddressServiceImpl implements AddressService {
 			return clientResolver.getBtcdClient(chainCode).getNewAddress();
 		} catch (BitcoindException e) {
 			throw new BitcoinWrapperException(Errors.TODO, e);
-		} catch (CommunicationException e) {
+		} catch (com.neemre.btcdcli4j.core.CommunicationException e) {
 			throw new BitcoinWrapperException(Errors.TODO, e);
 		}
 	}
@@ -168,9 +169,9 @@ public class AddressServiceImpl implements AddressService {
 	private String getNewLtcAddress(String chainCode) throws LitecoinWrapperException {
 		try {
 			return clientResolver.getLtcdClient(chainCode).getNewAddress();
-		} catch (BitcoindException e) {
+		} catch (LitecoindException e) {
 			throw new LitecoinWrapperException(Errors.TODO, e);
-		} catch (CommunicationException e) {
+		} catch (com.neemre.ltcdcli4j.core.CommunicationException e) {
 			throw new LitecoinWrapperException(Errors.TODO, e);
 		}
 	}

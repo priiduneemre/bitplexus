@@ -26,6 +26,7 @@
 		<spring.version>4.1.5.RELEASE</spring.version>
 		<hibernate.version>5.0.0.CR2</hibernate.version>
 		<btcd-cli4j.version>0.5.1</btcd-cli4j.version>
+		<ltcd-cli4j.version>0.1.0</ltcd-cli4j.version>
 		<slf4j.version>1.7.10</slf4j.version>
 		<geda.version>3.1.0</geda.version>
 	</properties>
@@ -70,7 +71,17 @@
 			<groupId>com.neemre.btcd-cli4j</groupId>
 			<artifactId>btcd-cli4j-daemon</artifactId>
 			<version>${btcd-cli4j.version}</version>
-		</dependency>		
+		</dependency>
+		<dependency>
+			<groupId>com.neemre.ltcd-cli4j</groupId>
+			<artifactId>ltcd-cli4j-core</artifactId>
+			<version>${ltcd-cli4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.neemre.ltcd-cli4j</groupId>
+			<artifactId>ltcd-cli4j-daemon</artifactId>
+			<version>${ltcd-cli4j.version}</version>
+		</dependency>
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -146,7 +157,7 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
 			<version>3.4</version>
-		</dependency>	
+		</dependency>
 	</dependencies>
 
 	<repositories>

@@ -26,8 +26,7 @@ import com.neemre.bitplexus.common.dto.WalletDto;
 import com.neemre.bitplexus.common.dto.WalletStateTypeDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
 import com.neemre.btcdcli4j.core.BitcoindException;
-import com.neemre.btcdcli4j.core.CommunicationException;
-import com.neemre.btcdcli4j.core.domain.Info;
+import com.neemre.ltcdcli4j.core.LitecoindException;
 
 @Controller
 @RequestMapping("")
@@ -153,13 +152,15 @@ public class VisitController {
 	
 	@RequestMapping(value = "/btc/info", method = RequestMethod.GET)
 	@ResponseBody
-	public Info getInfo(ModelMap model) throws BitcoindException, CommunicationException {
+	public com.neemre.btcdcli4j.core.domain.Info getInfo(ModelMap model) throws BitcoindException, 
+			com.neemre.btcdcli4j.core.CommunicationException {
 		return clientResolver.getBtcdClient("BITCOIN_TEST3").getInfo();
 	}
 	
 	@RequestMapping(value = "/ltc/info", method = RequestMethod.GET)
 	@ResponseBody
-	public Info getInfo1(ModelMap model) throws BitcoindException, CommunicationException {
-		return clientResolver.getBtcdClient("LITECOIN_TEST3").getInfo();
+	public com.neemre.ltcdcli4j.core.domain.Info getInfo1(ModelMap model) throws LitecoindException, 
+			com.neemre.ltcdcli4j.core.CommunicationException {
+		return clientResolver.getLtcdClient("LITECOIN_TEST3").getInfo();
 	}
 }
