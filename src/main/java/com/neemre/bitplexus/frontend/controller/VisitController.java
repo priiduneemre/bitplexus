@@ -55,7 +55,7 @@ public class VisitController {
 	@RequestMapping(value = "/member/visit", method = RequestMethod.GET)
 	@ResponseBody
 	public VisitDto viewShowOne(ModelMap model) {
-		VisitDto visit = visitService.findVisitById(3L);
+		VisitDto visit = visitService.findVisitById(76L);
 		return visit;
 	}
 	
@@ -76,7 +76,7 @@ public class VisitController {
 	@RequestMapping(value = "/customer/wallet", method = RequestMethod.GET)
 	@ResponseBody
 	public WalletDto viewShowOne1(ModelMap model) {
-		WalletDto wallet = walletService.findWalletById(10);
+		WalletDto wallet = walletService.findWalletById(17);
 		return wallet;
 	}
 	
@@ -90,35 +90,42 @@ public class VisitController {
 	@RequestMapping(value = "/customer/wallets/update", method = RequestMethod.GET)
 	@ResponseBody
 	public WalletDto viewShowUpdate(ModelMap model) {
-		return walletService.updateWallet(new WalletDto(10, null, null, "New wallet #9432757", null,
+		return walletService.updateWallet(new WalletDto(17, null, null, "New wallet #we34rjg", null,
 				null));
 	}
 	
 	@RequestMapping(value = "/customer/wallets/state/update", method = RequestMethod.GET)
 	@ResponseBody
 	public WalletDto viewShowUpdate1(ModelMap model) {
-		return walletService.updateWalletState(new WalletDto(10, null, new WalletStateTypeDto(null,
-				WalletStateTypes.ARCHIVED.name(), null), null, null, null));
+		return walletService.updateWalletState(new WalletDto(17, null, new WalletStateTypeDto(null,
+				WalletStateTypes.DELETED.name(), null), null, null, null));
 	}
 	
 	@RequestMapping(value = "/customer/addresses/count", method = RequestMethod.GET)
 	@ResponseBody
 	public Integer viewShowCount(ModelMap model) {
-		return addressService.countSubwalletAddressesByLabel("Dough for illegal stuff", 10, 
-				"BITCOIN_TEST3");
+		return addressService.countSubwalletAddressesByLabel("edium-term", 5, 
+				"LITECOIN_TEST3");
 	}
 	
-	@RequestMapping(value = "/customer/addresses/new", method = RequestMethod.GET)
+	@RequestMapping(value = "/customer/addresses/new/external", method = RequestMethod.GET)
 	@ResponseBody
-	public AddressDto viewShowCreateNew2(ModelMap model) throws NodeWrapperException {
-		return addressService.createNewAddress(new AddressDto(null, 10, null, null, "New address #XYZ",
-				null, null, null, null), "BITCOIN_TEST3");
+	public AddressDto viewShowCreateNew2(ModelMap model) {
+		return addressService.createNewExternalAddress(new AddressDto(null, null, null, null, 
+				null, "m91EALsE1LEaUK8tHzNrBoNn2mWojFHFR", null, null, null), "BITCOIN_TEST3");
+	}
+	
+	@RequestMapping(value = "/customer/addresses/new/wallet", method = RequestMethod.GET)
+	@ResponseBody
+	public AddressDto viewShowCreateNew3(ModelMap model) throws NodeWrapperException {
+		return addressService.createNewWalletAddress(new AddressDto(null, 16, null, null, 
+				"Anoter address #3345", null, null, null, null), "BITCOIN_TEST3");
 	}
 	
 	@RequestMapping(value = "/customer/address", method = RequestMethod.GET)
 	@ResponseBody
 	public AddressDto viewShowOne2(ModelMap model) {
-		AddressDto address = addressService.findAddressById(15L);
+		AddressDto address = addressService.findAddressById(21L);
 		return address;
 	}
 	
@@ -132,21 +139,21 @@ public class VisitController {
 	@RequestMapping(value = "/customer/addresses/update", method = RequestMethod.GET)
 	@ResponseBody
 	public AddressDto viewShowUpdate2(ModelMap model) {
-		return addressService.updateAddress(new AddressDto(115L, null, null, null, "New address #XYZ2",
-				null, null, null, null));
+		return addressService.updateAddress(new AddressDto(21L, null, null, null, 
+				"Long-term deposit (0.5 tBTC) address #5", null, null, null, null));
 	}
 
 	@RequestMapping(value = "/customer/addresses/balance/update", method = RequestMethod.GET)
 	@ResponseBody
 	public AddressDto viewShowUpdate3(ModelMap model) throws NodeWrapperException {
-		return addressService.updateAddressBalance(115L);
+		return addressService.updateAddressBalance(96L);
 	}
 	
 	@RequestMapping(value = "/customer/addresses/state/update", method = RequestMethod.GET)
 	@ResponseBody
 	public AddressDto viewShowUpdate4(ModelMap model) {
-		return addressService.updateAddressState(new AddressDto(115L, null, null, 
-				new AddressStateTypeDto(null, AddressStateTypes.HIDDEN.name(), null), null, null, 
+		return addressService.updateAddressState(new AddressDto(21L, null, null, 
+				new AddressStateTypeDto(null, AddressStateTypes.DELETED.name(), null), null, null, 
 				null, null, null));
 	}
 	

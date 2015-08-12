@@ -678,15 +678,15 @@ INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id
 WHERE w.wallet_id = in_wallet_id AND ch.code = in_chain_code;
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
-CREATE OR REPLACE FUNCTION f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) 
+CREATE OR REPLACE FUNCTION f_get_address_type_id(in_address VARCHAR(35), in_chain_code VARCHAR(30)) 
 RETURNS SMALLINT AS $$
 SELECT COALESCE((SELECT address_type_id 
 FROM address_type AS adt INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id
 WHERE ch.code = in_chain_code AND adt.leading_symbol = substr(in_address, 1, 1)), f_to_smallint(-1));
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
-CREATE OR REPLACE FUNCTION f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_code VARCHAR(30), 
-in_label_fragment VARCHAR(60)) RETURNS INTEGER AS $$
+CREATE OR REPLACE FUNCTION f_count_addresses_by_label(in_label_fragment VARCHAR(60), in_wallet_id INTEGER, 
+in_chain_code VARCHAR(30)) RETURNS INTEGER AS $$
 SELECT CAST(count(*) AS INTEGER) AS address_count
 FROM address AS a INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
 INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id
@@ -852,8 +852,8 @@ DROP FUNCTION IF EXISTS f_estimate_btc_supply(in_chain_started_at TIMESTAMP(0), 
 DROP FUNCTION IF EXISTS f_calc_ltc_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_estimate_ltc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) CASCADE;
 DROP FUNCTION IF EXISTS f_get_wallet_subbalance(in_wallet_id INTEGER, in_chain_code VARCHAR(30)) CASCADE;
-DROP FUNCTION IF EXISTS f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) CASCADE;
-DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_code VARCHAR(30), in_label_fragment VARCHAR(60)) CASCADE;
+DROP FUNCTION IF EXISTS f_get_address_type_id(in_address VARCHAR(35), in_chain_code VARCHAR(30)) CASCADE;
+DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_label_fragment VARCHAR(60), in_wallet_id INTEGER, in_chain_code VARCHAR(30)) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_btc_transaction_fee(in_binary_size INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_ltc_transaction_fee(in_binary_size INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_transaction_size(in_hex_transaction TEXT) CASCADE;
@@ -960,7 +960,7 @@ BEGIN
     FROM address AS a INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
     INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id
     WHERE address_id = NEW.address_id;
-    IF (f_get_address_type_id(chain_code, NEW.encoded_form) <> address_type_id) THEN
+    IF (f_get_address_type_id(NEW.encoded_form, chain_code) <> address_type_id) THEN
         RAISE EXCEPTION '% failed (table ''%'') - base58 address (encoded_form = %) must meet the formatting reqs of the specified address type (code = %).', 
             TG_OP, TG_TABLE_NAME, NEW.encoded_form, address_type_code USING ERRCODE = '30201';
     END IF;
@@ -1420,8 +1420,8 @@ GRANT EXECUTE ON FUNCTION f_estimate_btc_supply(in_chain_started_at TIMESTAMP(0)
 GRANT EXECUTE ON FUNCTION f_calc_ltc_supply(in_block_height INTEGER) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_estimate_ltc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_get_wallet_subbalance(in_wallet_id INTEGER, in_chain_code VARCHAR(30)) TO bitplexus_customer, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_get_address_type_id(in_chain_code VARCHAR(30), in_address VARCHAR(35)) TO bitplexus_customer, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_count_addresses_by_label(in_wallet_id INTEGER, in_chain_code VARCHAR(30), in_label_fragment VARCHAR(60)) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_get_address_type_id(in_address VARCHAR(35), in_chain_code VARCHAR(30)) TO bitplexus_customer, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_count_addresses_by_label(in_label_fragment VARCHAR(60), in_wallet_id INTEGER, in_chain_code VARCHAR(30)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_btc_transaction_fee(in_binary_size INTEGER) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_ltc_transaction_fee(in_binary_size INTEGER) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_transaction_size(in_hex_transaction TEXT) TO bitplexus_customer, bitplexus_dbm;

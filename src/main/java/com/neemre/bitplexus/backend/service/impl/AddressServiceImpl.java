@@ -17,8 +17,12 @@ import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
 import com.neemre.bitplexus.backend.crypto.NodeWrapperResolver;
 import com.neemre.bitplexus.backend.data.AddressRepository;
 import com.neemre.bitplexus.backend.data.AddressTypeRepository;
+import com.neemre.bitplexus.backend.data.WalletRepository;
 import com.neemre.bitplexus.backend.model.Address;
+import com.neemre.bitplexus.backend.model.AddressType;
+import com.neemre.bitplexus.backend.model.Wallet;
 import com.neemre.bitplexus.backend.model.reference.enums.AddressStateTypes;
+import com.neemre.bitplexus.backend.model.reference.enums.WalletStateTypes;
 import com.neemre.bitplexus.backend.service.AddressService;
 import com.neemre.bitplexus.common.Defaults;
 import com.neemre.bitplexus.common.Errors;
@@ -34,7 +38,9 @@ public class AddressServiceImpl implements AddressService {
 	private AddressRepository addressRepository;
 	@Autowired
 	private AddressTypeRepository addressTypeRepository;
-
+	@Autowired
+	private WalletRepository walletRepository;
+	
 	@Resource(name = "dtoAssembler")
 	private DtoAssembler dtoAssembler;
 	@Autowired
@@ -51,7 +57,18 @@ public class AddressServiceImpl implements AddressService {
 
 	@Transactional
 	@Override
-	public AddressDto createNewAddress(AddressDto addressDto, String chainCode) 
+	public AddressDto createNewExternalAddress(AddressDto addressDto, String chainCode) {
+		Address address = dtoAssembler.disassemble(addressDto, AddressDto.class, Address.class);
+		address.setEncodedForm(addressDto.getEncodedForm());
+		address.setAddressType(new AddressType(addressTypeRepository.findIdByAddressAndChainCode(
+				address.getEncodedForm(), chainCode), null, null, null, null, null, null, null, null));
+		Address createdAddress = addressRepository.saveAndFlush(address);
+		return dtoAssembler.assemble(createdAddress, Address.class, AddressDto.class);
+	}
+	
+	@Transactional
+	@Override
+	public AddressDto createNewWalletAddress(AddressDto addressDto, String chainCode) 
 			throws NodeWrapperException {
 		Address address = dtoAssembler.disassemble(addressDto, AddressDto.class, Address.class);
 		if (clientResolver.getBtcdClient(chainCode) != null) {
@@ -59,11 +76,15 @@ public class AddressServiceImpl implements AddressService {
 		} else if (clientResolver.getLtcdClient(chainCode) != null) {
 			address.setEncodedForm(getNewLtcAddress(chainCode));
 		}
-		address.getWallet().setWalletId(addressDto.getWalletId());
-		address.getAddressType().setAddressTypeId(addressTypeRepository.findIdByAddressAndChainCode(
-				address.getEncodedForm(), chainCode));
-		address.setAddressStateType(addressRepository.findAddressStateTypeByCode(
-				AddressStateTypes.ALLOCATED.name()));
+		Wallet relatedWallet = walletRepository.findOne(addressDto.getWalletId());
+		if (relatedWallet.getWalletStateType().getCode().equals(WalletStateTypes.CREATED.name())) {
+			relatedWallet.setWalletStateType(walletRepository.findWalletStateTypeByCode(
+					WalletStateTypes.ACTIVE.name()));
+			relatedWallet = walletRepository.saveAndFlush(relatedWallet);
+		}
+		address.setWallet(relatedWallet);
+		address.setAddressType(new AddressType(addressTypeRepository.findIdByAddressAndChainCode(
+				address.getEncodedForm(), chainCode), null, null, null, null, null, null, null, null));
 		address.setBalance(BigDecimal.ZERO);
 		Address createdAddress = addressRepository.saveAndFlush(address);
 		return dtoAssembler.assemble(createdAddress, Address.class, AddressDto.class);
@@ -97,11 +118,25 @@ public class AddressServiceImpl implements AddressService {
 	public AddressDto updateAddressBalance(Long addressId) throws NodeWrapperException {
 		Address address = addressRepository.findOne(addressId);
 		String chainCode = address.getAddressType().getChain().getCode();
+		BigDecimal updatedBalance = null;
 		if (clientResolver.getBtcdClient(chainCode) != null) {
-			address.setBalance(getBtcAddressUnspent(address.getEncodedForm(), chainCode));
+			updatedBalance = getBtcAddressUnspent(address.getEncodedForm(), chainCode);
 		} else if (clientResolver.getLtcdClient(chainCode) != null) {
-			address.setBalance(getLtcAddressUnspent(address.getEncodedForm(), chainCode));
+			updatedBalance = getLtcAddressUnspent(address.getEncodedForm(), chainCode);
 		}
+		if (address.getAddressStateType().getCode().equals(AddressStateTypes.ALLOCATED.name())) {
+			if ((updatedBalance.compareTo(BigDecimal.ZERO) == 1)) {
+				address.setAddressStateType(addressRepository.findAddressStateTypeByCode(
+						AddressStateTypes.ACTIVE.name()));
+			}
+		}
+		if (address.getAddressStateType().getCode().equals(AddressStateTypes.ACTIVE.name())) {
+			if ((updatedBalance.compareTo(BigDecimal.ZERO) == 0)) {
+				address.setAddressStateType(addressRepository.findAddressStateTypeByCode(
+						AddressStateTypes.USED.name()));
+			}
+		}
+		address.setBalance(updatedBalance);
 		Address updatedAddress = addressRepository.saveAndFlush(address);
 		return dtoAssembler.assemble(updatedAddress, Address.class, AddressDto.class);
 	}

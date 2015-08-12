@@ -9,8 +9,10 @@ import com.neemre.bitplexus.common.dto.AddressDto;
 public interface AddressService {
 
 	Integer countSubwalletAddressesByLabel(String labelFragment, Integer walletId, String chainCode);
-	
-	AddressDto createNewAddress(AddressDto addressDto, String chainCode) throws NodeWrapperException;
+
+	AddressDto createNewExternalAddress(AddressDto addressDto, String chainCode);
+		
+	AddressDto createNewWalletAddress(AddressDto addressDto, String chainCode) throws NodeWrapperException;
 
 	AddressDto findAddressById(Long addressId);
 	

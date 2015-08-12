@@ -15,8 +15,8 @@ public interface JpaAddressRepository extends AddressRepository, JpaRepository<A
 
 	@Override
 	@Procedure("f_count_addresses_by_label")
-	Integer countByLabelAndWalletIdAndChainCode(@Param("in_label_fragment") String labelFragment, 
-			@Param("in_wallet_id") Integer walletId, @Param("in_chain_code") String chainCode);
+	Integer countByLabelAndWalletIdAndChainCode(String labelFragment, Integer walletId, 
+			String chainCode);
 	
 	@Override
 	@Query("SELECT ast FROM AddressStateType AS ast WHERE ast.code = :code")

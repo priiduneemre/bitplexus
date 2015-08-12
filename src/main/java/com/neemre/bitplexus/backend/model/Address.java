@@ -54,9 +54,9 @@ import com.neemre.bitplexus.backend.model.reference.AddressStateType;
 		allocationSize = 1)
 @NamedStoredProcedureQuery(name = "countByLabelAndWalletIdAndChainCode",
 		procedureName = "f_count_addresses_by_label", parameters = {
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_label_fragment", type = String.class),
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_wallet_id", type = Integer.class),
-		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class),
-		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_label_fragment", type = String.class)})
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class)})
 public class Address extends BaseEntity {
 	
 	private static final long serialVersionUID = 1L;

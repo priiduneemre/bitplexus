@@ -24,6 +24,8 @@ public class NodeWrapperResolver {
 	public BtcdClient getBtcdClient(String chainCode) {
 		try {
 			return (BtcdClient)context.getBean(chainCode + CLIENT_BEAN_SUFFIX);
+		} catch (ClassCastException e) {
+			return null;
 		} catch (NoSuchBeanDefinitionException e) {
 			return null;
 		}
@@ -32,6 +34,8 @@ public class NodeWrapperResolver {
 	public BtcdDaemon getBtcdDaemon(String chainCode) {
 		try {
 			return (BtcdDaemon)context.getBean(chainCode + DAEMON_BEAN_SUFFIX);
+		} catch (ClassCastException e) {
+			return null;
 		} catch (NoSuchBeanDefinitionException e) {
 			return null;
 		}
@@ -40,6 +44,8 @@ public class NodeWrapperResolver {
 	public LtcdClient getLtcdClient(String chainCode) {
 		try {
 			return (LtcdClient)context.getBean(chainCode + CLIENT_BEAN_SUFFIX);
+		} catch (ClassCastException e) {
+			return null;
 		} catch (NoSuchBeanDefinitionException e) {
 			return null;
 		}
@@ -48,6 +54,8 @@ public class NodeWrapperResolver {
 	public LtcdDaemon getLtcdDaemon(String chainCode) {
 		try {
 			return (LtcdDaemon)context.getBean(chainCode + DAEMON_BEAN_SUFFIX);
+		} catch (ClassCastException e) {
+			return null;
 		} catch (NoSuchBeanDefinitionException e) {
 			return null;
 		}

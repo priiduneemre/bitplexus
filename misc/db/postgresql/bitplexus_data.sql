@@ -252,3 +252,19 @@ TRUNCATE TABLE wallet_state_type CASCADE;
 TRUNCATE TABLE address_state_type CASCADE;
 TRUNCATE TABLE transaction_status_type CASCADE;
 TRUNCATE TABLE transaction_endpoint_type CASCADE;
+
+
+/*3. Miscellaneous objects & operations*/
+/*3.1 Sequence modification statements (to account for manually entered data)*/
+ALTER SEQUENCE IF EXISTS seq_member_member_id RESTART WITH 6;
+ALTER SEQUENCE IF EXISTS seq_employee_role_employee_role_id RESTART WITH 6;
+ALTER SEQUENCE IF EXISTS seq_currency_currency_id RESTART WITH 7;
+ALTER SEQUENCE IF EXISTS seq_chain_chain_id RESTART WITH 8;
+ALTER SEQUENCE IF EXISTS seq_wallet_wallet_id RESTART WITH 6;
+ALTER SEQUENCE IF EXISTS seq_address_type_address_type_id RESTART WITH 11;
+ALTER SEQUENCE IF EXISTS seq_address_address_id RESTART WITH 45;
+ALTER SEQUENCE IF EXISTS seq_address_book_entry_address_book_entry_id RESTART WITH 9;
+ALTER SEQUENCE IF EXISTS seq_transactions_transaction_id RESTART WITH 17;
+ALTER SEQUENCE IF EXISTS seq_transaction_endpoint_transaction_endpoint_id RESTART WITH 36;
+ALTER SEQUENCE IF EXISTS seq_payment_request_payment_request_id RESTART WITH 6;
+ALTER SEQUENCE IF EXISTS seq_visit_visit_id RESTART WITH 10;

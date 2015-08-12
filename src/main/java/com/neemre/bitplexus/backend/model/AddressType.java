@@ -45,8 +45,8 @@ import lombok.ToString;
 		allocationSize = 1)
 @NamedStoredProcedureQuery(name = "findIdByAddressAndChainCode", 
 		procedureName = "f_get_address_type_id", parameters = {
-		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class),
-		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_address", type = String.class)})
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_address", type = String.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class)})
 public class AddressType extends BaseEntity {
 	
 	public static final Ordering<AddressType> LEADING_SYMBOL_ORDERING = Ordering.natural().nullsLast()
