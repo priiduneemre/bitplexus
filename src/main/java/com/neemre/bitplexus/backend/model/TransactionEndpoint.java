@@ -92,7 +92,7 @@ public class TransactionEndpoint extends BaseEntity {
 	}
 	
 	private static class TransactionEndpointTypeExtractor implements Function<TransactionEndpoint, Short> {
-
+		
 		@Override
 		public Short apply(TransactionEndpoint transactionEndpoint) {
 			if (transactionEndpoint.getTransactionEndpointType() != null) {

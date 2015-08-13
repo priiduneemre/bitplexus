@@ -255,7 +255,7 @@ TRUNCATE TABLE transaction_endpoint_type CASCADE;
 
 
 /*3. Miscellaneous objects & operations*/
-/*3.1 Sequence modification statements (to account for manually entered data)*/
+/*3.1 Sequence modification statements (to account for manually inserted data)*/
 ALTER SEQUENCE IF EXISTS seq_member_member_id RESTART WITH 6;
 ALTER SEQUENCE IF EXISTS seq_employee_role_employee_role_id RESTART WITH 6;
 ALTER SEQUENCE IF EXISTS seq_currency_currency_id RESTART WITH 7;

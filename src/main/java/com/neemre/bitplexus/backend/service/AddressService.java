@@ -5,7 +5,6 @@ import java.util.List;
 import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
 import com.neemre.bitplexus.common.dto.AddressDto;
 
-
 public interface AddressService {
 
 	Integer countSubwalletAddressesByLabel(String labelFragment, Integer walletId, String chainCode);

@@ -38,7 +38,14 @@
 				<entry key="AddressDto" value="com.neemre.bitplexus.common.dto.AddressDto"/>
 				<entry key="AddressStateTypeDto" 
 					value="com.neemre.bitplexus.common.dto.AddressStateTypeDto"/>
-				<entry key="CustomerDto" value="com.neemre.bitplexus.common.dto.CustomerDto"/>
+				<entry key="ChainDto" value="com.neemre.bitplexus.common.dto.ChainDto"/>
+				<entry key="TransactionDto" value="com.neemre.bitplexus.common.dto.TransactionDto"/>				
+				<entry key="TransactionEndpointDto" 
+					value="com.neemre.bitplexus.common.dto.TransactionEndpointDto"/>
+				<entry key="TransactionEndpointTypeDto" 
+					value="com.neemre.bitplexus.common.dto.TransactionEndpointTypeDto"/>
+				<entry key="TransactionStatusTypeDto" 
+					value="com.neemre.bitplexus.common.dto.TransactionStatusTypeDto"/>
 				<entry key="VisitDto" value="com.neemre.bitplexus.common.dto.VisitDto"/>
 				<entry key="WalletDto" value="com.neemre.bitplexus.common.dto.WalletDto"/>
 				<entry key="WalletStateTypeDto" 
@@ -48,8 +55,8 @@
 	</bean>
 	
 	<bean id="dtoAssembler" class="com.neemre.bitplexus.common.dto.assembly.DtoAssemblerImpl">
-		<property name="beanFactory" ref="dtoAssemblerBeanFactory"/>	
-	</bean>	
+		<property name="beanFactory" ref="dtoAssemblerBeanFactory"/>
+	</bean>
 	
 	<bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
 		<property name="basenames">

@@ -12,11 +12,15 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Dto("com.neemre.bitplexus.backend.model.Customer")
-public class CustomerDto implements Serializable {
+@Dto("com.neemre.bitplexus.backend.model.reference.TransactionStatusType")
+public class TransactionStatusTypeDto implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	@DtoField(value = "customerId", readOnly = true)
-	private Integer customerId;
+	@DtoField(value = "transactionStatusTypeId", readOnly = true)
+	private Short transactionStatusTypeId;
+	@DtoField(value = "code", readOnly = true)
+	private String code;
+	@DtoField(value = "name", readOnly = true)
+	private String name;
 }

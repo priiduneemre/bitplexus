@@ -17,10 +17,12 @@ import com.neemre.bitplexus.backend.crypto.NodeWrapperResolver;
 import com.neemre.bitplexus.backend.model.reference.enums.AddressStateTypes;
 import com.neemre.bitplexus.backend.model.reference.enums.WalletStateTypes;
 import com.neemre.bitplexus.backend.service.AddressService;
+import com.neemre.bitplexus.backend.service.TransactionService;
 import com.neemre.bitplexus.backend.service.VisitService;
 import com.neemre.bitplexus.backend.service.WalletService;
 import com.neemre.bitplexus.common.dto.AddressDto;
 import com.neemre.bitplexus.common.dto.AddressStateTypeDto;
+import com.neemre.bitplexus.common.dto.TransactionDto;
 import com.neemre.bitplexus.common.dto.VisitDto;
 import com.neemre.bitplexus.common.dto.WalletDto;
 import com.neemre.bitplexus.common.dto.WalletStateTypeDto;
@@ -34,6 +36,8 @@ public class VisitController {
 
 	@Autowired
 	private AddressService addressService;
+	@Autowired
+	private TransactionService transactionService;
 	@Autowired
 	private VisitService visitService;
 	@Autowired
@@ -157,6 +161,21 @@ public class VisitController {
 				null, null, null));
 	}
 	
+	@RequestMapping(value = "/customer/transactions", method = RequestMethod.GET)
+	@ResponseBody
+	public List<TransactionDto> viewShowAll3(ModelMap model) {
+		List<TransactionDto> transactions = transactionService.findSubwalletTransactions(4, 
+				"BITCOIN_TEST3");
+		return transactions;
+	}
+	
+	@RequestMapping(value = "/customer/transaction", method = RequestMethod.GET)
+	@ResponseBody
+	public TransactionDto viewShowOne3(ModelMap model) {
+		TransactionDto transaction = transactionService.findTransactionById(16L);
+		return transaction;
+	}
+
 	@RequestMapping(value = "/btc/info", method = RequestMethod.GET)
 	@ResponseBody
 	public com.neemre.btcdcli4j.core.domain.Info getInfo(ModelMap model) throws BitcoindException, 
