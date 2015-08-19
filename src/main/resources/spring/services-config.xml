@@ -14,7 +14,9 @@
 	<context:component-scan base-package="com.neemre.bitplexus.backend.service.impl"/>
 	
 	<context:component-scan base-package="com.neemre.bitplexus.backend.crypto"/>
-		
+	
+	<util:properties id="tickerApiClientConfig"
+		location="/WEB-INF/classes/api/rest/forex_ticker.properties"/>
 	<util:properties id="btcTestnet3NodeConfig"
 		location="/WEB-INF/classes/node/bitcoin/testnet3_config.properties"/>
 	<util:properties id="ltcTestnet3NodeConfig"

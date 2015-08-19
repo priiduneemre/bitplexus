@@ -58,6 +58,14 @@
 		<property name="beanFactory" ref="dtoAssemblerBeanFactory"/>
 	</bean>
 	
+	<bean id="restTemplate" class="org.springframework.web.client.RestTemplate">
+		<property name="messageConverters">
+			<list>
+				<bean class="org.springframework.http.converter.json.MappingJackson2HttpMessageConverter"/>
+			</list>
+		</property>
+	</bean>
+	
 	<bean id="messageSource" class="org.springframework.context.support.ResourceBundleMessageSource">
 		<property name="basenames">
 			<list>
