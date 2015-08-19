@@ -1,5 +1,6 @@
 package com.neemre.bitplexus.frontend.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -17,11 +18,13 @@ import com.neemre.bitplexus.backend.crypto.NodeWrapperResolver;
 import com.neemre.bitplexus.backend.model.reference.enums.AddressStateTypes;
 import com.neemre.bitplexus.backend.model.reference.enums.WalletStateTypes;
 import com.neemre.bitplexus.backend.service.AddressService;
+import com.neemre.bitplexus.backend.service.ChainService;
 import com.neemre.bitplexus.backend.service.TransactionService;
 import com.neemre.bitplexus.backend.service.VisitService;
 import com.neemre.bitplexus.backend.service.WalletService;
 import com.neemre.bitplexus.common.dto.AddressDto;
 import com.neemre.bitplexus.common.dto.AddressStateTypeDto;
+import com.neemre.bitplexus.common.dto.ChainDto;
 import com.neemre.bitplexus.common.dto.TransactionDto;
 import com.neemre.bitplexus.common.dto.VisitDto;
 import com.neemre.bitplexus.common.dto.WalletDto;
@@ -36,6 +39,8 @@ public class VisitController {
 
 	@Autowired
 	private AddressService addressService;
+	@Autowired
+	private ChainService chainService;
 	@Autowired
 	private TransactionService transactionService;
 	@Autowired
@@ -75,6 +80,12 @@ public class VisitController {
 	public WalletDto viewShowCreateNew1(ModelMap model) {
 		return walletService.createNewWallet(new WalletDto(null, "rebel_sloth", null, 
 				"My new wallet", null, null));
+	}
+	
+	@RequestMapping(value = "/customer/wallets/chain/balance", method = RequestMethod.GET)
+	@ResponseBody
+	public BigDecimal viewShowSum(ModelMap model) {
+		return walletService.findSubwalletBalance(1, "BITCOIN_TEST3");
 	}
 	
 	@RequestMapping(value = "/customer/wallet", method = RequestMethod.GET)
@@ -176,6 +187,31 @@ public class VisitController {
 		return transaction;
 	}
 
+	@RequestMapping(value = "/customer/transactions/fee/minimum", method = RequestMethod.GET)
+	@ResponseBody
+	public BigDecimal viewShowComplexCalcResult(ModelMap model) {
+		return transactionService.findTransactionMinimumFee("LITECOIN_TEST3");
+	}
+	
+	@RequestMapping(value = "/customer/transactions/fee/optimal", method = RequestMethod.GET)
+	@ResponseBody
+	public  BigDecimal viewShowComplexCalcResult1(ModelMap model) {
+		return transactionService.findTransactionOptimalFee("aaaaaaaaaa", "BITCOIN_TEST3");
+	}
+	
+	@RequestMapping(value = "/chains", method = RequestMethod.GET)
+	@ResponseBody
+	public List<ChainDto> viewShowAll4(ModelMap model) {
+		List<ChainDto> chains = chainService.findChainsByOperationality(true);
+		return chains;
+	}
+	
+	@RequestMapping(value = "/chains/price", method = RequestMethod.GET)
+	@ResponseBody
+	public BigDecimal viewShowExternalApiResult(ModelMap model) {
+		return chainService.findChainUnitPrice("BITCOIN_TEST3");
+	}
+	
 	@RequestMapping(value = "/btc/info", method = RequestMethod.GET)
 	@ResponseBody
 	public com.neemre.btcdcli4j.core.domain.Info getInfo(ModelMap model) throws BitcoindException, 
