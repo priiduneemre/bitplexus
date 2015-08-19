@@ -14,6 +14,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedStoredProcedureQueries;
 import javax.persistence.NamedStoredProcedureQuery;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
@@ -41,6 +42,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
 
+import com.google.common.base.Function;
 import com.neemre.bitplexus.backend.model.reference.AddressStateType;
 
 @Data
@@ -52,11 +54,17 @@ import com.neemre.bitplexus.backend.model.reference.AddressStateType;
 @Table(name = "address", schema = "public")
 @SequenceGenerator(name = "seq_address_id", sequenceName = "seq_address_address_id", 
 		allocationSize = 1)
+@NamedStoredProcedureQueries(value = {
 @NamedStoredProcedureQuery(name = "countByLabelAndWalletIdAndChainCode",
 		procedureName = "f_count_addresses_by_label", parameters = {
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_label_fragment", type = String.class),
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_wallet_id", type = Integer.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class)}),
+@NamedStoredProcedureQuery(name = "sumBalanceByWalletIdAndChainCode",
+		procedureName = "f_get_wallet_subbalance", parameters = {
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_wallet_id", type = Integer.class),
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class)})
+})
 public class Address extends BaseEntity {
 	
 	private static final long serialVersionUID = 1L;
@@ -125,6 +133,14 @@ public class Address extends BaseEntity {
 				paymentRequests.remove(paymentRequest);
 				paymentRequest.setAddress(null);
 			}
+		}
+	}
+	
+	public static class EncodedFormExtractor implements Function<Address, String> {
+
+		@Override
+		public String apply(Address address) {
+			return address.getEncodedForm();
 		}
 	}
 }

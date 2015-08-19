@@ -27,8 +27,9 @@
 		<hibernate.version>5.0.0.CR2</hibernate.version>
 		<btcd-cli4j.version>0.5.1</btcd-cli4j.version>
 		<ltcd-cli4j.version>0.1.0</ltcd-cli4j.version>
-		<slf4j.version>1.7.10</slf4j.version>
 		<geda.version>3.1.0</geda.version>
+		<jackson.version>2.5.0</jackson.version>
+		<slf4j.version>1.7.10</slf4j.version>
 	</properties>
 
 	<dependencies>
@@ -45,6 +46,11 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
 			<version>${spring.version}</version>
 		</dependency>
 		<dependency>
@@ -149,9 +155,19 @@
 			<version>${geda.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.inspire-software.lib.dto.geda</groupId>
-			<artifactId>geda.examples</artifactId>
-			<version>${geda.version}</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${jackson.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>

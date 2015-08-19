@@ -1,5 +1,6 @@
 package com.neemre.bitplexus.backend.data.jpa;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -28,4 +29,8 @@ public interface JpaAddressRepository extends AddressRepository, JpaRepository<A
 			+ "AND ch.code = :chainCode ORDER BY ast.addressStateTypeId, a.label")
 	List<Address> findByWalletIdAndChainCode(@Param("walletId") Integer walletId, 
 			@Param("chainCode") String chainCode);
+	
+	@Override
+	@Procedure("f_get_wallet_subbalance")
+	BigDecimal sumBalanceByWalletIdAndChainCode(Integer walletId, String chainCode);
 }

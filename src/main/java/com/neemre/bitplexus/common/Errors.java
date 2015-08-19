@@ -9,8 +9,6 @@ import lombok.ToString;
 @AllArgsConstructor
 public enum Errors {
 	
-	ARGS_CLASS_UNINSANTIATABLE(1, ""),
-	ARGS_CLASS_INVISIBLE(2, ""),
 	TODO(1, "TODO");
 	
 	private final int code;

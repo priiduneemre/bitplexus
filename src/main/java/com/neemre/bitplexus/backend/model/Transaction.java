@@ -15,9 +15,13 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedStoredProcedureQueries;
+import javax.persistence.NamedStoredProcedureQuery;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
+import javax.persistence.ParameterMode;
 import javax.persistence.SequenceGenerator;
+import javax.persistence.StoredProcedureParameter;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -52,6 +56,13 @@ import com.neemre.bitplexus.backend.model.reference.TransactionStatusType;
 @Table(name = "transactions", schema = "public")
 @SequenceGenerator(name = "seq_transaction_id", sequenceName = "seq_transactions_transaction_id", 
 		allocationSize = 1)
+@NamedStoredProcedureQueries(value = {
+@NamedStoredProcedureQuery(name = "estimateFeeByHexTxAndFeeCoefficient",
+		procedureName = "f_estimate_transaction_fee", parameters = {
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_currency_name", type = String.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_hex_transaction", type = String.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_fee_coefficient", type = BigDecimal.class)})
+})
 public class Transaction extends BaseEntity {
 	
 	private static final long serialVersionUID = 1L;

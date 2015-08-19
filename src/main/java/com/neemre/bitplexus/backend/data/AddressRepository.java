@@ -1,5 +1,6 @@
 package com.neemre.bitplexus.backend.data;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import com.neemre.bitplexus.backend.model.Address;
@@ -17,4 +18,6 @@ public interface AddressRepository {
 	Address findOne(Long addressId);
 	
 	Address saveAndFlush(Address address);
+	
+	BigDecimal sumBalanceByWalletIdAndChainCode(Integer walletId, String chainCode);
 }
