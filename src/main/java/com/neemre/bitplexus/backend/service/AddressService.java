@@ -11,7 +11,8 @@ public interface AddressService {
 
 	AddressDto createNewExternalAddress(AddressDto addressDto, String chainCode);
 		
-	AddressDto createNewWalletAddress(AddressDto addressDto, String chainCode) throws NodeWrapperException;
+	AddressDto createNewWalletAddress(AddressDto addressDto, String chainCode) 
+			throws NodeWrapperException;
 
 	AddressDto findAddressById(Long addressId);
 	

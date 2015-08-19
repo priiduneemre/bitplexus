@@ -1,5 +1,6 @@
 package com.neemre.bitplexus.backend.service.impl;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.neemre.bitplexus.backend.data.AddressRepository;
 import com.neemre.bitplexus.backend.data.CustomerRepository;
 import com.neemre.bitplexus.backend.data.WalletRepository;
 import com.neemre.bitplexus.backend.model.Wallet;
@@ -20,13 +22,15 @@ import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
 public class WalletServiceImpl implements WalletService {
 
 	@Autowired
+	private AddressRepository addressRepository;
+	@Autowired
 	private WalletRepository walletRepository;
 	@Autowired
 	private CustomerRepository customerRepository;
 	
 	@Resource(name = "dtoAssembler")
 	private DtoAssembler dtoAssembler;
-	
+
 	
 	@Transactional
 	@Override
@@ -37,6 +41,12 @@ public class WalletServiceImpl implements WalletService {
 				WalletStateTypes.CREATED.name()));
 		Wallet createdWallet = walletRepository.saveAndFlush(wallet);
 		return dtoAssembler.assemble(createdWallet, Wallet.class, WalletDto.class);
+	}
+	
+	@Transactional(readOnly = true)
+	@Override
+	public BigDecimal findSubwalletBalance(Integer walletId, String chainCode) {
+		return addressRepository.sumBalanceByWalletIdAndChainCode(walletId, chainCode);
 	}
 	
 	@Transactional(readOnly = true)

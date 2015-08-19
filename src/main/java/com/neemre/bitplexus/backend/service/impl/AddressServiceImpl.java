@@ -156,7 +156,7 @@ public class AddressServiceImpl implements AddressService {
 			throws BitcoinWrapperException {
 		try {
 			List<com.neemre.btcdcli4j.core.domain.Output> unspentOutputs = clientResolver
-					.getBtcdClient(chainCode).listUnspent(Defaults.UNCONFIRMED_CONF_COUNT, 
+					.getBtcdClient(chainCode).listUnspent(Defaults.BTC_COMPLETED_CONF_COUNT,
 							Integer.MAX_VALUE, Arrays.asList(encodedForm));
 			BigDecimal balance = BigDecimal.ZERO;
 			for (int i = 0; i < unspentOutputs.size(); i++) {
@@ -175,7 +175,7 @@ public class AddressServiceImpl implements AddressService {
 			throws LitecoinWrapperException {
 		try {
 			List<com.neemre.ltcdcli4j.core.domain.Output> unspentOutputs = clientResolver
-					.getLtcdClient(chainCode).listUnspent(Defaults.UNCONFIRMED_CONF_COUNT, 
+					.getLtcdClient(chainCode).listUnspent(Defaults.LTC_COMPLETED_CONF_COUNT, 
 							Integer.MAX_VALUE, Arrays.asList(encodedForm));
 			BigDecimal balance = BigDecimal.ZERO;
 			for (int i = 0; i < unspentOutputs.size(); i++) {
