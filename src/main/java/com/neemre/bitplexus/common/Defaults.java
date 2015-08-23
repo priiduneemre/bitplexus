@@ -17,9 +17,12 @@ public final class Defaults {
 	public static final int BTC_COMPLETED_CONF_COUNT = 3;
 	public static final int LTC_COMPLETED_CONF_COUNT = 12;
 
-	public static final BigDecimal TX_FEE_COEFFICIENT = new BigDecimal("3.0");
+	public static final BigDecimal BTC_TXN_FEE_COEFFICIENT = new BigDecimal("3.0");
+	public static final BigDecimal LTC_TXN_FEE_COEFFICIENT = new BigDecimal("3.0");
+	public static final int BTC_TXN_TIMEOUT = 216000;
+	public static final int LTC_TXN_TIMEOUT = 54000;
 
 	public static final boolean ALLOW_HIGH_FEES = false;
 	public static final int PASSPHRASE_TIMEOUT = 1;
-	public static final int RAW_TX_VERBOSITY = 1;
+	public static final int RAW_TXN_VERBOSITY = 1;
 }

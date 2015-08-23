@@ -1,6 +1,11 @@
 package com.neemre.bitplexus.backend;
 
+import java.util.ArrayList;
+
 import javax.xml.bind.DatatypeConverter;
+
+import com.google.common.base.Joiner;
+import com.neemre.bitplexus.common.Constants;
 
 public class IncubatorMain {
 
@@ -13,5 +18,9 @@ public class IncubatorMain {
 				+ "9299eb505f2919a6f4d9115dd088ac00000000");
 		System.out.printf("Network ('%s') transaction size was: '%s';\n", "BITCOIN_TEST3", 
 				btcNetworkTransaction.length);
+		
+		String emptyListCsv = Joiner.on(Constants.STRING_COMMA).useForNull(Constants.STRING_NULL)
+				.join(new ArrayList<String>());
+		 System.out.printf("%s result for \"%s\": \"%s\";\n", "Joiner#join(..)", "[]", emptyListCsv);
 	}
 }

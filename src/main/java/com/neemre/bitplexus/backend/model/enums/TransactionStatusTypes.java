@@ -1,4 +1,4 @@
-package com.neemre.bitplexus.backend.model.reference.enums;
+package com.neemre.bitplexus.backend.model.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.ToString;
