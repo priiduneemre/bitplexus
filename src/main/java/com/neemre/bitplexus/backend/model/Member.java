@@ -45,7 +45,7 @@ import lombok.ToString;
 @SequenceGenerator(name = "seq_member_id", sequenceName = "seq_member_member_id", allocationSize = 1)
 @NamedStoredProcedureQuery(name = "findMemberRolesByUsername", 
 		procedureName = "f_get_member_roles", parameters = {
-		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_username", type = String[].class)})
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_username", type = String.class)})
 public class Member extends BaseEntity {
 	
 	private static final long serialVersionUID = 1L;

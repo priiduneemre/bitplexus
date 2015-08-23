@@ -18,18 +18,18 @@ public interface JpaAddressRepository extends AddressRepository, JpaRepository<A
 	@Procedure("f_count_addresses_by_label")
 	Integer countByLabelAndWalletIdAndChainCode(String labelFragment, Integer walletId, 
 			String chainCode);
-	
+
 	@Override
 	@Query("SELECT ast FROM AddressStateType AS ast WHERE ast.code = :code")
 	AddressStateType findAddressStateTypeByCode(@Param("code") String code);
-	
+
 	@Override
 	@Query("SELECT a FROM Address AS a INNER JOIN a.addressStateType AS ast INNER JOIN a.wallet AS w "
 			+ "INNER JOIN a.addressType AS at INNER JOIN at.chain AS ch WHERE w.walletId = :walletId "
 			+ "AND ch.code = :chainCode ORDER BY ast.addressStateTypeId, a.label")
 	List<Address> findByWalletIdAndChainCode(@Param("walletId") Integer walletId, 
 			@Param("chainCode") String chainCode);
-	
+
 	@Override
 	@Procedure("f_get_wallet_subbalance")
 	BigDecimal sumBalanceByWalletIdAndChainCode(Integer walletId, String chainCode);

@@ -13,7 +13,7 @@ import com.neemre.bitplexus.backend.data.AddressRepository;
 import com.neemre.bitplexus.backend.data.CustomerRepository;
 import com.neemre.bitplexus.backend.data.WalletRepository;
 import com.neemre.bitplexus.backend.model.Wallet;
-import com.neemre.bitplexus.backend.model.reference.enums.WalletStateTypes;
+import com.neemre.bitplexus.backend.model.enums.WalletStateTypes;
 import com.neemre.bitplexus.backend.service.WalletService;
 import com.neemre.bitplexus.common.dto.WalletDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;

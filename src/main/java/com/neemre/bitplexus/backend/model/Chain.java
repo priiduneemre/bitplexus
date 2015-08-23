@@ -147,6 +147,14 @@ public class Chain extends BaseEntity {
 		}
 	}
 	
+	public static class CodeExtractor implements Function<Chain, String> {
+
+		@Override
+		public String apply(Chain chain) {
+			return chain.getCode();
+		}
+	}
+
 	private static class NameExtractor implements Function<Chain, String> {
 
 		@Override
@@ -154,7 +162,7 @@ public class Chain extends BaseEntity {
 			return chain.getName();
 		}
 	}
-	
+
 	private static class OperationalityExtractor implements Function<Chain, Boolean> {
 
 		@Override
