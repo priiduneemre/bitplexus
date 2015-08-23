@@ -1,6 +1,8 @@
 package com.neemre.bitplexus.frontend.controller;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -15,8 +17,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
 import com.neemre.bitplexus.backend.crypto.NodeWrapperResolver;
-import com.neemre.bitplexus.backend.model.reference.enums.AddressStateTypes;
-import com.neemre.bitplexus.backend.model.reference.enums.WalletStateTypes;
+import com.neemre.bitplexus.backend.model.enums.AddressStateTypes;
+import com.neemre.bitplexus.backend.model.enums.WalletStateTypes;
 import com.neemre.bitplexus.backend.service.AddressService;
 import com.neemre.bitplexus.backend.service.ChainService;
 import com.neemre.bitplexus.backend.service.TransactionService;
@@ -171,7 +173,33 @@ public class VisitController {
 				new AddressStateTypeDto(null, AddressStateTypes.DELETED.name(), null), null, null, 
 				null, null, null));
 	}
-	
+
+	@RequestMapping(value = "/customer/transactions/complete", method = RequestMethod.GET)
+	@ResponseBody
+	public List<String> viewShowComplexQueryResult(ModelMap model) {
+		List<String> completedNetworkUids = transactionService.completeTransactions(532797, 
+				new Date(), "BITCOIN_TEST3");
+		return completedNetworkUids;
+	}
+
+	@RequestMapping(value = "/customer/transactions/confirm", method = RequestMethod.GET)
+	@ResponseBody
+	public List<String> viewShowComplexQueryResult1(ModelMap model) {
+		List<String> confirmedNetworkUids = transactionService.confirmTransactions(Arrays.asList(
+				new String[]{"e2bdb2e0bcc65462008f90ef5e0f32a867bfe3e84c61d36db29c8667ee2a1fad",
+						"9a2fb291dd54a8ee06c4aa802da1747ff7b1f955a316cbf0544e138e9fe7fdd6", 
+						"26cc7d07b9811f22beffb60cf32497da216a007648c629f04d9b55642ce43394"}),
+						532795, new Date(), "BITCOIN_TEST3");
+		return confirmedNetworkUids;
+	}
+
+	@RequestMapping(value = "/customer/transactions/drop", method = RequestMethod.GET)
+	@ResponseBody
+	public List<String> viewShowComplexQueryResult2(ModelMap model) {
+		List<String> droppedNetworkUids = transactionService.dropTransactions("BITCOIN_TEST3");
+		return droppedNetworkUids;
+	}
+
 	@RequestMapping(value = "/customer/transactions", method = RequestMethod.GET)
 	@ResponseBody
 	public List<TransactionDto> viewShowAll3(ModelMap model) {

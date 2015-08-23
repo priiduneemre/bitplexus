@@ -571,7 +571,7 @@ WITH affected_member AS (
 SELECT EXISTS (SELECT 1 FROM affected_member);
 $$ LANGUAGE sql STRICT;
 
-CREATE OR REPLACE FUNCTION f_get_member_roles(in_username VARCHAR(20)) RETURNS VARCHAR(30)[] AS $$
+CREATE OR REPLACE FUNCTION f_get_member_roles(in_username VARCHAR(20)) RETURNS TEXT AS $$
 WITH requested_member AS (
     SELECT * 
     FROM member AS m INNER JOIN person AS p ON m.member_id = p.person_id 
@@ -586,7 +586,7 @@ WITH requested_member AS (
     INNER JOIN role AS r ON er.role_id = r.role_id 
     WHERE e.employee_id = (SELECT person_id FROM requested_member) AND er.is_active = TRUE
 )
-SELECT CAST(array_agg(role_code) AS VARCHAR(30)[]) FROM active_roles;
+SELECT array_to_string(array_agg(role_code), ',', 'null') FROM active_roles;
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_calc_btc_supply(in_block_height INTEGER) RETURNS NUMERIC(23, 8) AS $$
@@ -712,55 +712,72 @@ CREATE OR REPLACE FUNCTION f_calc_transaction_size(in_hex_transaction TEXT) RETU
 SELECT octet_length(decode(in_hex_transaction, 'hex')) AS binary_size;
 $$ LANGUAGE sql IMMUTABLE LEAKPROOF STRICT;
 
-CREATE OR REPLACE FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64)) RETURNS BOOLEAN AS $$
+CREATE OR REPLACE FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64), in_chain_code VARCHAR(30)) 
+RETURNS BOOLEAN AS $$
 WITH was_confirmed_transaction AS (
-    UPDATE transactions SET transaction_status_type_id = 2, confirmed_at = NULL, block_height = NULL
-    WHERE network_uid = in_network_uid AND transaction_status_type_id = 3
-    RETURNING network_uid
+    UPDATE transactions AS t SET transaction_status_type_id = 2, confirmed_at = NULL, block_height = NULL
+    FROM transaction_endpoint AS te, address AS a, address_type AS at, chain AS ch
+    WHERE t.network_uid = in_network_uid AND t.transaction_status_type_id = 3
+        AND t.transaction_id = te.transaction_id AND te.address_id = a.address_id
+        AND a.address_type_id = at.address_type_id AND at.chain_id = ch.chain_id AND ch.code = in_chain_code
+    RETURNING t.network_uid
 ), was_completed_transaction AS (
-    UPDATE transactions SET transaction_status_type_id = 2, confirmed_at = NULL, completed_at = NULL,
+    UPDATE transactions AS t SET transaction_status_type_id = 2, confirmed_at = NULL, completed_at = NULL,
         block_height = NULL
-    WHERE network_uid = in_network_uid AND transaction_status_type_id = 4
-    RETURNING network_uid
+    FROM transaction_endpoint AS te, address AS a, address_type AS at, chain AS ch
+    WHERE t.network_uid = in_network_uid AND t.transaction_status_type_id = 4
+        AND t.transaction_id = te.transaction_id AND te.address_id = a.address_id
+        AND a.address_type_id = at.address_type_id AND at.chain_id = ch.chain_id AND ch.code = in_chain_code
+    RETURNING t.network_uid
 )
 SELECT EXISTS (SELECT 1 FROM was_confirmed_transaction UNION ALL SELECT 1 FROM was_completed_transaction);
 $$ LANGUAGE sql STRICT;
 
-CREATE OR REPLACE FUNCTION f_complete_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), 
-in_confirmation_count SMALLINT) RETURNS CHAR(64)[] AS $$
+CREATE OR REPLACE FUNCTION f_complete_transactions(in_confirmation_count SMALLINT, in_block_height INTEGER, 
+in_block_time TIMESTAMP(0), in_chain_code VARCHAR(30)) RETURNS TEXT AS $$
 WITH completed_transactions AS (
-    UPDATE transactions SET transaction_status_type_id = 4, completed_at = in_block_time
-    WHERE block_height <= (in_block_height - (in_confirmation_count - 1)) AND transaction_status_type_id = 3
-    RETURNING network_uid
+    UPDATE transactions AS t SET transaction_status_type_id = 4, completed_at = in_block_time
+    FROM transaction_endpoint AS te, address AS a, address_type AS at, chain AS ch
+    WHERE t.block_height <= (in_block_height - (in_confirmation_count - 1)) AND t.transaction_status_type_id = 3
+        AND t.transaction_id = te.transaction_id AND te.address_id = a.address_id
+        AND a.address_type_id = at.address_type_id AND at.chain_id = ch.chain_id AND ch.code = in_chain_code
+    RETURNING t.network_uid
 )
-SELECT array_agg(network_uid) FROM completed_transactions;
+SELECT array_to_string(array_agg(network_uid), ',', 'null') FROM completed_transactions;
 $$ LANGUAGE sql STRICT;
 
-CREATE OR REPLACE FUNCTION f_confirm_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), 
-in_network_uids CHAR(64)[]) RETURNS CHAR(64)[] AS $$
+CREATE OR REPLACE FUNCTION f_confirm_transactions(in_network_uids_csv TEXT, in_block_height INTEGER, 
+in_block_time TIMESTAMP(0), in_chain_code VARCHAR(30)) RETURNS TEXT AS $$
 DECLARE
+    in_network_uids CHAR(64)[] := string_to_array(in_network_uids_csv, ',', 'null');
     confirmed_network_uids CHAR(64)[];
 BEGIN
     FOR i IN 1..array_length(in_network_uids, 1) LOOP
-        PERFORM f_clean_evicted_transaction(in_network_uids[i]);
-        UPDATE transactions SET transaction_status_type_id = 3, confirmed_at = in_block_time, 
+        PERFORM f_clean_evicted_transaction(in_network_uids[i], in_chain_code);
+        UPDATE transactions AS t SET transaction_status_type_id = 3, confirmed_at = in_block_time, 
             block_height = in_block_height
-        WHERE network_uid = in_network_uids[i] AND transaction_status_type_id = 2;
+        FROM transaction_endpoint AS te, address AS a, address_type AS at, chain AS ch
+        WHERE t.network_uid = in_network_uids[i] AND t.transaction_status_type_id IN (2, 6)
+            AND t.transaction_id = te.transaction_id AND te.address_id = a.address_id
+            AND a.address_type_id = at.address_type_id AND at.chain_id = ch.chain_id AND ch.code = in_chain_code;
         IF (FOUND) THEN
             confirmed_network_uids := array_append(confirmed_network_uids, in_network_uids[i]);
         END IF;
     END LOOP;
-    RETURN confirmed_network_uids;
+    RETURN array_to_string(confirmed_network_uids, ',', 'null');
 END
 $$ LANGUAGE plpgsql STRICT;
 
-CREATE OR REPLACE FUNCTION f_drop_transactions(in_txn_timeout INTEGER) RETURNS CHAR(64)[] AS $$
+CREATE OR REPLACE FUNCTION f_drop_transactions(in_txn_timeout INTEGER, in_chain_code VARCHAR(30)) RETURNS TEXT AS $$
 WITH dropped_transactions AS (
-    UPDATE transactions SET transaction_status_type_id = 6
-    WHERE extract(epoch FROM (CURRENT_TIMESTAMP(0) - received_at)) >= in_txn_timeout AND transaction_status_type_id = 2
-    RETURNING network_uid
+    UPDATE transactions AS t SET transaction_status_type_id = 6
+    FROM transaction_endpoint AS te, address AS a, address_type AS at, chain AS ch
+    WHERE extract(epoch FROM (CURRENT_TIMESTAMP(0) - t.received_at)) >= in_txn_timeout AND t.transaction_status_type_id = 2
+        AND t.transaction_id = te.transaction_id AND te.address_id = a.address_id
+        AND a.address_type_id = at.address_type_id AND at.chain_id = ch.chain_id AND ch.code = in_chain_code
+    RETURNING t.network_uid
 )
-SELECT array_agg(network_uid) FROM dropped_transactions;
+SELECT array_to_string(array_agg(network_uid), ',', 'null') FROM dropped_transactions;
 $$ LANGUAGE sql STRICT;
 
 CREATE OR REPLACE FUNCTION f_estimate_transaction_fee(in_currency_name VARCHAR(25), in_hex_transaction TEXT, 
@@ -780,8 +797,8 @@ BEGIN
 END
 $$ LANGUAGE plpgsql STABLE STRICT;
 
-CREATE OR REPLACE FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) RETURNS VARCHAR(35)[] AS $$
-SELECT array_agg(a.encoded_form) AS addresses
+CREATE OR REPLACE FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) RETURNS TEXT AS $$
+SELECT array_to_string(array_agg(a.encoded_form), ',', 'null') AS addresses_csv
 FROM transactions AS t INNER JOIN transaction_endpoint AS te ON t.transaction_id = te.transaction_id
 INNER JOIN address AS a ON te.address_id = a.address_id
 WHERE t.network_uid = in_network_uid;
@@ -800,9 +817,9 @@ $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_build_payment_request_uri(in_payment_request_id BIGINT) RETURNS VARCHAR(1024) AS $$ 
 DECLARE
-    AMOUNTPARAM_NAME CONSTANT VARCHAR := 'amount';
-    LABELPARAM_NAME CONSTANT VARCHAR := 'label';
-    MESSAGEPARAM_NAME CONSTANT VARCHAR := 'message';
+    AMOUNTPARAM_NAME CONSTANT VARCHAR(6) := 'amount';
+    LABELPARAM_NAME CONSTANT VARCHAR(5) := 'label';
+    MESSAGEPARAM_NAME CONSTANT VARCHAR(7) := 'message';
     currency_name VARCHAR(25);
     address VARCHAR(35);
     amount NUMERIC(23, 8);
@@ -826,10 +843,10 @@ BEGIN
             'FM999999999999990.99999999') AS NUMERIC) || '&';
     END IF;
     IF (label IS NOT NULL) THEN
-        payment_request_uri := payment_request_uri || LABELPARAM_NAME || '=' || f_uri_encode(label) || '&';
+        payment_request_uri := payment_request_uri || LABELPARAM_NAME || '=' || f_encode_uri(label) || '&';
     END IF;
     IF (message IS NOT NULL) THEN
-        payment_request_uri := payment_request_uri || MESSAGEPARAM_NAME || '=' || f_uri_encode(message);
+        payment_request_uri := payment_request_uri || MESSAGEPARAM_NAME || '=' || f_encode_uri(message);
     END IF;
     RETURN regexp_replace(payment_request_uri, '[?&]$', '');
     EXCEPTION 
@@ -857,10 +874,10 @@ DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_label_fragment VARCHAR(60)
 DROP FUNCTION IF EXISTS f_calc_btc_transaction_fee(in_binary_size INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_ltc_transaction_fee(in_binary_size INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_transaction_size(in_hex_transaction TEXT) CASCADE;
-DROP FUNCTION IF EXISTS f_clean_evicted_transaction(in_network_uid CHAR(64)) CASCADE;
-DROP FUNCTION IF EXISTS f_complete_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), in_confirmation_count SMALLINT) CASCADE;
-DROP FUNCTION IF EXISTS f_confirm_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), in_network_uids CHAR(64)[]) CASCADE;
-DROP FUNCTION IF EXISTS f_drop_transactions(in_txn_timeout INTEGER) CASCADE;
+DROP FUNCTION IF EXISTS f_clean_evicted_transaction(in_network_uid CHAR(64), in_chain_code VARCHAR(30)) CASCADE;
+DROP FUNCTION IF EXISTS f_complete_transactions(in_confirmation_count SMALLINT, in_block_height INTEGER, in_block_time TIMESTAMP(0), in_chain_code VARCHAR(30)) CASCADE;
+DROP FUNCTION IF EXISTS f_confirm_transactions(in_network_uids_csv TEXT, in_block_height INTEGER, in_block_time TIMESTAMP(0), in_chain_code VARCHAR(30)) CASCADE;
+DROP FUNCTION IF EXISTS f_drop_transactions(in_txn_timeout INTEGER, in_chain_code VARCHAR(30)) CASCADE;
 DROP FUNCTION IF EXISTS f_estimate_transaction_fee(in_currency_name VARCHAR(25), in_hex_transaction TEXT, in_fee_coefficient NUMERIC(3, 1)) CASCADE;
 DROP FUNCTION IF EXISTS f_get_transaction_addresses(in_network_uid CHAR(64)) CASCADE;
 DROP FUNCTION IF EXISTS f_get_transaction_overview(in_transaction_id BIGINT) CASCADE;
@@ -1425,10 +1442,10 @@ GRANT EXECUTE ON FUNCTION f_count_addresses_by_label(in_label_fragment VARCHAR(6
 GRANT EXECUTE ON FUNCTION f_calc_btc_transaction_fee(in_binary_size INTEGER) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_ltc_transaction_fee(in_binary_size INTEGER) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_transaction_size(in_hex_transaction TEXT) TO bitplexus_customer, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64)) TO bitplexus_drone, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_complete_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), in_confirmation_count SMALLINT) TO bitplexus_drone, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_confirm_transactions(in_block_height INTEGER, in_block_time TIMESTAMP(0), in_network_uids CHAR(64)[]) TO bitplexus_drone, bitplexus_dbm;
-GRANT EXECUTE ON FUNCTION f_drop_transactions(in_txn_timeout INTEGER) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64), in_chain_code VARCHAR(30)) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_complete_transactions(in_confirmation_count SMALLINT, in_block_height INTEGER, in_block_time TIMESTAMP(0), in_chain_code VARCHAR(30)) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_confirm_transactions(in_network_uids_csv TEXT, in_block_height INTEGER, in_block_time TIMESTAMP(0), in_chain_code VARCHAR(30)) TO bitplexus_drone, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_drop_transactions(in_txn_timeout INTEGER, in_chain_code VARCHAR(30)) TO bitplexus_drone, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_estimate_transaction_fee(in_currency_name VARCHAR(25), in_hex_transaction TEXT, in_fee_coefficient NUMERIC(3, 1)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) TO bitplexus_drone, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_get_transaction_overview(in_transaction_id BIGINT) TO bitplexus_dbm;
