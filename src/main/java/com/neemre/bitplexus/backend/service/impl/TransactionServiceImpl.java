@@ -15,6 +15,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.neemre.bitplexus.backend.crypto.BitcoinWrapperException;
@@ -27,7 +30,9 @@ import com.neemre.bitplexus.backend.data.TransactionEndpointRepository;
 import com.neemre.bitplexus.backend.data.TransactionRepository;
 import com.neemre.bitplexus.backend.model.Address;
 import com.neemre.bitplexus.backend.model.Address.EncodedFormExtractor;
-import com.neemre.bitplexus.backend.model.reference.enums.TransactionStatusTypes;
+import com.neemre.bitplexus.backend.model.Currency;
+import com.neemre.bitplexus.backend.model.enums.Currencies;
+import com.neemre.bitplexus.backend.model.enums.TransactionStatusTypes;
 import com.neemre.bitplexus.backend.model.Transaction;
 import com.neemre.bitplexus.backend.service.TransactionService;
 import com.neemre.bitplexus.common.Constants;
@@ -60,6 +65,57 @@ public class TransactionServiceImpl implements TransactionService {
 	private NodeWrapperResolver clientResolver;
 
 
+	@Transactional
+	@Override
+	public List<String> completeTransactions(Integer blockHeight, Date blockTime, String chainCode) {
+		String completedNetworkUidsCsv = Constants.STRING_EMPTY;
+		Currency currency = currencyRepository.findByChainCode(chainCode);
+		if (currency.getName().equals(Currencies.BITCOIN.getName())) {
+			completedNetworkUidsCsv = transactionRepository.updateTransactionStatusTypesToCompleted(
+					(short)Defaults.BTC_COMPLETED_CONF_COUNT, blockHeight, blockTime, chainCode); 
+		} else if (currency.getName().equals(Currencies.LITECOIN.getName())) {
+			completedNetworkUidsCsv = transactionRepository.updateTransactionStatusTypesToCompleted(
+					(short)Defaults.LTC_COMPLETED_CONF_COUNT, blockHeight, blockTime, chainCode);
+		} else {
+			throw new IllegalArgumentException(Errors.TODO.getDescription());
+		}
+		return Lists.newArrayList(Splitter.on(Constants.STRING_COMMA).omitEmptyStrings().trimResults()
+				.split(MoreObjects.firstNonNull(completedNetworkUidsCsv, Constants.STRING_EMPTY)
+						.replaceAll(Constants.STRING_NULL, Constants.STRING_EMPTY)));
+	}
+
+	@Transactional
+	@Override
+	public List<String> confirmTransactions(List<String> networkUids, Integer blockHeight, 
+			Date blockTime, String chainCode) {
+		String networkUidsCsv = Joiner.on(Constants.STRING_COMMA).useForNull(Constants.STRING_NULL)
+				.join(networkUids);
+		String confirmedNetworkUidsCsv = transactionRepository.updateTransactionStatusTypesToConfirmed(
+				networkUidsCsv, blockHeight, blockTime, chainCode);
+		return Lists.newArrayList(Splitter.on(Constants.STRING_COMMA).omitEmptyStrings().trimResults()
+				.split(MoreObjects.firstNonNull(confirmedNetworkUidsCsv, Constants.STRING_EMPTY)
+						.replaceAll(Constants.STRING_NULL, Constants.STRING_EMPTY)));
+	}
+
+	@Transactional
+	@Override
+	public List<String> dropTransactions(String chainCode) {
+		String droppedNetworkUidsCsv = Constants.STRING_EMPTY;
+		Currency currency = currencyRepository.findByChainCode(chainCode);
+		if (currency.getName().equals(Currencies.BITCOIN.getName())) {
+			droppedNetworkUidsCsv = transactionRepository.updateTransactionStatusTypesToDropped(
+					Defaults.BTC_TXN_TIMEOUT, chainCode);
+		} else if (currency.getName().equals(Currencies.LITECOIN.getName())) {
+			droppedNetworkUidsCsv = transactionRepository.updateTransactionStatusTypesToDropped(
+					Defaults.LTC_TXN_TIMEOUT, chainCode);
+		} else {
+			throw new IllegalArgumentException(Errors.TODO.getDescription());
+		}
+		return Lists.newArrayList(Splitter.on(Constants.STRING_COMMA).omitEmptyStrings().trimResults()
+				.split(MoreObjects.firstNonNull(droppedNetworkUidsCsv, Constants.STRING_EMPTY)
+						.replaceAll(Constants.STRING_NULL, Constants.STRING_EMPTY)));
+	}
+
 	@Transactional(readOnly = true)
 	@Override
 	public List<TransactionDto> findSubwalletTransactions(Integer walletId, String chainCode) {
@@ -78,17 +134,29 @@ public class TransactionServiceImpl implements TransactionService {
 	@Transactional(readOnly = true)
 	@Override
 	public BigDecimal findTransactionMinimumFee(String chainCode) {
-		String currencyName = currencyRepository.findByChainCode(chainCode).getName();
-		return transactionRepository.estimateFeeByHexTxAndFeeCoefficient(currencyName, 
-				Constants.STRING_EMPTY, Defaults.TX_FEE_COEFFICIENT);
+		Currency currency = currencyRepository.findByChainCode(chainCode);
+		if (currency.getName().equals(Currencies.BITCOIN.getName())) {
+			return transactionRepository.estimateFeeByHexTxnAndFeeCoefficient(currency.getName(),
+					Constants.STRING_EMPTY, Defaults.BTC_TXN_FEE_COEFFICIENT);
+		} else if (currency.getName().equals(Currencies.LITECOIN.getName())) {
+			return transactionRepository.estimateFeeByHexTxnAndFeeCoefficient(currency.getName(),
+					Constants.STRING_EMPTY, Defaults.LTC_TXN_FEE_COEFFICIENT);
+		}
+		throw new IllegalArgumentException(Errors.TODO.getDescription());
 	}
 
 	@Transactional(readOnly = true)
 	@Override
 	public BigDecimal findTransactionOptimalFee(String hexTransaction, String chainCode) {
-		String currencyName = currencyRepository.findByChainCode(chainCode).getName();
-		return transactionRepository.estimateFeeByHexTxAndFeeCoefficient(currencyName, 
-				hexTransaction, Defaults.TX_FEE_COEFFICIENT);
+		Currency currency = currencyRepository.findByChainCode(chainCode);
+		if (currency.getName().equals(Currencies.BITCOIN.getName())) {
+			return transactionRepository.estimateFeeByHexTxnAndFeeCoefficient(currency.getName(), 
+					hexTransaction, Defaults.BTC_TXN_FEE_COEFFICIENT);
+		} else if (currency.getName().equals(Currencies.LITECOIN.getName())) {
+			return transactionRepository.estimateFeeByHexTxnAndFeeCoefficient(currency.getName(), 
+					hexTransaction, Defaults.LTC_TXN_FEE_COEFFICIENT);
+		}
+		throw new IllegalArgumentException(Errors.TODO.getDescription());
 	}
 
 
@@ -311,7 +379,7 @@ public class TransactionServiceImpl implements TransactionService {
 			String chainCode) throws BitcoinWrapperException {
 		try {
 			return (com.neemre.btcdcli4j.core.domain.RawTransaction)clientResolver.getBtcdClient(
-					chainCode).getRawTransaction(networkUid, Defaults.RAW_TX_VERBOSITY);
+					chainCode).getRawTransaction(networkUid, Defaults.RAW_TXN_VERBOSITY);
 		} catch (BitcoindException e) {
 			throw new BitcoinWrapperException(Errors.TODO, e);
 		} catch (com.neemre.btcdcli4j.core.CommunicationException e) {
@@ -324,7 +392,7 @@ public class TransactionServiceImpl implements TransactionService {
 			String chainCode) throws LitecoinWrapperException {
 		try {
 			return (com.neemre.ltcdcli4j.core.domain.RawTransaction)clientResolver.getLtcdClient(
-					chainCode).getRawTransaction(networkUid, Defaults.RAW_TX_VERBOSITY);
+					chainCode).getRawTransaction(networkUid, Defaults.RAW_TXN_VERBOSITY);
 		} catch (LitecoindException e) {
 			throw new LitecoinWrapperException(Errors.TODO, e);
 		} catch (com.neemre.ltcdcli4j.core.CommunicationException e) {

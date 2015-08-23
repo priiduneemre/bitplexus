@@ -1,6 +1,7 @@
 package com.neemre.bitplexus.backend.model;
 
 import java.math.BigDecimal;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -57,11 +58,27 @@ import com.neemre.bitplexus.backend.model.reference.TransactionStatusType;
 @SequenceGenerator(name = "seq_transaction_id", sequenceName = "seq_transactions_transaction_id", 
 		allocationSize = 1)
 @NamedStoredProcedureQueries(value = {
-@NamedStoredProcedureQuery(name = "estimateFeeByHexTxAndFeeCoefficient",
+@NamedStoredProcedureQuery(name = "estimateFeeByHexTxnAndFeeCoefficient",
 		procedureName = "f_estimate_transaction_fee", parameters = {
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_currency_name", type = String.class),
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_hex_transaction", type = String.class),
-		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_fee_coefficient", type = BigDecimal.class)})
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_fee_coefficient", type = BigDecimal.class)}),
+@NamedStoredProcedureQuery(name = "updateTransactionStatusTypesToCompleted", 
+		procedureName = "f_complete_transactions", parameters = {
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_confirmation_count", type = Short.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_block_height", type = Integer.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_block_time", type = Timestamp.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class)}),
+@NamedStoredProcedureQuery(name = "updateTransactionStatusTypesToConfirmed", 
+		procedureName = "f_confirm_transactions", parameters = {
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_network_uids_csv", type = String.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_block_height", type = Integer.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_block_time", type = Timestamp.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class)}),
+@NamedStoredProcedureQuery(name = "updateTransactionStatusTypesToDropped", 
+		procedureName = "f_drop_transactions", parameters = {
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_txn_timeout", type = Integer.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class)})
 })
 public class Transaction extends BaseEntity {
 	
