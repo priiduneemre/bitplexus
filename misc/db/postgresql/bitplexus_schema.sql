@@ -328,7 +328,7 @@ CREATE TABLE transaction_status_type (
     CONSTRAINT ak_transaction_status_type_name UNIQUE (name)
 );
 
-CREATE TABLE transactions (
+CREATE TABLE transaction (
     transaction_id              BIGSERIAL,
     transaction_status_type_id  SMALLINT        NOT NULL    DEFAULT 1,
     local_uid                   CHAR(36)        NOT NULL    DEFAULT CAST(gen_random_uuid() AS CHAR(36)), 
@@ -344,26 +344,26 @@ CREATE TABLE transactions (
     logged_at                   TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     updated_at                  TIMESTAMP(0),
     
-    CONSTRAINT pk_transactions PRIMARY KEY (transaction_id),
-    CONSTRAINT ak_transactions_local_uid UNIQUE (local_uid),
-    CONSTRAINT ak_transactions_network_uid UNIQUE (network_uid),
-    CONSTRAINT fk_transactions_transaction_status_type_id FOREIGN KEY (transaction_status_type_id) REFERENCES transaction_status_type (transaction_status_type_id) ON UPDATE CASCADE,
+    CONSTRAINT pk_transaction PRIMARY KEY (transaction_id),
+    CONSTRAINT ak_transaction_local_uid UNIQUE (local_uid),
+    CONSTRAINT ak_transaction_network_uid UNIQUE (network_uid),
+    CONSTRAINT fk_transaction_transaction_status_type_id FOREIGN KEY (transaction_status_type_id) REFERENCES transaction_status_type (transaction_status_type_id) ON UPDATE CASCADE,
 
-    CONSTRAINT ck_transactions_local_uid_valid CHECK (local_uid ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'),
-    CONSTRAINT ck_transactions_network_uid_in_hex CHECK (network_uid ~ '^[0-9a-f]*$'),
-    CONSTRAINT ck_transactions_received_at_in_range CHECK (received_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_transactions_confirmed_at_nullness CHECK (confirmed_at IS NULL = block_height IS NULL),
-    CONSTRAINT ck_transactions_confirmed_at_in_range CHECK (confirmed_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_transactions_confirmed_at_chrono_order CHECK (confirmed_at >= received_at),
-    CONSTRAINT ck_transactions_completed_at_in_range CHECK (completed_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_transactions_completed_at_chrono_order CHECK (completed_at >= confirmed_at),
-    CONSTRAINT ck_transactions_block_height_in_range CHECK (block_height >= 0),
-    CONSTRAINT ck_transactions_binary_size_in_range CHECK (binary_size > 0 AND binary_size <= 1000000),
-    CONSTRAINT ck_transactions_fee_in_range CHECK (fee >= 0),
-    CONSTRAINT ck_transactions_unit_price_in_range CHECK (unit_price > 0),
-    CONSTRAINT ck_transactions_logged_at_in_range CHECK (logged_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_transactions_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
-    CONSTRAINT ck_transactions_updated_at_chrono_order CHECK (updated_at >= logged_at)
+    CONSTRAINT ck_transaction_local_uid_valid CHECK (local_uid ~ '^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'),
+    CONSTRAINT ck_transaction_network_uid_in_hex CHECK (network_uid ~ '^[0-9a-f]*$'),
+    CONSTRAINT ck_transaction_received_at_in_range CHECK (received_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transaction_confirmed_at_nullness CHECK (confirmed_at IS NULL = block_height IS NULL),
+    CONSTRAINT ck_transaction_confirmed_at_in_range CHECK (confirmed_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transaction_confirmed_at_chrono_order CHECK (confirmed_at >= received_at),
+    CONSTRAINT ck_transaction_completed_at_in_range CHECK (completed_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transaction_completed_at_chrono_order CHECK (completed_at >= confirmed_at),
+    CONSTRAINT ck_transaction_block_height_in_range CHECK (block_height >= 0),
+    CONSTRAINT ck_transaction_binary_size_in_range CHECK (binary_size > 0 AND binary_size <= 1000000),
+    CONSTRAINT ck_transaction_fee_in_range CHECK (fee >= 0),
+    CONSTRAINT ck_transaction_unit_price_in_range CHECK (unit_price > 0),
+    CONSTRAINT ck_transaction_logged_at_in_range CHECK (logged_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transaction_updated_at_in_range CHECK (updated_at BETWEEN '1900-01-01' AND '2100-01-01'),
+    CONSTRAINT ck_transaction_updated_at_chrono_order CHECK (updated_at >= logged_at)
 );
 
 CREATE TABLE transaction_endpoint_type (
@@ -385,7 +385,7 @@ CREATE TABLE transaction_endpoint (
     logged_at                       TIMESTAMP(0)    NOT NULL    DEFAULT CURRENT_TIMESTAMP(0),
     
     CONSTRAINT pk_transaction_endpoint PRIMARY KEY (transaction_endpoint_id),
-    CONSTRAINT fk_transaction_endpoint_transaction_id FOREIGN KEY (transaction_id) REFERENCES transactions (transaction_id),
+    CONSTRAINT fk_transaction_endpoint_transaction_id FOREIGN KEY (transaction_id) REFERENCES transaction (transaction_id),
     CONSTRAINT fk_transaction_endpoint_address_id FOREIGN KEY (address_id) REFERENCES address (address_id),
     CONSTRAINT fk_transaction_endpoint_transaction_endpoint_type_id FOREIGN KEY (transaction_endpoint_type_id) REFERENCES transaction_endpoint_type (transaction_endpoint_type_id) ON UPDATE CASCADE,
     
@@ -437,7 +437,7 @@ DROP TABLE IF EXISTS address_state_type CASCADE;
 DROP TABLE IF EXISTS address CASCADE;
 DROP TABLE IF EXISTS address_book_entry CASCADE;
 DROP TABLE IF EXISTS transaction_status_type CASCADE;
-DROP TABLE IF EXISTS transactions CASCADE;
+DROP TABLE IF EXISTS transaction CASCADE;
 DROP TABLE IF EXISTS transaction_endpoint_type CASCADE;
 DROP TABLE IF EXISTS transaction_endpoint CASCADE;
 DROP TABLE IF EXISTS payment_request CASCADE;
@@ -464,7 +464,7 @@ CREATE INDEX idx_address_address_type_id ON address USING btree (address_type_id
 CREATE INDEX idx_address_address_state_type_id ON address USING btree (address_state_type_id);
 CREATE INDEX idx_address_book_entry_customer_id ON address_book_entry USING btree (customer_id);
 CREATE INDEX idx_address_book_entry_address_id ON address_book_entry USING btree (address_id);
-CREATE INDEX idx_transactions_transaction_status_type_id ON transactions USING btree (transaction_status_type_id);
+CREATE INDEX idx_transaction_transaction_status_type_id ON transaction USING btree (transaction_status_type_id);
 CREATE INDEX idx_transaction_endpoint_transaction_id ON transaction_endpoint USING btree (transaction_id);
 CREATE INDEX idx_transaction_endpoint_address_id ON transaction_endpoint USING btree (address_id);
 CREATE INDEX idx_transaction_endpoint_transaction_endpoint_type_id ON transaction_endpoint USING btree (transaction_endpoint_type_id);
@@ -489,7 +489,7 @@ DROP INDEX IF EXISTS idx_address_address_type_id;
 DROP INDEX IF EXISTS idx_address_address_state_type_id;
 DROP INDEX IF EXISTS idx_address_book_entry_customer_id;
 DROP INDEX IF EXISTS idx_address_book_entry_address_id;
-DROP INDEX IF EXISTS idx_transactions_transaction_status_type_id;
+DROP INDEX IF EXISTS idx_transaction_transaction_status_type_id;
 DROP INDEX IF EXISTS idx_transaction_endpoint_transaction_id;
 DROP INDEX IF EXISTS idx_transaction_endpoint_address_id;
 DROP INDEX IF EXISTS idx_transaction_endpoint_transaction_endpoint_type_id;
@@ -502,14 +502,14 @@ CREATE INDEX idx_member_failed_logins ON member USING btree (failed_logins) WHER
 CREATE INDEX idx_member_phone_number ON member USING btree (phone_number varchar_pattern_ops);
 CREATE INDEX idx_address_type_leading_symbol ON address_type USING btree (leading_symbol);
 CREATE INDEX idx_address_encoded_form ON address USING btree (encoded_form varchar_pattern_ops);
-CREATE INDEX idx_transactions_block_height ON transactions USING btree (block_height);
+CREATE INDEX idx_transaction_block_height ON transaction USING btree (block_height);
 CREATE INDEX idx_visit_ip_address ON visit USING btree (ip_address);
 CREATE INDEX idx_visit_login_at ON visit USING btree (login_at);
 
 CREATE INDEX fidx_person_first_name ON person USING btree (lower(first_name) varchar_pattern_ops);
 CREATE INDEX fidx_person_last_name ON person USING btree (lower(last_name) varchar_pattern_ops);
 CREATE INDEX fidx_address_label ON address USING btree (lower(label) varchar_pattern_ops);
-CREATE INDEX fidx_transactions_network_uid ON transactions USING btree (lower(network_uid) varchar_pattern_ops);
+CREATE INDEX fidx_transaction_network_uid ON transaction USING btree (lower(network_uid) varchar_pattern_ops);
 
 CREATE UNIQUE INDEX uidx_employee_role_employee_id_role_id ON employee_role USING btree (employee_id, role_id) WHERE is_active = TRUE;
 
@@ -518,14 +518,14 @@ DROP INDEX IF EXISTS idx_member_failed_logins;
 DROP INDEX IF EXISTS idx_member_phone_number;
 DROP INDEX IF EXISTS idx_address_type_leading_symbol;
 DROP INDEX IF EXISTS idx_address_encoded_form;
-DROP INDEX IF EXISTS idx_transactions_block_height;
+DROP INDEX IF EXISTS idx_transaction_block_height;
 DROP INDEX IF EXISTS idx_visit_ip_address;
 DROP INDEX IF EXISTS idx_visit_login_at;
 
 DROP INDEX IF EXISTS fidx_person_first_name;
 DROP INDEX IF EXISTS fidx_person_last_name;
 DROP INDEX IF EXISTS fidx_address_label;
-DROP INDEX IF EXISTS fidx_transactions_network_uid;
+DROP INDEX IF EXISTS fidx_transaction_network_uid;
 
 DROP INDEX IF EXISTS uidx_employee_role_employee_id_role_id;
 
@@ -715,14 +715,14 @@ $$ LANGUAGE sql IMMUTABLE LEAKPROOF STRICT;
 CREATE OR REPLACE FUNCTION f_clean_evicted_transaction(in_network_uid CHAR(64), in_chain_code VARCHAR(30)) 
 RETURNS BOOLEAN AS $$
 WITH was_confirmed_transaction AS (
-    UPDATE transactions AS t SET transaction_status_type_id = 2, confirmed_at = NULL, block_height = NULL
+    UPDATE transaction AS t SET transaction_status_type_id = 2, confirmed_at = NULL, block_height = NULL
     FROM transaction_endpoint AS te, address AS a, address_type AS at, chain AS ch
     WHERE t.network_uid = in_network_uid AND t.transaction_status_type_id = 3
         AND t.transaction_id = te.transaction_id AND te.address_id = a.address_id
         AND a.address_type_id = at.address_type_id AND at.chain_id = ch.chain_id AND ch.code = in_chain_code
     RETURNING t.network_uid
 ), was_completed_transaction AS (
-    UPDATE transactions AS t SET transaction_status_type_id = 2, confirmed_at = NULL, completed_at = NULL,
+    UPDATE transaction AS t SET transaction_status_type_id = 2, confirmed_at = NULL, completed_at = NULL,
         block_height = NULL
     FROM transaction_endpoint AS te, address AS a, address_type AS at, chain AS ch
     WHERE t.network_uid = in_network_uid AND t.transaction_status_type_id = 4
@@ -736,7 +736,7 @@ $$ LANGUAGE sql STRICT;
 CREATE OR REPLACE FUNCTION f_complete_transactions(in_confirmation_count SMALLINT, in_block_height INTEGER, 
 in_block_time TIMESTAMP(0), in_chain_code VARCHAR(30)) RETURNS TEXT AS $$
 WITH completed_transactions AS (
-    UPDATE transactions AS t SET transaction_status_type_id = 4, completed_at = in_block_time
+    UPDATE transaction AS t SET transaction_status_type_id = 4, completed_at = in_block_time
     FROM transaction_endpoint AS te, address AS a, address_type AS at, chain AS ch
     WHERE t.block_height <= (in_block_height - (in_confirmation_count - 1)) AND t.transaction_status_type_id = 3
         AND t.transaction_id = te.transaction_id AND te.address_id = a.address_id
@@ -754,7 +754,7 @@ DECLARE
 BEGIN
     FOR i IN 1..array_length(in_network_uids, 1) LOOP
         PERFORM f_clean_evicted_transaction(in_network_uids[i], in_chain_code);
-        UPDATE transactions AS t SET transaction_status_type_id = 3, confirmed_at = in_block_time, 
+        UPDATE transaction AS t SET transaction_status_type_id = 3, confirmed_at = in_block_time, 
             block_height = in_block_height
         FROM transaction_endpoint AS te, address AS a, address_type AS at, chain AS ch
         WHERE t.network_uid = in_network_uids[i] AND t.transaction_status_type_id IN (2, 6)
@@ -770,7 +770,7 @@ $$ LANGUAGE plpgsql STRICT;
 
 CREATE OR REPLACE FUNCTION f_drop_transactions(in_txn_timeout INTEGER, in_chain_code VARCHAR(30)) RETURNS TEXT AS $$
 WITH dropped_transactions AS (
-    UPDATE transactions AS t SET transaction_status_type_id = 6
+    UPDATE transaction AS t SET transaction_status_type_id = 6
     FROM transaction_endpoint AS te, address AS a, address_type AS at, chain AS ch
     WHERE extract(epoch FROM (CURRENT_TIMESTAMP(0) - t.received_at)) >= in_txn_timeout AND t.transaction_status_type_id = 2
         AND t.transaction_id = te.transaction_id AND te.address_id = a.address_id
@@ -799,7 +799,7 @@ $$ LANGUAGE plpgsql STABLE STRICT;
 
 CREATE OR REPLACE FUNCTION f_get_transaction_addresses(in_network_uid CHAR(64)) RETURNS TEXT AS $$
 SELECT array_to_string(array_agg(a.encoded_form), ',', 'null') AS addresses_csv
-FROM transactions AS t INNER JOIN transaction_endpoint AS te ON t.transaction_id = te.transaction_id
+FROM transaction AS t INNER JOIN transaction_endpoint AS te ON t.transaction_id = te.transaction_id
 INNER JOIN address AS a ON te.address_id = a.address_id
 WHERE t.network_uid = in_network_uid;
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
@@ -809,7 +809,7 @@ RETURNS TABLE (input_sum NUMERIC(23, 8), output_sum NUMERIC(23, 8), change_sum N
 SELECT sum(CASE code WHEN 'INPUT' THEN amount ELSE 0 END) AS input_sum, 
     sum(CASE code WHEN 'OUTPUT_MAIN' THEN amount ELSE 0 END) AS output_sum,
     sum(CASE code WHEN 'OUTPUT_CHANGE' THEN amount ELSE 0 END) AS change_sum, t.fee
-FROM transactions AS t INNER JOIN transaction_endpoint AS te ON t.transaction_id = te.transaction_id
+FROM transaction AS t INNER JOIN transaction_endpoint AS te ON t.transaction_id = te.transaction_id
 INNER JOIN transaction_endpoint_type AS ted ON te.transaction_endpoint_type_id = ted.transaction_endpoint_type_id
 WHERE t.transaction_id = in_transaction_id
 GROUP BY t.fee;
@@ -1001,7 +1001,7 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION f_lower_transactions_uids() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION f_lower_transaction_uids() RETURNS TRIGGER AS $$
 BEGIN
     NEW.local_uid := lower(NEW.local_uid);
     NEW.network_uid := lower(NEW.network_uid);
@@ -1009,7 +1009,7 @@ BEGIN
 END
 $$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION f_check_transactions_fee() RETURNS TRIGGER AS $$
+CREATE OR REPLACE FUNCTION f_check_transaction_fee() RETURNS TRIGGER AS $$
 DECLARE
     standard_fee NUMERIC(23, 8);
     available_supply NUMERIC(23, 8);
@@ -1160,8 +1160,8 @@ DROP FUNCTION IF EXISTS f_disable_chain_is_operational() CASCADE;
 DROP FUNCTION IF EXISTS f_resolve_address_address_state_type_id() CASCADE;
 DROP FUNCTION IF EXISTS f_check_address_encoded_form() CASCADE;
 DROP FUNCTION IF EXISTS f_check_address_balance() CASCADE;
-DROP FUNCTION IF EXISTS f_lower_transactions_uids() CASCADE;
-DROP FUNCTION IF EXISTS f_check_transactions_fee() CASCADE;
+DROP FUNCTION IF EXISTS f_lower_transaction_uids() CASCADE;
+DROP FUNCTION IF EXISTS f_check_transaction_fee() CASCADE;
 DROP FUNCTION IF EXISTS f_check_transaction_endpoint_address_id() CASCADE;
 DROP FUNCTION IF EXISTS f_check_transaction_endpoint_transaction_endpoint_type_id() CASCADE;
 DROP FUNCTION IF EXISTS f_check_transaction_endpoint_amount() CASCADE;
@@ -1251,16 +1251,16 @@ CREATE TRIGGER tr_address_book_entry_updated_at_refresh BEFORE UPDATE ON address
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
-CREATE TRIGGER tr_transactions_uids_lower BEFORE INSERT OR UPDATE OF local_uid, network_uid ON transactions
+CREATE TRIGGER tr_transaction_uids_lower BEFORE INSERT OR UPDATE OF local_uid, network_uid ON transaction
 FOR EACH ROW
-EXECUTE PROCEDURE f_lower_transactions_uids();
+EXECUTE PROCEDURE f_lower_transaction_uids();
 
-CREATE CONSTRAINT TRIGGER tr_transactions_fee_check AFTER INSERT OR UPDATE OF fee ON transactions
+CREATE CONSTRAINT TRIGGER tr_transaction_fee_check AFTER INSERT OR UPDATE OF fee ON transaction
 INITIALLY DEFERRED
 FOR EACH ROW
-EXECUTE PROCEDURE f_check_transactions_fee();
+EXECUTE PROCEDURE f_check_transaction_fee();
 
-CREATE TRIGGER tr_transactions_updated_at_refresh BEFORE UPDATE ON transactions
+CREATE TRIGGER tr_transaction_updated_at_refresh BEFORE UPDATE ON transaction
 FOR EACH ROW 
 EXECUTE PROCEDURE f_refresh_entity_updated_at();
 
@@ -1318,9 +1318,9 @@ DROP TRIGGER IF EXISTS tr_address_encoded_form_check ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_balance_check ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_updated_at_refresh ON address CASCADE;
 DROP TRIGGER IF EXISTS tr_address_book_entry_updated_at_refresh ON address_book_entry CASCADE;
-DROP TRIGGER IF EXISTS tr_transactions_uids_lower ON transactions CASCADE;
-DROP TRIGGER IF EXISTS tr_transactions_fee_check ON transactions CASCADE;
-DROP TRIGGER IF EXISTS tr_transactions_updated_at_refresh ON transactions CASCADE;
+DROP TRIGGER IF EXISTS tr_transaction_uids_lower ON transaction CASCADE;
+DROP TRIGGER IF EXISTS tr_transaction_fee_check ON transaction CASCADE;
+DROP TRIGGER IF EXISTS tr_transaction_updated_at_refresh ON transaction CASCADE;
 DROP TRIGGER IF EXISTS tr_transaction_endpoint_address_id_check ON transaction_endpoint CASCADE;
 DROP TRIGGER IF EXISTS tr_transaction_endpoint_transaction_endpoint_type_id_check ON transaction_endpoint CASCADE;
 DROP TRIGGER IF EXISTS tr_transaction_endpoint_amount_check ON transaction_endpoint CASCADE;
@@ -1355,7 +1355,7 @@ GRANT SELECT ON TABLE address_state_type TO bitplexus_dbm;
 GRANT SELECT ON TABLE address TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT SELECT ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
 GRANT SELECT ON TABLE transaction_status_type TO bitplexus_customer, bitplexus_dbm;
-GRANT SELECT ON TABLE transactions TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
+GRANT SELECT ON TABLE transaction TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT SELECT ON TABLE transaction_endpoint_type TO bitplexus_customer, bitplexus_dbm;
 GRANT SELECT ON TABLE transaction_endpoint TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT SELECT ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
@@ -1372,7 +1372,7 @@ GRANT INSERT ON TABLE wallet TO bitplexus_customer, bitplexus_dbm;
 GRANT INSERT ON TABLE address_type TO bitplexus_employee, bitplexus_dbm;
 GRANT INSERT ON TABLE address TO bitplexus_customer, bitplexus_dbm;
 GRANT INSERT ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
-GRANT INSERT ON TABLE transactions TO bitplexus_customer, bitplexus_dbm;
+GRANT INSERT ON TABLE transaction TO bitplexus_customer, bitplexus_dbm;
 GRANT INSERT ON TABLE transaction_endpoint TO bitplexus_customer, bitplexus_dbm;
 GRANT INSERT ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
 GRANT INSERT ON TABLE visit TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
@@ -1388,7 +1388,7 @@ GRANT UPDATE ON TABLE wallet TO bitplexus_customer, bitplexus_dbm;
 GRANT UPDATE ON TABLE address_type TO bitplexus_employee, bitplexus_dbm;
 GRANT UPDATE ON TABLE address TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT UPDATE ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
-GRANT UPDATE ON TABLE transactions TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
+GRANT UPDATE ON TABLE transaction TO bitplexus_customer, bitplexus_drone, bitplexus_dbm;
 GRANT UPDATE ON TABLE transaction_endpoint TO bitplexus_dbm;
 GRANT UPDATE ON TABLE payment_request TO bitplexus_dbm;
 GRANT UPDATE ON TABLE visit TO bitplexus_dbm;
@@ -1404,7 +1404,7 @@ GRANT DELETE ON TABLE wallet TO bitplexus_dbm;
 GRANT DELETE ON TABLE address_type TO bitplexus_employee, bitplexus_dbm;
 GRANT DELETE ON TABLE address TO bitplexus_dbm;
 GRANT DELETE ON TABLE address_book_entry TO bitplexus_customer, bitplexus_dbm;
-GRANT DELETE ON TABLE transactions TO bitplexus_dbm;
+GRANT DELETE ON TABLE transaction TO bitplexus_dbm;
 GRANT DELETE ON TABLE transaction_endpoint TO bitplexus_dbm;
 GRANT DELETE ON TABLE payment_request TO bitplexus_customer, bitplexus_dbm;
 GRANT DELETE ON TABLE visit TO bitplexus_dbm;
@@ -1417,7 +1417,7 @@ GRANT USAGE ON SEQUENCE seq_wallet_wallet_id TO bitplexus_customer, bitplexus_db
 GRANT USAGE ON SEQUENCE seq_address_type_address_type_id TO bitplexus_employee, bitplexus_dbm;
 GRANT USAGE ON SEQUENCE seq_address_address_id TO bitplexus_customer, bitplexus_dbm;
 GRANT USAGE ON SEQUENCE seq_address_book_entry_address_book_entry_id TO bitplexus_customer, bitplexus_dbm;
-GRANT USAGE ON SEQUENCE seq_transactions_transaction_id TO bitplexus_customer, bitplexus_dbm;
+GRANT USAGE ON SEQUENCE seq_transaction_transaction_id TO bitplexus_customer, bitplexus_dbm;
 GRANT USAGE ON SEQUENCE seq_transaction_endpoint_transaction_endpoint_id TO bitplexus_customer, bitplexus_dbm;
 GRANT USAGE ON SEQUENCE seq_payment_request_payment_request_id TO bitplexus_customer, bitplexus_dbm;
 GRANT USAGE ON SEQUENCE seq_visit_visit_id TO bitplexus_customer, bitplexus_employee, bitplexus_dbm;
@@ -1470,7 +1470,7 @@ ALTER SEQUENCE IF EXISTS wallet_wallet_id_seq RENAME TO seq_wallet_wallet_id;
 ALTER SEQUENCE IF EXISTS address_type_address_type_id_seq RENAME TO seq_address_type_address_type_id;
 ALTER SEQUENCE IF EXISTS address_address_id_seq RENAME TO seq_address_address_id;
 ALTER SEQUENCE IF EXISTS address_book_entry_address_book_entry_id_seq RENAME TO seq_address_book_entry_address_book_entry_id;
-ALTER SEQUENCE IF EXISTS transactions_transaction_id_seq RENAME TO seq_transactions_transaction_id;
+ALTER SEQUENCE IF EXISTS transaction_transaction_id_seq RENAME TO seq_transaction_transaction_id;
 ALTER SEQUENCE IF EXISTS transaction_endpoint_transaction_endpoint_id_seq RENAME TO seq_transaction_endpoint_transaction_endpoint_id;
 ALTER SEQUENCE IF EXISTS payment_request_payment_request_id_seq RENAME TO seq_payment_request_payment_request_id;
 ALTER SEQUENCE IF EXISTS visit_visit_id_seq RENAME TO seq_visit_visit_id;

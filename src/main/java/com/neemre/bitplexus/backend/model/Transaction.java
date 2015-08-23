@@ -54,8 +54,8 @@ import com.neemre.bitplexus.backend.model.reference.TransactionStatusType;
 @ToString(callSuper = true, exclude = {"transactionEndpoints"})
 @EqualsAndHashCode(callSuper = false)
 @Entity
-@Table(name = "transactions", schema = "public")
-@SequenceGenerator(name = "seq_transaction_id", sequenceName = "seq_transactions_transaction_id", 
+@Table(name = "transaction", schema = "public")
+@SequenceGenerator(name = "seq_transaction_id", sequenceName = "seq_transaction_transaction_id", 
 		allocationSize = 1)
 @NamedStoredProcedureQueries(value = {
 @NamedStoredProcedureQuery(name = "estimateFeeByHexTxnAndFeeCoefficient",
