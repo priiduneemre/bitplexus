@@ -21,6 +21,8 @@ public interface TransactionService {
 
 	TransactionDto findTransactionById(Long transactionId);
 
+	TransactionDto findTransactionByNetworkUid(String networkUid);
+
 	BigDecimal findTransactionMinimumFee(String chainCode);
 
 	BigDecimal findTransactionOptimalFee(String hexTransaction, String chainCode);

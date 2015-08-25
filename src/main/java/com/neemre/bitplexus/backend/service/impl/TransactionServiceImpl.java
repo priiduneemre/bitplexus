@@ -133,6 +133,13 @@ public class TransactionServiceImpl implements TransactionService {
 
 	@Transactional(readOnly = true)
 	@Override
+	public TransactionDto findTransactionByNetworkUid(String networkUid) {
+		Transaction transaction = transactionRepository.findByNetworkUid(networkUid);
+		return dtoAssembler.assemble(transaction, Transaction.class,  TransactionDto.class);
+	}
+
+	@Transactional(readOnly = true)
+	@Override
 	public BigDecimal findTransactionMinimumFee(String chainCode) {
 		Currency currency = currencyRepository.findByChainCode(chainCode);
 		if (currency.getName().equals(Currencies.BITCOIN.getName())) {

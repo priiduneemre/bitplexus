@@ -61,7 +61,6 @@ public class TransactionDto implements Serializable {
 	private List<TransactionEndpointDto> transactionEndpoints;
 	
 
-
 	public static class TransactionEndpointDtoToTransactionEndpointMatcher implements 
 			DtoToEntityMatcher<TransactionEndpointDto, TransactionEndpoint> {
 

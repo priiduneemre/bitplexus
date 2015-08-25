@@ -11,6 +11,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import com.neemre.bitplexus.backend.crypto.BitcoinWrapperException;
 import com.neemre.bitplexus.backend.crypto.LitecoinWrapperException;
 import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
@@ -24,6 +27,7 @@ import com.neemre.bitplexus.backend.model.Wallet;
 import com.neemre.bitplexus.backend.model.enums.AddressStateTypes;
 import com.neemre.bitplexus.backend.model.enums.WalletStateTypes;
 import com.neemre.bitplexus.backend.service.AddressService;
+import com.neemre.bitplexus.common.Constants;
 import com.neemre.bitplexus.common.Defaults;
 import com.neemre.bitplexus.common.Errors;
 import com.neemre.bitplexus.common.dto.AddressDto;
@@ -40,7 +44,7 @@ public class AddressServiceImpl implements AddressService {
 	private AddressTypeRepository addressTypeRepository;
 	@Autowired
 	private WalletRepository walletRepository;
-	
+
 	@Resource(name = "dtoAssembler")
 	private DtoAssembler dtoAssembler;
 	@Autowired
@@ -65,7 +69,7 @@ public class AddressServiceImpl implements AddressService {
 		Address createdAddress = addressRepository.saveAndFlush(address);
 		return dtoAssembler.assemble(createdAddress, Address.class, AddressDto.class);
 	}
-	
+
 	@Transactional
 	@Override
 	public AddressDto createNewWalletAddress(AddressDto addressDto, String chainCode) 
@@ -92,6 +96,13 @@ public class AddressServiceImpl implements AddressService {
 
 	@Transactional(readOnly = true)
 	@Override
+	public AddressDto findAddressByEncodedForm(String encodedForm) {
+		Address address = addressRepository.findByEncodedForm(encodedForm);
+		return dtoAssembler.assemble(address, Address.class, AddressDto.class);
+	}
+
+	@Transactional(readOnly = true)
+	@Override
 	public AddressDto findAddressById(Long addressId) {
 		Address address = addressRepository.findOne(addressId);
 		return dtoAssembler.assemble(address, Address.class, AddressDto.class);
@@ -99,8 +110,31 @@ public class AddressServiceImpl implements AddressService {
 
 	@Transactional(readOnly = true)
 	@Override
+	public List<String> findAddressesByTransactionNetworkUid(String networkUid) {
+		String encodedFormsCsv = addressRepository.findByTransactionNetworkUid(networkUid);
+		return Lists.newArrayList(Splitter.on(Constants.STRING_COMMA).omitEmptyStrings().trimResults()
+				.split(MoreObjects.firstNonNull(encodedFormsCsv, Constants.STRING_EMPTY)
+						.replaceAll(Constants.STRING_NULL, Constants.STRING_EMPTY)));
+	}
+
+	@Transactional(readOnly = true)
+	@Override
+	public List<AddressDto> findExternalAddressesByChainCode(String chainCode) {
+		List<Address> addresses = addressRepository.findByNullWalletIdAndChainCode(chainCode);
+		return dtoAssembler.assemble(addresses, Address.class, AddressDto.class);
+	}
+
+	@Transactional(readOnly = true)
+	@Override
 	public List<AddressDto> findSubwalletAddresses(Integer walletId, String chainCode) {
 		List<Address> addresses = addressRepository.findByWalletIdAndChainCode(walletId, chainCode);
+		return dtoAssembler.assemble(addresses, Address.class, AddressDto.class);
+	}
+
+	@Transactional(readOnly = true)
+	@Override
+	public List<AddressDto> findWalletAddressesByChainCode(String chainCode) {
+		List<Address> addresses = addressRepository.findByNonNullWalletIdAndChainCode(chainCode);
 		return dtoAssembler.assemble(addresses, Address.class, AddressDto.class);
 	}
 

@@ -24,6 +24,26 @@ public interface JpaAddressRepository extends AddressRepository, JpaRepository<A
 	AddressStateType findAddressStateTypeByCode(@Param("code") String code);
 
 	@Override
+	@Query("SELECT a FROM Address AS a WHERE a.encodedForm = :encodedForm")
+	Address findByEncodedForm(@Param("encodedForm") String encodedForm);
+
+	@Override
+	@Query("SELECT a FROM Address AS a INNER JOIN a.addressStateType AS ast INNER JOIN a.wallet AS w "
+			+ "INNER JOIN a.addressType AS at INNER JOIN at.chain AS ch WHERE ch.code = :chainCode "
+			+ "ORDER BY w.walletId, ast.addressStateTypeId, a.label")
+	List<Address> findByNonNullWalletIdAndChainCode(@Param("chainCode") String chainCode);
+
+	@Override
+	@Query("SELECT a FROM Address AS a INNER JOIN a.addressStateType AS ast "
+			+ "INNER JOIN a.addressType AS at INNER JOIN at.chain AS ch WHERE ch.code = :chainCode "
+			+ "ORDER BY at.addressTypeId, a.encodedForm")
+	List<Address> findByNullWalletIdAndChainCode(@Param("chainCode") String chainCode);
+
+	@Override
+	@Procedure("f_get_transaction_addresses")
+	String findByTransactionNetworkUid(String networkUid);
+
+	@Override
 	@Query("SELECT a FROM Address AS a INNER JOIN a.addressStateType AS ast INNER JOIN a.wallet AS w "
 			+ "INNER JOIN a.addressType AS at INNER JOIN at.chain AS ch WHERE w.walletId = :walletId "
 			+ "AND ch.code = :chainCode ORDER BY ast.addressStateTypeId, a.label")
