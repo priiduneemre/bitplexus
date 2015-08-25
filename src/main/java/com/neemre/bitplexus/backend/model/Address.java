@@ -60,6 +60,9 @@ import com.neemre.bitplexus.backend.model.reference.AddressStateType;
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_label_fragment", type = String.class),
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_wallet_id", type = Integer.class),
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class)}),
+@NamedStoredProcedureQuery(name = "findByTransactionNetworkUid",
+		procedureName = "f_get_transaction_addresses", parameters = {
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_network_uid", type = String.class)}),
 @NamedStoredProcedureQuery(name = "sumBalanceByWalletIdAndChainCode",
 		procedureName = "f_get_wallet_subbalance", parameters = {
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_wallet_id", type = Integer.class),

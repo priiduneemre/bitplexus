@@ -1,7 +1,8 @@
 package com.neemre.bitplexus.backend.crypto;
 
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,12 +34,12 @@ public class NodeWrapperResolver {
 		}
 	}
 
-	public List<BtcdClient> getBtcdClients(List<String> chainCodes) {
-		List<BtcdClient> btcdClients = new ArrayList<BtcdClient>();
+	public Map<String, BtcdClient> getBtcdClients(List<String> chainCodes) {
+		Map<String, BtcdClient> btcdClients = new HashMap<String, BtcdClient>();
 		for (String chainCode : chainCodes) {
 			BtcdClient btcdClient = getBtcdClient(chainCode);
 			if (btcdClient != null) {
-				btcdClients.add(btcdClient);
+				btcdClients.put(chainCode, btcdClient);
 			}
 		}
 		return btcdClients;
@@ -54,12 +55,12 @@ public class NodeWrapperResolver {
 		}
 	}
 
-	public List<BtcdDaemon> getBtcdDaemons(List<String> chainCodes) {
-		List<BtcdDaemon> btcdDaemons = new ArrayList<BtcdDaemon>();
+	public Map<String, BtcdDaemon> getBtcdDaemons(List<String> chainCodes) {
+		Map<String, BtcdDaemon> btcdDaemons = new HashMap<String, BtcdDaemon>();
 		for (String chainCode : chainCodes) {
 			BtcdDaemon btcdDaemon = getBtcdDaemon(chainCode);
 			if (btcdDaemon != null) {
-				btcdDaemons.add(btcdDaemon);
+				btcdDaemons.put(chainCode, btcdDaemon);
 			}
 		}
 		return btcdDaemons;
@@ -75,12 +76,12 @@ public class NodeWrapperResolver {
 		}
 	}
 
-	public List<LtcdClient> getLtcdClients(List<String> chainCodes) {
-		List<LtcdClient> ltcdClients = new ArrayList<LtcdClient>();
+	public Map<String, LtcdClient> getLtcdClients(List<String> chainCodes) {
+		Map<String, LtcdClient> ltcdClients = new HashMap<String, LtcdClient>();
 		for (String chainCode : chainCodes) {
 			LtcdClient ltcdClient = getLtcdClient(chainCode);
 			if (ltcdClient != null) {
-				ltcdClients.add(ltcdClient);
+				ltcdClients.put(chainCode, ltcdClient);
 			}
 		}
 		return ltcdClients;
@@ -96,12 +97,12 @@ public class NodeWrapperResolver {
 		}
 	}
 
-	public List<LtcdDaemon> getLtcdDaemons(List<String> chainCodes) {
-		List<LtcdDaemon> ltcdDaemons = new ArrayList<LtcdDaemon>();
+	public Map<String, LtcdDaemon> getLtcdDaemons(List<String> chainCodes) {
+		Map<String, LtcdDaemon> ltcdDaemons = new HashMap<String, LtcdDaemon>();
 		for (String chainCode : chainCodes) {
 			LtcdDaemon ltcdDaemon = getLtcdDaemon(chainCode);
 			if (ltcdDaemon != null) {
-				ltcdDaemons.add(ltcdDaemon);
+				ltcdDaemons.put(chainCode, ltcdDaemon);
 			}
 		}
 		return ltcdDaemons;

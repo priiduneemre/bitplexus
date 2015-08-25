@@ -4,6 +4,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Date;
 
+import com.google.common.base.Function;
 import com.inspiresoftware.lib.dto.geda.annotations.Dto;
 import com.inspiresoftware.lib.dto.geda.annotations.DtoField;
 
@@ -41,4 +42,13 @@ public class ChainDto implements Serializable {
 	private Date updatedAt;
 	@DtoField(value = "updatedBy.employeeId", readOnly = true, entityBeanKeys = {"Employee"})
 	private Integer updatedById;
+
+
+	public static class CodeExtractor implements Function<ChainDto, String> {
+
+		@Override
+		public String apply(ChainDto chainDto) {
+			return chainDto.getCode();
+		}
+	}
 }
