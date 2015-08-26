@@ -21,12 +21,14 @@ import com.neemre.bitplexus.backend.model.enums.AddressStateTypes;
 import com.neemre.bitplexus.backend.model.enums.WalletStateTypes;
 import com.neemre.bitplexus.backend.service.AddressService;
 import com.neemre.bitplexus.backend.service.ChainService;
+import com.neemre.bitplexus.backend.service.MemberService;
 import com.neemre.bitplexus.backend.service.TransactionService;
 import com.neemre.bitplexus.backend.service.VisitService;
 import com.neemre.bitplexus.backend.service.WalletService;
 import com.neemre.bitplexus.common.dto.AddressDto;
 import com.neemre.bitplexus.common.dto.AddressStateTypeDto;
 import com.neemre.bitplexus.common.dto.ChainDto;
+import com.neemre.bitplexus.common.dto.MemberDto;
 import com.neemre.bitplexus.common.dto.TransactionDto;
 import com.neemre.bitplexus.common.dto.VisitDto;
 import com.neemre.bitplexus.common.dto.WalletDto;
@@ -44,6 +46,8 @@ public class VisitController {
 	@Autowired
 	private ChainService chainService;
 	@Autowired
+	private MemberService memberService;
+	@Autowired
 	private TransactionService transactionService;
 	@Autowired
 	private VisitService visitService;
@@ -56,68 +60,6 @@ public class VisitController {
 	private NodeWrapperResolver clientResolver;
 
 
-	@RequestMapping(value = "/member/visits/new", method = RequestMethod.GET)
-	@ResponseBody
-	public VisitDto viewShowCreateNew(ModelMap model, HttpServletRequest request) {
-		return visitService.createNewVisit(new VisitDto(null, "rebel_sloth", request.getRemoteAddr(),
-				null));
-	}
-
-	@RequestMapping(value = "/member/visit", method = RequestMethod.GET)
-	@ResponseBody
-	public VisitDto viewShowOne(ModelMap model) {
-		VisitDto visit = visitService.findVisitById(76L);
-		return visit;
-	}
-
-	@RequestMapping(value = "/member/visits", method = RequestMethod.GET)
-	@ResponseBody
-	public List<VisitDto> viewShowAll(ModelMap model) {
-		List<VisitDto> visits = visitService.findVisitsByMemberUsername("rebel_sloth");
-		return visits;
-	}
-
-	@RequestMapping(value = "/customer/wallets/new", method = RequestMethod.GET)
-	@ResponseBody
-	public WalletDto viewShowCreateNew1(ModelMap model) {
-		return walletService.createNewWallet(new WalletDto(null, "rebel_sloth", null, 
-				"My new wallet", null, null));
-	}
-
-	@RequestMapping(value = "/customer/wallets/chain/balance", method = RequestMethod.GET)
-	@ResponseBody
-	public BigDecimal viewShowSum(ModelMap model) {
-		return walletService.findSubwalletBalance(1, "BITCOIN_TEST3");
-	}
-
-	@RequestMapping(value = "/customer/wallet", method = RequestMethod.GET)
-	@ResponseBody
-	public WalletDto viewShowOne1(ModelMap model) {
-		WalletDto wallet = walletService.findWalletById(17);
-		return wallet;
-	}
-
-	@RequestMapping(value = "/customer/wallets", method = RequestMethod.GET)
-	@ResponseBody
-	public List<WalletDto> viewShowAll1(ModelMap model) {
-		List<WalletDto> wallets = walletService.findWalletsByCustomerUsername("rebel_sloth");
-		return wallets;
-	}
-
-	@RequestMapping(value = "/customer/wallets/update", method = RequestMethod.GET)
-	@ResponseBody
-	public WalletDto viewShowUpdate(ModelMap model) {
-		return walletService.updateWallet(new WalletDto(17, null, null, "New wallet #we34rjg", null,
-				null));
-	}
-
-	@RequestMapping(value = "/customer/wallets/state/update", method = RequestMethod.GET)
-	@ResponseBody
-	public WalletDto viewShowUpdate1(ModelMap model) {
-		return walletService.updateWalletState(new WalletDto(17, null, new WalletStateTypeDto(null,
-				WalletStateTypes.DELETED.name(), null), null, null, null));
-	}
-
 	@RequestMapping(value = "/customer/addresses/count", method = RequestMethod.GET)
 	@ResponseBody
 	public Integer viewShowCount(ModelMap model) {
@@ -127,21 +69,21 @@ public class VisitController {
 
 	@RequestMapping(value = "/customer/addresses/new/external", method = RequestMethod.GET)
 	@ResponseBody
-	public AddressDto viewShowCreateNew2(ModelMap model) {
+	public AddressDto viewShowCreateNew(ModelMap model) {
 		return addressService.createNewExternalAddress(new AddressDto(null, null, null, null, 
 				null, "m91EALsE1LEaUK8tHzNrBoNn2mWojFHFR", null, null, null), "BITCOIN_TEST3");
 	}
 
 	@RequestMapping(value = "/customer/addresses/new/wallet", method = RequestMethod.GET)
 	@ResponseBody
-	public AddressDto viewShowCreateNew3(ModelMap model) throws NodeWrapperException {
+	public AddressDto viewShowCreateNew1(ModelMap model) throws NodeWrapperException {
 		return addressService.createNewWalletAddress(new AddressDto(null, 16, null, null, 
 				"Anoter address #3345", null, null, null, null), "BITCOIN_TEST3");
 	}
 
 	@RequestMapping(value = "/customer/address/encodedForm", method = RequestMethod.GET)
 	@ResponseBody
-	public AddressDto viewShowOne2(ModelMap model) {
+	public AddressDto viewShowOne(ModelMap model) {
 		AddressDto address = addressService.findAddressByEncodedForm(
 				"mq4gQZwpzW9fr4vhoPoANz7eMZKwTqx8rT");
 		return address;
@@ -149,59 +91,86 @@ public class VisitController {
 
 	@RequestMapping(value = "/customer/address", method = RequestMethod.GET)
 	@ResponseBody
-	public AddressDto viewShowOne3(ModelMap model) {
+	public AddressDto viewShowOne1(ModelMap model) {
 		AddressDto address = addressService.findAddressById(21L);
 		return address;
 	}
 
 	@RequestMapping(value = "/customer/addresses/transaction", method = RequestMethod.GET)
 	@ResponseBody
-	public List<String> viewShowAll2(ModelMap model) {
+	public List<String> viewShowAll(ModelMap model) {
 		List<String> encodedForms = addressService.findAddressesByTransactionNetworkUid(
-				"45a48c901df784c55102b233cc3878345350068a6e74c00fe2883b2355d397bc");
+				"45a48c901df784c55102b233ce3878345350068a6e74c00fe2883b2355d397bc");
 		return encodedForms;
 	}
 
 	@RequestMapping(value = "/customer/addresses/chain/external", method = RequestMethod.GET)
 	@ResponseBody
-	public List<AddressDto> viewShowAll3(ModelMap model) {
+	public List<AddressDto> viewShowAll1(ModelMap model) {
 		List<AddressDto> addresses = addressService.findExternalAddressesByChainCode("BITCOIN_TEST3");
 		return addresses;
 	}
 
 	@RequestMapping(value = "/customer/addresses", method = RequestMethod.GET)
 	@ResponseBody
-	public List<AddressDto> viewShowAll4(ModelMap model) {
+	public List<AddressDto> viewShowAll2(ModelMap model) {
 		List<AddressDto> addresses = addressService.findSubwalletAddresses(5, "BITCOIN_TEST3");
 		return addresses;
 	}
 
 	@RequestMapping(value = "/customer/addresses/chain/wallet", method = RequestMethod.GET)
 	@ResponseBody
-	public List<AddressDto> viewShowAll5(ModelMap model) {
+	public List<AddressDto> viewShowAll3(ModelMap model) {
 		List<AddressDto> addresses = addressService.findWalletAddressesByChainCode("BITCOIN_TEST3");
 		return addresses;
 	}
 
 	@RequestMapping(value = "/customer/addresses/update", method = RequestMethod.GET)
 	@ResponseBody
-	public AddressDto viewShowUpdate2(ModelMap model) {
+	public AddressDto viewShowUpdate(ModelMap model) {
 		return addressService.updateAddress(new AddressDto(21L, null, null, null, 
 				"Long-term deposit (0.5 tBTC) address #5", null, null, null, null));
 	}
 
 	@RequestMapping(value = "/customer/addresses/balance/update", method = RequestMethod.GET)
 	@ResponseBody
-	public AddressDto viewShowUpdate3(ModelMap model) throws NodeWrapperException {
+	public AddressDto viewShowUpdate1(ModelMap model) throws NodeWrapperException {
 		return addressService.updateAddressBalance(96L);
 	}
 
 	@RequestMapping(value = "/customer/addresses/state/update", method = RequestMethod.GET)
 	@ResponseBody
-	public AddressDto viewShowUpdate4(ModelMap model) {
+	public AddressDto viewShowUpdate2(ModelMap model) {
 		return addressService.updateAddressState(new AddressDto(21L, null, null, 
 				new AddressStateTypeDto(null, AddressStateTypes.DELETED.name(), null), null, null, 
 				null, null, null));
+	}
+
+	@RequestMapping(value = "/chains", method = RequestMethod.GET)
+	@ResponseBody
+	public List<ChainDto> viewShowAll4(ModelMap model) {
+		List<ChainDto> chains = chainService.findChainsByOperationality(true);
+		return chains;
+	}
+
+	@RequestMapping(value = "/chains/price", method = RequestMethod.GET)
+	@ResponseBody
+	public BigDecimal viewShowExternalApiResult(ModelMap model) {
+		return chainService.findChainUnitPrice("BITCOIN_TEST3");
+	}
+
+	@RequestMapping(value = "/member", method = RequestMethod.GET)
+	@ResponseBody
+	public MemberDto viewShowOne2(ModelMap model) {
+		MemberDto member = memberService.findMemberByUsername("rebel_sloth");
+		return member;
+	}
+
+	@RequestMapping(value = "/member/roles", method = RequestMethod.GET)
+	@ResponseBody
+	public List<String> viewShowAll5(ModelMap model) {
+		List<String> memberRoles = memberService.findMemberRolesByUsername("rebel_sloth");
+		return memberRoles;
 	}
 
 	@RequestMapping(value = "/customer/transactions/complete", method = RequestMethod.GET)
@@ -240,16 +209,16 @@ public class VisitController {
 
 	@RequestMapping(value = "/customer/transaction", method = RequestMethod.GET)
 	@ResponseBody
-	public TransactionDto viewShowOne4(ModelMap model) {
+	public TransactionDto viewShowOne3(ModelMap model) {
 		TransactionDto transaction = transactionService.findTransactionById(16L);
 		return transaction;
 	}
 
 	@RequestMapping(value = "/customer/transaction/networkUid", method = RequestMethod.GET)
 	@ResponseBody
-	public TransactionDto viewShowOne5(ModelMap model) {
+	public TransactionDto viewShowOne4(ModelMap model) {
 		TransactionDto transaction = transactionService.findTransactionByNetworkUid(
-				"45a48c901df784c55102b233cc3878345350068a6e74c00fe2883b2355d397bc");
+				"45a48c901df784c55102b233cc3878345350068a6e74c00fe2983b2355d397bc");
 		return transaction;
 	}
 
@@ -265,17 +234,66 @@ public class VisitController {
 		return transactionService.findTransactionOptimalFee("aaaaaaaaaa", "BITCOIN_TEST3");
 	}
 
-	@RequestMapping(value = "/chains", method = RequestMethod.GET)
+	@RequestMapping(value = "/member/visits/new", method = RequestMethod.GET)
 	@ResponseBody
-	public List<ChainDto> viewShowAll7(ModelMap model) {
-		List<ChainDto> chains = chainService.findChainsByOperationality(true);
-		return chains;
+	public VisitDto viewShowCreateNew2(ModelMap model, HttpServletRequest request) {
+		return visitService.createNewVisit(new VisitDto(null, "rebel_sloth", request.getRemoteAddr(),
+				null));
 	}
 
-	@RequestMapping(value = "/chains/price", method = RequestMethod.GET)
+	@RequestMapping(value = "/member/visit", method = RequestMethod.GET)
 	@ResponseBody
-	public BigDecimal viewShowExternalApiResult(ModelMap model) {
-		return chainService.findChainUnitPrice("BITCOIN_TEST3");
+	public VisitDto viewShowOne5(ModelMap model) {
+		VisitDto visit = visitService.findVisitById(76L);
+		return visit;
+	}
+
+	@RequestMapping(value = "/member/visits", method = RequestMethod.GET)
+	@ResponseBody
+	public List<VisitDto> viewShowAll7(ModelMap model) {
+		List<VisitDto> visits = visitService.findVisitsByMemberUsername("rebel_sloth");
+		return visits;
+	}
+
+	@RequestMapping(value = "/customer/wallets/new", method = RequestMethod.GET)
+	@ResponseBody
+	public WalletDto viewShowCreateNew3(ModelMap model) {
+		return walletService.createNewWallet(new WalletDto(null, "rebel_sloth", null, 
+				"My new wallet", null, null));
+	}
+
+	@RequestMapping(value = "/customer/wallets/chain/balance", method = RequestMethod.GET)
+	@ResponseBody
+	public BigDecimal viewShowSum(ModelMap model) {
+		return walletService.findSubwalletBalance(1, "BITCOIN_TEST3");
+	}
+
+	@RequestMapping(value = "/customer/wallet", method = RequestMethod.GET)
+	@ResponseBody
+	public WalletDto viewShowOne6(ModelMap model) {
+		WalletDto wallet = walletService.findWalletById(17);
+		return wallet;
+	}
+
+	@RequestMapping(value = "/customer/wallets", method = RequestMethod.GET)
+	@ResponseBody
+	public List<WalletDto> viewShowAll8(ModelMap model) {
+		List<WalletDto> wallets = walletService.findWalletsByCustomerUsername("rebel_sloth");
+		return wallets;
+	}
+
+	@RequestMapping(value = "/customer/wallets/update", method = RequestMethod.GET)
+	@ResponseBody
+	public WalletDto viewShowUpdate3(ModelMap model) {
+		return walletService.updateWallet(new WalletDto(17, null, null, "New wallet #we34rjg", null,
+				null));
+	}
+
+	@RequestMapping(value = "/customer/wallets/state/update", method = RequestMethod.GET)
+	@ResponseBody
+	public WalletDto viewShowUpdate4(ModelMap model) {
+		return walletService.updateWalletState(new WalletDto(17, null, new WalletStateTypeDto(null,
+				WalletStateTypes.DELETED.name(), null), null, null, null));
 	}
 
 	@RequestMapping(value = "/btc/info", method = RequestMethod.GET)

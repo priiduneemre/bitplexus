@@ -39,7 +39,8 @@
 				<entry key="AddressStateTypeDto" 
 					value="com.neemre.bitplexus.common.dto.AddressStateTypeDto"/>
 				<entry key="ChainDto" value="com.neemre.bitplexus.common.dto.ChainDto"/>
-				<entry key="TransactionDto" value="com.neemre.bitplexus.common.dto.TransactionDto"/>				
+				<entry key="MemberDto" value="com.neemre.bitplexus.common.dto.MemberDto"/>
+				<entry key="TransactionDto" value="com.neemre.bitplexus.common.dto.TransactionDto"/>
 				<entry key="TransactionEndpointDto" 
 					value="com.neemre.bitplexus.common.dto.TransactionEndpointDto"/>
 				<entry key="TransactionEndpointTypeDto" 
