@@ -48,10 +48,10 @@ public class Person extends Member {
 	@Generated(GenerationTime.INSERT)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "created_at", insertable = false, updatable = false)
-	private Date createdAt;
+	private Date pCreatedAt;
 	@Past
 	@Generated(GenerationTime.ALWAYS)
 	@Temporal(TemporalType.TIMESTAMP)
 	@Column(name = "updated_at", insertable = false, updatable = false)
-	private Date updatedAt;
+	private Date pUpdatedAt;
 }

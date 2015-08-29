@@ -9,7 +9,8 @@
 
 	<name>Bitplexus</name>
 	<description>A proof-of-concept universal cryptocurrency wallet service (for Bitcoin, Litecoin etc.)</description>
-	<url>http://bitplexus.neemre.com</url>
+	<url>http://bitplexus.neemre.com/</url>
+	<inceptionYear>2015</inceptionYear>
 
 	<licenses>
 		<license>
@@ -21,103 +22,86 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-		<jdk.version>1.7</jdk.version>
-		<spring.version>4.1.5.RELEASE</spring.version>
-		<hibernate.version>5.0.0.CR2</hibernate.version>
-		<btcd-cli4j.version>0.5.1</btcd-cli4j.version>
-		<ltcd-cli4j.version>0.1.0</ltcd-cli4j.version>
-		<geda.version>3.1.0</geda.version>
-		<jackson.version>2.5.0</jackson.version>
-		<slf4j.version>1.7.10</slf4j.version>
+		<com.fasterxml.jackson.core.version>2.6.1</com.fasterxml.jackson.core.version>
+		<com.inspire-software.lib.dto.geda.version>3.1.0</com.inspire-software.lib.dto.geda.version>
+		<com.neemre.btcd-cli4j.version>0.5.1</com.neemre.btcd-cli4j.version>
+		<com.neemre.ltcd-cli4j.version>0.1.0</com.neemre.ltcd-cli4j.version>
+		<java.version>1.7</java.version>
+		<org.hibernate.version>5.0.0.Final</org.hibernate.version>
+		<org.slf4j.version>1.7.12</org.slf4j.version>
+		<org.springframework.version>4.2.0.RELEASE</org.springframework.version>
 	</properties>
 
 	<dependencies>
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-core</artifactId>
-			<version>${spring.version}</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${com.fasterxml.jackson.core.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-beans</artifactId>
-			<version>${spring.version}</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${com.fasterxml.jackson.core.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-context</artifactId>
-			<version>${spring.version}</version>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>${com.fasterxml.jackson.core.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-web</artifactId>
-			<version>${spring.version}</version>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>19.0-rc1</version>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-webmvc</artifactId>
-			<version>${spring.version}</version>
+			<groupId>com.inspire-software.lib.dto.geda</groupId>
+			<artifactId>geda.core</artifactId>
+			<version>${com.inspire-software.lib.dto.geda.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>javassist</groupId>
+					<artifactId>javassist</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>org.springframework</groupId>
-			<artifactId>spring-tx</artifactId>
-			<version>${spring.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.data</groupId>
-			<artifactId>spring-data-jpa</artifactId>
-			<version>1.8.2.RELEASE</version>
-		</dependency>
-		<dependency>
-			<groupId>com.neemre.btcd-cli4j</groupId>
-			<artifactId>btcd-cli4j-core</artifactId>
-			<version>${btcd-cli4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.neemre.btcd-cli4j</groupId>
-			<artifactId>btcd-cli4j-daemon</artifactId>
-			<version>${btcd-cli4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.neemre.ltcd-cli4j</groupId>
-			<artifactId>ltcd-cli4j-core</artifactId>
-			<version>${ltcd-cli4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>com.neemre.ltcd-cli4j</groupId>
-			<artifactId>ltcd-cli4j-daemon</artifactId>
-			<version>${ltcd-cli4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.projectlombok</groupId>
-			<artifactId>lombok</artifactId>
-			<version>1.16.2</version>
-			<scope>provided</scope>
-		</dependency>
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
-			<version>${slf4j.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.hibernate</groupId>
-			<artifactId>hibernate-entitymanager</artifactId>
-			<version>${hibernate.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.postgresql</groupId>
-			<artifactId>postgresql</artifactId>
-			<version>9.4-1201-jdbc41</version>
+			<groupId>com.inspire-software.lib.dto.geda</groupId>
+			<artifactId>geda.spring-integration</artifactId>
+			<version>${com.inspire-software.lib.dto.geda.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.jolbox</groupId>
 			<artifactId>bonecp</artifactId>
 			<version>0.8.0.RELEASE</version>
+			<scope>runtime</scope>
 		</dependency>
 		<dependency>
-			<groupId>javax</groupId>
-			<artifactId>javaee-api</artifactId>
-			<version>7.0</version>
+			<groupId>com.neemre.btcd-cli4j</groupId>
+			<artifactId>btcd-cli4j-core</artifactId>
+			<version>${com.neemre.btcd-cli4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.neemre.btcd-cli4j</groupId>
+			<artifactId>btcd-cli4j-daemon</artifactId>
+			<version>${com.neemre.btcd-cli4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.neemre.ltcd-cli4j</groupId>
+			<artifactId>ltcd-cli4j-core</artifactId>
+			<version>${com.neemre.ltcd-cli4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.neemre.ltcd-cli4j</groupId>
+			<artifactId>ltcd-cli4j-daemon</artifactId>
+			<version>${com.neemre.ltcd-cli4j.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<version>3.1.0</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
 			<groupId>javax.validation</groupId>
@@ -125,54 +109,99 @@
 			<version>1.1.0.Final</version>
 		</dependency>
 		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>aspectjrt</artifactId>
+			<version>1.8.6</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>${org.hibernate.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-entitymanager</artifactId>
+			<version>${org.hibernate.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+		<dependency>
 			<groupId>org.hibernate</groupId>
 			<artifactId>hibernate-validator</artifactId>
-			<version>5.2.0.CR1</version>
+			<version>5.2.1.Final</version>
+			<scope>runtime</scope>
 		</dependency>
 		<dependency>
-			<groupId>javax.el</groupId>
-			<artifactId>javax.el-api</artifactId>
-			<version>2.2.4</version>
+			<groupId>org.hibernate.javax.persistence</groupId>
+			<artifactId>hibernate-jpa-2.1-api</artifactId>
+			<version>1.0.0.Final</version>
 		</dependency>
 		<dependency>
-			<groupId>org.glassfish.web</groupId>
-			<artifactId>javax.el</artifactId>
-			<version>2.2.4</version>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<version>9.4-1202-jdbc41</version>
+			<scope>runtime</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.google.guava</groupId>
-			<artifactId>guava</artifactId>
-			<version>18.0</version>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.16.6</version>
+			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.inspire-software.lib.dto.geda</groupId>
-			<artifactId>geda.core</artifactId>
-			<version>${geda.version}</version>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>${org.slf4j.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.inspire-software.lib.dto.geda</groupId>
-			<artifactId>geda.spring-integration</artifactId>
-			<version>${geda.version}</version>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-log4j12</artifactId>
+			<version>${org.slf4j.version}</version>
+			<scope>runtime</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-core</artifactId>
-			<version>${jackson.version}</version>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-aop</artifactId>
+			<version>${org.springframework.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-annotations</artifactId>
-			<version>${jackson.version}</version>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-beans</artifactId>
+			<version>${org.springframework.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>com.fasterxml.jackson.core</groupId>
-			<artifactId>jackson-databind</artifactId>
-			<version>${jackson.version}</version>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context</artifactId>
+			<version>${org.springframework.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>3.4</version>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+			<version>${org.springframework.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-tx</artifactId>
+			<version>${org.springframework.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+			<version>${org.springframework.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-webmvc</artifactId>
+			<version>${org.springframework.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-commons</artifactId>
+			<version>1.10.2.RELEASE</version>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.data</groupId>
+			<artifactId>spring-data-jpa</artifactId>
+			<version>1.8.2.RELEASE</version>
 		</dependency>
 	</dependencies>
 
@@ -181,6 +210,7 @@
 			<id>mvn-nemp-ftp</id>
 			<name>Nemp's Maven Repository</name>
 			<url>http://mvn.neemre.com/</url>
+			<layout>default</layout>
 		</repository>
 	</repositories>
 
@@ -189,16 +219,24 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.2</version>
+				<version>3.3</version>
 				<configuration>
-					<source>${jdk.version}</source>
-					<target>${jdk.version}</target>
+					<source>${java.version}</source>
+					<target>${java.version}</target>
 				</configuration>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-war-plugin</artifactId>
-				<version>2.4</version>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<version>2.10.3</version>
+				<executions>
+					<execution>
+						<id>attach-javadocs</id>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -213,24 +251,19 @@
 					</execution>
 				</executions>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>2.9.1</version>
-				<executions>
-					<execution>
-						<id>attach-javadocs</id>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
+		</plugins>
+	</build>
+
+	<reporting>
+		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-project-info-reports-plugin</artifactId>
 				<version>2.8</version>
+				<configuration>
+					<dependencyLocationsEnabled>false</dependencyLocationsEnabled>
+				</configuration>
 			</plugin>
 		</plugins>
-	</build>
+	</reporting>
 </project>

@@ -32,7 +32,6 @@ public class MemberServiceImpl implements MemberService {
 	@Override
 	public MemberDto findMemberByUsername(String username) {
 		Member member = memberRepository.findByUsername(username);
-		System.out.println(member);
 		return dtoAssembler.assemble(member, Member.class, MemberDto.class);
 	}
 
