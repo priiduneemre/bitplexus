@@ -29,6 +29,7 @@
 		<com.neemre.btcd-cli4j.version>0.5.1</com.neemre.btcd-cli4j.version>
 		<com.neemre.ltcd-cli4j.version>0.1.0</com.neemre.ltcd-cli4j.version>
 		<java.version>1.7</java.version>
+		<org.aspectj.version>1.8.6</org.aspectj.version>
 		<org.hibernate.version>5.0.0.Final</org.hibernate.version>
 		<org.slf4j.version>1.7.12</org.slf4j.version>
 		<org.springframework.version>4.2.0.RELEASE</org.springframework.version>
@@ -111,7 +112,12 @@
 		<dependency>
 			<groupId>org.aspectj</groupId>
 			<artifactId>aspectjrt</artifactId>
-			<version>1.8.6</version>
+			<version>${org.aspectj.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>org.aspectj</groupId>
+			<artifactId>aspectjweaver</artifactId>
+			<version>${org.aspectj.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate</groupId>

@@ -20,18 +20,18 @@ public class DtoAssemblerImpl implements DtoAssembler {
 
 
 	@Override
-	public <T, S> S assemble(T entity, Class<T> entityClazz, Class<S> dtoClazz) {
+	public <T, S> S assemble(T entity, Class<T> entityClass, Class<S> dtoClass) {
 		try {
 			return Iterables.getOnlyElement(assemble(new ArrayList<T>(Arrays.asList(entity)),
-					entityClazz, dtoClazz));
+					entityClass, dtoClass));
 		} catch (NoSuchElementException e) {
 			return null;
 		}
 	}
 
 	@Override
-	public <T, S> List<S> assemble(List<T> entities, Class<T> entityClazz, Class<S> dtoClazz) {
-		if ((entityClazz == null) || (dtoClazz == null)) {
+	public <T, S> List<S> assemble(List<T> entities, Class<T> entityClass, Class<S> dtoClass) {
+		if ((entityClass == null) || (dtoClass == null)) {
 			throw new IllegalArgumentException(Errors.TODO.getDescription());
 		}
 		if (entities == null) {
@@ -39,24 +39,24 @@ public class DtoAssemblerImpl implements DtoAssembler {
 		}
 		List<S> dtos = new ArrayList<S>();
 		entities.removeAll(Collections.singleton(null));
-		DTOAssembler.newAssembler(dtoClazz, entityClazz).assembleDtos(dtos, entities, null, 
+		DTOAssembler.newAssembler(dtoClass, entityClass).assembleDtos(dtos, entities, null, 
 				beanFactory);
 		return dtos;
 	}
 
 	@Override
-	public <T, S> T disassemble(S dto, Class<S> dtoClazz, Class<T> entityClazz) {
+	public <T, S> T disassemble(S dto, Class<S> dtoClass, Class<T> entityClass) {
 		try {
 			return Iterables.getOnlyElement(disassemble(new ArrayList<S>(Arrays.asList(dto)),
-					dtoClazz, entityClazz));
+					dtoClass, entityClass));
 		} catch (NoSuchElementException e) {
 			return null;
 		}
 	}
 
 	@Override
-	public <T, S> List<T> disassemble(List<S> dtos, Class<S> dtoClazz, Class<T> entityClazz) {
-		if ((dtoClazz == null) || (entityClazz == null)) {
+	public <T, S> List<T> disassemble(List<S> dtos, Class<S> dtoClass, Class<T> entityClass) {
+		if ((dtoClass == null) || (entityClass == null)) {
 			throw new IllegalArgumentException(Errors.TODO.getDescription());
 		}
 		if (dtos == null) {
@@ -64,7 +64,7 @@ public class DtoAssemblerImpl implements DtoAssembler {
 		}
 		List<T> entities = new ArrayList<T>();
 		dtos.removeAll(Collections.singleton(null));
-		DTOAssembler.newAssembler(dtoClazz, entityClazz).assembleEntities(dtos, entities, null, 
+		DTOAssembler.newAssembler(dtoClass, entityClass).assembleEntities(dtos, entities, null, 
 				beanFactory);
 		return entities;
 	}
