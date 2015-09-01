@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
 import com.neemre.bitplexus.backend.service.AddressService;
 import com.neemre.bitplexus.backend.service.TransactionService;
+import com.neemre.bitplexus.common.WrappedCheckedException;
 import com.neemre.bitplexus.common.dto.AddressDto;
 import com.neemre.ltcdcli4j.core.domain.Transaction;
 import com.neemre.ltcdcli4j.daemon.event.WalletListener;
@@ -34,7 +35,7 @@ public class LtcdWalletListener extends WalletListener {
 				AddressDto txnAddress = addressService.findAddressByEncodedForm(encodedForm);
 				addressService.updateAddressBalance(txnAddress.getAddressId());
 			} catch (NodeWrapperException e) {
-				System.out.println("TODO: logging");
+				throw new WrappedCheckedException(e);
 			}
 		}
 	}

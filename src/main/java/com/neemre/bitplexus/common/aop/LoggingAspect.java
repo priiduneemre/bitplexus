@@ -45,7 +45,7 @@ public class LoggingAspect {
 		getLogger(joinPoint.getTarget().getClass()).error("<< {}({}): an exception was caught by "
 				+ "the application's fault barrier, message was: '{}'", methodName, 
 				Joiner.on(Constants.STRING_COMMA + Constants.STRING_SPACE).join(argTypeNames), 
-				e.getMessage());
+				e.getMessage(), e);
 	}
 
 	@Before("ArchitectureAspect.dtoOperation()")

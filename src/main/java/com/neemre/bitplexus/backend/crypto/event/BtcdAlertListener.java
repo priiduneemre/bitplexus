@@ -1,11 +1,18 @@
 package com.neemre.bitplexus.backend.crypto.event;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.neemre.btcdcli4j.daemon.event.AlertListener;
 
 public class BtcdAlertListener extends AlertListener {
 
+	private static final Logger LOG = LoggerFactory.getLogger(BtcdAlertListener.class);
+
+
 	@Override
 	public void alertReceived(String alert) {
-		System.out.println("TODO: logging");
+		LOG.error("<< alertReceived(String): [FATAL] An alert was received by 'bitcoind' "
+				+ "regarding a (potentially critical) network problem: '{}'", alert);
 	}
 }

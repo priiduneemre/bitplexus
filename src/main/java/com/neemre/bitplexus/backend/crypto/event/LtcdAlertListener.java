@@ -1,11 +1,18 @@
 package com.neemre.bitplexus.backend.crypto.event;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.neemre.ltcdcli4j.daemon.event.AlertListener;
 
 public class LtcdAlertListener extends AlertListener {
 
+	private static final Logger LOG = LoggerFactory.getLogger(LtcdAlertListener.class);
+
+
 	@Override
 	public void alertReceived(String alert) {
-		System.out.println("TODO: logging");
+		LOG.error("<< alertReceived(String): [FATAL] An alert was received by 'litecoind' "
+				+ "regarding a (potentially critical) network problem: '{}'", alert);
 	}
 }
