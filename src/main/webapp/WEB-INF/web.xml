@@ -12,6 +12,7 @@
 	<context-param>
 		<param-name>contextConfigLocation</param-name>
 		<param-value>
+			/WEB-INF/classes/spring/common-config.xml,
 			/WEB-INF/classes/spring/data-access-config.xml,
 			/WEB-INF/classes/spring/services-config.xml,
 			/WEB-INF/classes/spring/tools-config.xml
@@ -45,7 +46,10 @@
 		<servlet-class>org.springframework.web.servlet.DispatcherServlet</servlet-class>
 		<init-param>
 			<param-name>contextConfigLocation</param-name>
-			<param-value>/WEB-INF/classes/spring/web-mvc-config.xml</param-value>
+			<param-value>
+				/WEB-INF/classes/spring/common-config.xml,
+				/WEB-INF/classes/spring/web-mvc-config.xml
+			</param-value>
 		</init-param>
 		<load-on-startup>1</load-on-startup>
 	</servlet>

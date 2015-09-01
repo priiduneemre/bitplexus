@@ -9,7 +9,7 @@ import lombok.ToString;
 @AllArgsConstructor
 public enum Errors {
 	
-	TODO(1, "TODO");
+	TODO(1, "TODO: proper error codes & messages");
 	
 	private final int code;
 	private final String message;
