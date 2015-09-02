@@ -25,4 +25,5 @@ public final class Defaults {
 	public static final boolean ALLOW_HIGH_FEES = false;
 	public static final int PASSPHRASE_TIMEOUT = 1;
 	public static final int RAW_TXN_VERBOSITY = 1;
+	public static final boolean BLOCK_VERBOSITY = true;
 }

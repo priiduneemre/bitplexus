@@ -5,10 +5,8 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 import javax.annotation.Resource;
-import javax.xml.bind.DatatypeConverter;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -34,6 +32,7 @@ import com.neemre.bitplexus.backend.model.Currency;
 import com.neemre.bitplexus.backend.model.enums.Currencies;
 import com.neemre.bitplexus.backend.model.enums.TransactionStatusTypes;
 import com.neemre.bitplexus.backend.model.Transaction;
+import com.neemre.bitplexus.backend.service.ChainService;
 import com.neemre.bitplexus.backend.service.TransactionService;
 import com.neemre.bitplexus.common.Constants;
 import com.neemre.bitplexus.common.Defaults;
@@ -42,7 +41,10 @@ import com.neemre.bitplexus.common.PropertyKeys;
 import com.neemre.bitplexus.common.dto.TransactionDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
 import com.neemre.bitplexus.common.dto.virtual.PaymentDetailsDto;
+import com.neemre.bitplexus.common.util.DateUtils;
+import com.neemre.bitplexus.common.util.StringUtils;
 import com.neemre.btcdcli4j.core.BitcoindException;
+import com.neemre.btcdcli4j.core.CommunicationException;
 import com.neemre.btcdcli4j.core.client.BtcdClient;
 import com.neemre.ltcdcli4j.core.LitecoindException;
 import com.neemre.ltcdcli4j.core.client.LtcdClient;
@@ -63,6 +65,9 @@ public class TransactionServiceImpl implements TransactionService {
 	private DtoAssembler dtoAssembler;
 	@Autowired
 	private NodeWrapperResolver clientResolver;
+
+	@Autowired
+	private ChainService chainService;
 
 
 	@Transactional
@@ -246,7 +251,7 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private String createRawBtcTransaction(PaymentDetailsDto paymentDetailsDto,
+	private String createBtcRawTransaction(PaymentDetailsDto paymentDetailsDto,
 			List<com.neemre.btcdcli4j.core.domain.OutputOverview> selectedOutputs, String chainCode) 
 					throws BitcoinWrapperException {
 		try {
@@ -261,7 +266,7 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private String createRawLtcTransaction(PaymentDetailsDto paymentDetailsDto,
+	private String createLtcRawTransaction(PaymentDetailsDto paymentDetailsDto,
 			List<com.neemre.ltcdcli4j.core.domain.OutputOverview> selectedOutputs, String chainCode) 
 					throws LitecoinWrapperException {
 		try {
@@ -302,7 +307,7 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private String signRawBtcTransaction(String hexTransaction, String chainCode) 
+	private String signBtcRawTransaction(String hexTransaction, String chainCode) 
 			throws BitcoinWrapperException {
 		try {
 			BtcdClient btcdClient = clientResolver.getBtcdClient(chainCode); 
@@ -317,7 +322,7 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private String signRawLtcTransaction(String hexTransaction, String chainCode)
+	private String signLtcRawTransaction(String hexTransaction, String chainCode)
 			throws LitecoinWrapperException {
 		try {
 			LtcdClient ltcdClient = clientResolver.getLtcdClient(chainCode);
@@ -332,7 +337,7 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private String sendRawBtcTransaction(String signedHexTransaction, String chainCode)
+	private String sendBtcRawTransaction(String signedHexTransaction, String chainCode)
 			throws BitcoinWrapperException {
 		try {
 			return clientResolver.getBtcdClient(chainCode).sendRawTransaction(signedHexTransaction,
@@ -345,7 +350,7 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private String sendRawLtcTransaction(String signedHexTransaction, String chainCode) 
+	private String sendLtcRawTransaction(String signedHexTransaction, String chainCode) 
 			throws LitecoinWrapperException {
 		try {
 			return clientResolver.getLtcdClient(chainCode).sendRawTransaction(signedHexTransaction,
@@ -382,7 +387,7 @@ public class TransactionServiceImpl implements TransactionService {
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private com.neemre.btcdcli4j.core.domain.RawTransaction getRawBtcTransaction(String networkUid,
+	private com.neemre.btcdcli4j.core.domain.RawTransaction getBtcRawTransaction(String networkUid,
 			String chainCode) throws BitcoinWrapperException {
 		try {
 			return (com.neemre.btcdcli4j.core.domain.RawTransaction)clientResolver.getBtcdClient(
