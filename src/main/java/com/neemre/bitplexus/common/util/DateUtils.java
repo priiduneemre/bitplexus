@@ -12,7 +12,7 @@ import lombok.NoArgsConstructor;
 public final class DateUtils {
 
 	public static Date toDate(long unixTimestamp) {
-		if(unixTimestamp < 0) {
+		if (unixTimestamp < 0) {
 			throw new IllegalArgumentException(Errors.TODO.getDescription());
 		} 
 		return new Date(TimeUnit.SECONDS.toMillis(unixTimestamp));

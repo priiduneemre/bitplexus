@@ -107,13 +107,13 @@ public class Transaction extends BaseEntity {
 	@Column(name = "received_at")
 	private Date receivedAt;
 	@Temporal(TemporalType.TIMESTAMP)
-	@Column(name = "confirmed_at", insertable = false)
+	@Column(name = "confirmed_at")
 	private Date confirmedAt;
 	@Temporal(TemporalType.TIMESTAMP)
-	@Column(name = "completed_at", insertable = false)
+	@Column(name = "completed_at")
 	private Date completedAt;
 	@Min(0)
-	@Column(name = "block_height", insertable = false)
+	@Column(name = "block_height")
 	private Integer blockHeight;
 	@NotNull
 	@Min(1)

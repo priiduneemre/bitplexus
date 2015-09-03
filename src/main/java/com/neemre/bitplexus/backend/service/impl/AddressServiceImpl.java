@@ -76,9 +76,9 @@ public class AddressServiceImpl implements AddressService {
 			throws NodeWrapperException {
 		Address address = dtoAssembler.disassemble(addressDto, AddressDto.class, Address.class);
 		if (clientResolver.getBtcdClient(chainCode) != null) {
-			address.setEncodedForm(getNewBtcAddress(chainCode));
+			address.setEncodedForm(getBtcNewAddress(chainCode));
 		} else if (clientResolver.getLtcdClient(chainCode) != null) {
-			address.setEncodedForm(getNewLtcAddress(chainCode));
+			address.setEncodedForm(getLtcNewAddress(chainCode));
 		}
 		Wallet relatedWallet = walletRepository.findOne(addressDto.getWalletId());
 		if (relatedWallet.getWalletStateType().getCode().equals(WalletStateTypes.CREATED.name())) {
@@ -224,7 +224,7 @@ public class AddressServiceImpl implements AddressService {
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private String getNewBtcAddress(String chainCode) throws BitcoinWrapperException {
+	private String getBtcNewAddress(String chainCode) throws BitcoinWrapperException {
 		try {
 			return clientResolver.getBtcdClient(chainCode).getNewAddress();
 		} catch (BitcoindException e) {
@@ -235,7 +235,7 @@ public class AddressServiceImpl implements AddressService {
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private String getNewLtcAddress(String chainCode) throws LitecoinWrapperException {
+	private String getLtcNewAddress(String chainCode) throws LitecoinWrapperException {
 		try {
 			return clientResolver.getLtcdClient(chainCode).getNewAddress();
 		} catch (LitecoindException e) {

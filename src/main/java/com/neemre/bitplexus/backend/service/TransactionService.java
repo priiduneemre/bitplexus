@@ -27,7 +27,7 @@ public interface TransactionService {
 
 	BigDecimal findTransactionOptimalFee(String hexTransaction, String chainCode);
 
-	TransactionDto receiveNewTransaciton(String networkUid, String chainCode) 
+	TransactionDto receiveNewTransaction(String networkUid, String chainCode) 
 			throws NodeWrapperException;
 
 	TransactionDto sendNewTransaction(PaymentDetailsDto paymentDetailsDto, Integer walletId, 
