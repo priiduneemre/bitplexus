@@ -38,6 +38,6 @@ public class LtcdBlockListener extends BlockListener {
 			} catch (NodeWrapperException e) {
 				throw new WrappedCheckedException(e);
 			}
-		}	
+		}
 	}
 }

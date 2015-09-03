@@ -27,13 +27,19 @@ public class LtcdWalletListener extends WalletListener {
 	@Override
 	public void walletChanged(Transaction transaction) {
 		if (transactionService.findTransactionByNetworkUid(transaction.getTxId()) == null) {
-			//TODO: create new incoming tx & insert it into db
+			try {
+				transactionService.receiveNewTransaction(transaction.getTxId(), chainCode);
+			} catch (NodeWrapperException e) {
+				throw new WrappedCheckedException(e);
+			}
 		}
 		for (String encodedForm : addressService.findAddressesByTransactionNetworkUid(
 				transaction.getTxId())) {
 			try {
 				AddressDto txnAddress = addressService.findAddressByEncodedForm(encodedForm);
-				addressService.updateAddressBalance(txnAddress.getAddressId());
+				if (txnAddress.getWalletId() != null) {
+					addressService.updateAddressBalance(txnAddress.getAddressId());
+				}
 			} catch (NodeWrapperException e) {
 				throw new WrappedCheckedException(e);
 			}

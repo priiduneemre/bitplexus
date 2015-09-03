@@ -13,7 +13,7 @@
 
 	<context:component-scan base-package="com.neemre.bitplexus.backend.crypto"/>
 
-	<context:component-scan base-package="com.neemre.bitplexus.backend.service.impl"/>
+	<context:component-scan base-package="com.neemre.bitplexus.backend.service"/>
 
 	<util:properties id="btcTestnet3NodeConfig"
 		location="/WEB-INF/classes/node/bitcoin/testnet3_config.properties"/>

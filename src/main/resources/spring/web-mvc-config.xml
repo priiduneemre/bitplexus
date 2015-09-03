@@ -14,7 +14,7 @@
 	<context:component-scan base-package="com.neemre.bitplexus.frontend.controller"/>
 	
 	<mvc:annotation-driven/>
-	
+
 	<mvc:resources location="/resources/css/" mapping="/static/css/**" cache-period="60"/>
 	<mvc:resources location="/resources/images/" mapping="/static/img/**" cache-period="60"/>
 	<mvc:resources location="/resources/js/" mapping="/static/js/**" cache-period="60"/>

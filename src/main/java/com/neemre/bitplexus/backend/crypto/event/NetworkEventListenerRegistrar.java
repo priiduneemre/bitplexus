@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
@@ -21,8 +22,11 @@ public class NetworkEventListenerRegistrar implements ApplicationListener<Contex
 
 	@Autowired
 	private ChainService chainService;
+
 	@Autowired
 	private NodeWrapperResolver daemonResolver;
+	@Autowired
+	private AutowireCapableBeanFactory beanFactory;
 
 	private boolean isRegistered;
 
@@ -40,9 +44,9 @@ public class NetworkEventListenerRegistrar implements ApplicationListener<Contex
 		for (Map.Entry<String, BtcdDaemon> entry : getAllBtcdDaemons().entrySet()) {
 			final String chainCode = entry.getKey();
 			final BtcdDaemon btcdDaemon = entry.getValue();
-			btcdDaemon.addAlertListener(new BtcdAlertListener());
-			btcdDaemon.addBlockListener(new BtcdBlockListener(chainCode));
-			btcdDaemon.addWalletListener(new BtcdWalletListener(chainCode));
+			btcdDaemon.addAlertListener(autowireBeanProperties(new BtcdAlertListener()));
+			btcdDaemon.addBlockListener(autowireBeanProperties(new BtcdBlockListener(chainCode)));
+			btcdDaemon.addWalletListener(autowireBeanProperties(new BtcdWalletListener(chainCode)));
 		}
 	}
 
@@ -50,9 +54,9 @@ public class NetworkEventListenerRegistrar implements ApplicationListener<Contex
 		for (Map.Entry<String, LtcdDaemon> entry : getAllLtcdDaemons().entrySet()) {
 			final String chainCode = entry.getKey();
 			final LtcdDaemon ltcdDaemon = entry.getValue();
-			ltcdDaemon.addAlertListener(new LtcdAlertListener());
-			ltcdDaemon.addBlockListener(new LtcdBlockListener(chainCode));
-			ltcdDaemon.addWalletListener(new LtcdWalletListener(chainCode));
+			ltcdDaemon.addAlertListener(autowireBeanProperties(new LtcdAlertListener()));
+			ltcdDaemon.addBlockListener(autowireBeanProperties(new LtcdBlockListener(chainCode)));
+			ltcdDaemon.addWalletListener(autowireBeanProperties(new LtcdWalletListener(chainCode)));
 		}
 	}
 
@@ -64,5 +68,10 @@ public class NetworkEventListenerRegistrar implements ApplicationListener<Contex
 	private Map<String, LtcdDaemon> getAllLtcdDaemons() {
 		List<ChainDto> chains = chainService.findChainsByOperationality(true);
 		return daemonResolver.getLtcdDaemons(Lists.transform(chains, new CodeExtractor()));
+	}
+
+	private <T> T autowireBeanProperties(T bean) {
+		beanFactory.autowireBeanProperties(bean, AutowireCapableBeanFactory.AUTOWIRE_BY_TYPE, true);
+		return bean;
 	}
 }

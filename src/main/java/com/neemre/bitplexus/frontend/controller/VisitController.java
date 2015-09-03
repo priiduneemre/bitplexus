@@ -78,7 +78,7 @@ public class VisitController {
 	@ResponseBody
 	public AddressDto viewShowCreateNew1(ModelMap model) throws NodeWrapperException {
 		return addressService.createNewWalletAddress(new AddressDto(null, 16, null, null, 
-				"Anoter address #3345", null, null, null, null), "BITCOIN_TEST3");
+				"Anoter address #3345", null, null, null, null), "LITECOIN_TEST3");
 	}
 
 	@RequestMapping(value = "/customer/address/encodedForm", method = RequestMethod.GET)
