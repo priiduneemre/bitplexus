@@ -1,23 +1,19 @@
 package com.neemre.bitplexus.backend.service.impl;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
 import java.util.List;
 
 import javax.annotation.Resource;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
-import com.neemre.bitplexus.backend.crypto.BitcoinWrapperException;
-import com.neemre.bitplexus.backend.crypto.LitecoinWrapperException;
 import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
-import com.neemre.bitplexus.backend.crypto.NodeWrapperResolver;
+import com.neemre.bitplexus.backend.crypto.adapter.NodeClientAdapter;
 import com.neemre.bitplexus.backend.data.AddressRepository;
 import com.neemre.bitplexus.backend.data.AddressTypeRepository;
 import com.neemre.bitplexus.backend.data.WalletRepository;
@@ -28,12 +24,8 @@ import com.neemre.bitplexus.backend.model.enums.AddressStateTypes;
 import com.neemre.bitplexus.backend.model.enums.WalletStateTypes;
 import com.neemre.bitplexus.backend.service.AddressService;
 import com.neemre.bitplexus.common.Constants;
-import com.neemre.bitplexus.common.Defaults;
-import com.neemre.bitplexus.common.Errors;
 import com.neemre.bitplexus.common.dto.AddressDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
-import com.neemre.btcdcli4j.core.BitcoindException;
-import com.neemre.ltcdcli4j.core.LitecoindException;
 
 @Service
 public class AddressServiceImpl implements AddressService {
@@ -48,7 +40,7 @@ public class AddressServiceImpl implements AddressService {
 	@Resource(name = "dtoAssembler")
 	private DtoAssembler dtoAssembler;
 	@Autowired
-	private NodeWrapperResolver clientResolver;
+	private NodeClientAdapter nodeClient;
 
 
 	@Transactional(readOnly = true)
@@ -75,10 +67,10 @@ public class AddressServiceImpl implements AddressService {
 	public AddressDto createNewWalletAddress(AddressDto addressDto, String chainCode) 
 			throws NodeWrapperException {
 		Address address = dtoAssembler.disassemble(addressDto, AddressDto.class, Address.class);
-		if (clientResolver.getBtcdClient(chainCode) != null) {
-			address.setEncodedForm(getBtcNewAddress(chainCode));
-		} else if (clientResolver.getLtcdClient(chainCode) != null) {
-			address.setEncodedForm(getLtcNewAddress(chainCode));
+		if (nodeClient.isOperationalBtcChain(chainCode)) {
+			address.setEncodedForm(nodeClient.getBtcNewAddress(chainCode));
+		} else if (nodeClient.isOperationalLtcChain(chainCode)) {
+			address.setEncodedForm(nodeClient.getLtcNewAddress(chainCode));
 		}
 		Wallet relatedWallet = walletRepository.findOne(addressDto.getWalletId());
 		if (relatedWallet.getWalletStateType().getCode().equals(WalletStateTypes.CREATED.name())) {
@@ -151,12 +143,15 @@ public class AddressServiceImpl implements AddressService {
 	@Override
 	public AddressDto updateAddressBalance(Long addressId) throws NodeWrapperException {
 		Address address = addressRepository.findOne(addressId);
+		if (address.getWallet() == null) {
+			return dtoAssembler.assemble(address, Address.class, AddressDto.class);
+		}
 		String chainCode = address.getAddressType().getChain().getCode();
 		BigDecimal updatedBalance = null;
-		if (clientResolver.getBtcdClient(chainCode) != null) {
-			updatedBalance = getBtcAddressUnspent(address.getEncodedForm(), chainCode);
-		} else if (clientResolver.getLtcdClient(chainCode) != null) {
-			updatedBalance = getLtcAddressUnspent(address.getEncodedForm(), chainCode);
+		if (nodeClient.isOperationalBtcChain(chainCode)) {
+			updatedBalance = nodeClient.getBtcAddressBalance(address.getEncodedForm(), chainCode);
+		} else if (nodeClient.isOperationalLtcChain(chainCode)) {
+			updatedBalance = nodeClient.getLtcAddressBalance(address.getEncodedForm(), chainCode);
 		}
 		if (address.getAddressStateType().getCode().equals(AddressStateTypes.ALLOCATED.name())) {
 			if ((updatedBalance.compareTo(BigDecimal.ZERO) == 1)) {
@@ -183,65 +178,5 @@ public class AddressServiceImpl implements AddressService {
 				.getAddressStateType().getCode()));
 		Address updatedAddress = addressRepository.saveAndFlush(address);
 		return dtoAssembler.assemble(updatedAddress, Address.class, AddressDto.class);
-	}
-
-	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private BigDecimal getBtcAddressUnspent(String encodedForm, String chainCode) 
-			throws BitcoinWrapperException {
-		try {
-			List<com.neemre.btcdcli4j.core.domain.Output> unspentOutputs = clientResolver
-					.getBtcdClient(chainCode).listUnspent(Defaults.BTC_COMPLETED_CONF_COUNT,
-							Integer.MAX_VALUE, Arrays.asList(encodedForm));
-			BigDecimal balance = BigDecimal.ZERO;
-			for (int i = 0; i < unspentOutputs.size(); i++) {
-				balance = balance.add(unspentOutputs.get(i).getAmount());
-			}
-			return balance;
-		} catch (BitcoindException e) {
-			throw new BitcoinWrapperException(Errors.TODO, e);
-		} catch (com.neemre.btcdcli4j.core.CommunicationException e) {
-			throw new BitcoinWrapperException(Errors.TODO, e);
-		}
-	}
-
-	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private BigDecimal getLtcAddressUnspent(String encodedForm, String chainCode) 
-			throws LitecoinWrapperException {
-		try {
-			List<com.neemre.ltcdcli4j.core.domain.Output> unspentOutputs = clientResolver
-					.getLtcdClient(chainCode).listUnspent(Defaults.LTC_COMPLETED_CONF_COUNT, 
-							Integer.MAX_VALUE, Arrays.asList(encodedForm));
-			BigDecimal balance = BigDecimal.ZERO;
-			for (int i = 0; i < unspentOutputs.size(); i++) {
-				balance = balance.add(unspentOutputs.get(i).getAmount());
-			}
-			return balance;
-		} catch (LitecoindException e) {
-			throw new LitecoinWrapperException(Errors.TODO, e);
-		} catch (com.neemre.ltcdcli4j.core.CommunicationException e) {
-			throw new LitecoinWrapperException(Errors.TODO, e);
-		}
-	}
-
-	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private String getBtcNewAddress(String chainCode) throws BitcoinWrapperException {
-		try {
-			return clientResolver.getBtcdClient(chainCode).getNewAddress();
-		} catch (BitcoindException e) {
-			throw new BitcoinWrapperException(Errors.TODO, e);
-		} catch (com.neemre.btcdcli4j.core.CommunicationException e) {
-			throw new BitcoinWrapperException(Errors.TODO, e);
-		}
-	}
-
-	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private String getLtcNewAddress(String chainCode) throws LitecoinWrapperException {
-		try {
-			return clientResolver.getLtcdClient(chainCode).getNewAddress();
-		} catch (LitecoindException e) {
-			throw new LitecoinWrapperException(Errors.TODO, e);
-		} catch (com.neemre.ltcdcli4j.core.CommunicationException e) {
-			throw new LitecoinWrapperException(Errors.TODO, e);
-		}
 	}
 }
