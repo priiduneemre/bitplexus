@@ -5,9 +5,9 @@ import org.slf4j.LoggerFactory;
 
 import com.neemre.ltcdcli4j.daemon.event.AlertListener;
 
-public class LtcdAlertListener extends AlertListener {
+public class LtcAlertListener extends AlertListener {
 
-	private static final Logger LOG = LoggerFactory.getLogger(LtcdAlertListener.class);
+	private static final Logger LOG = LoggerFactory.getLogger(LtcAlertListener.class);
 
 
 	@Override

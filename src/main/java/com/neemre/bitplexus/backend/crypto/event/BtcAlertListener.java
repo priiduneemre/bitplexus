@@ -5,9 +5,9 @@ import org.slf4j.LoggerFactory;
 
 import com.neemre.btcdcli4j.daemon.event.AlertListener;
 
-public class BtcdAlertListener extends AlertListener {
+public class BtcAlertListener extends AlertListener {
 
-	private static final Logger LOG = LoggerFactory.getLogger(BtcdAlertListener.class);
+	private static final Logger LOG = LoggerFactory.getLogger(BtcAlertListener.class);
 
 
 	@Override

@@ -8,10 +8,10 @@ import com.neemre.bitplexus.backend.service.TransactionService;
 import com.neemre.bitplexus.common.WrappedCheckedException;
 import com.neemre.bitplexus.common.dto.AddressDto;
 import com.neemre.bitplexus.common.util.DateUtils;
-import com.neemre.btcdcli4j.core.domain.Block;
-import com.neemre.btcdcli4j.daemon.event.BlockListener;
+import com.neemre.ltcdcli4j.core.domain.Block;
+import com.neemre.ltcdcli4j.daemon.event.BlockListener;
 
-public class BtcdBlockListener extends BlockListener {
+public class LtcBlockListener extends BlockListener {
 
 	@Autowired
 	private AddressService addressService;
@@ -21,7 +21,7 @@ public class BtcdBlockListener extends BlockListener {
 	private String chainCode;
 
 
-	public BtcdBlockListener(String chainCode) {
+	public LtcBlockListener(String chainCode) {
 		this.chainCode = chainCode;
 	}
 
