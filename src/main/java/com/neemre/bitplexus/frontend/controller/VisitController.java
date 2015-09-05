@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.neemre.bitplexus.backend.crypto.BitcoinWrapperException;
+import com.neemre.bitplexus.backend.crypto.LitecoinWrapperException;
 import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
-import com.neemre.bitplexus.backend.crypto.NodeWrapperResolver;
+import com.neemre.bitplexus.backend.crypto.adapter.NodeClientAdapter;
 import com.neemre.bitplexus.backend.model.enums.AddressStateTypes;
 import com.neemre.bitplexus.backend.model.enums.WalletStateTypes;
 import com.neemre.bitplexus.backend.service.AddressService;
@@ -34,8 +36,6 @@ import com.neemre.bitplexus.common.dto.VisitDto;
 import com.neemre.bitplexus.common.dto.WalletDto;
 import com.neemre.bitplexus.common.dto.WalletStateTypeDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
-import com.neemre.btcdcli4j.core.BitcoindException;
-import com.neemre.ltcdcli4j.core.LitecoindException;
 
 @Controller
 @RequestMapping("")
@@ -57,7 +57,7 @@ public class VisitController {
 	@Resource(name = "dtoAssembler")
 	private DtoAssembler dtoAssembler;
 	@Autowired
-	private NodeWrapperResolver clientResolver;
+	private NodeClientAdapter nodeClient;
 
 
 	@RequestMapping(value = "/customer/addresses/count", method = RequestMethod.GET)
@@ -298,15 +298,15 @@ public class VisitController {
 
 	@RequestMapping(value = "/btc/info", method = RequestMethod.GET)
 	@ResponseBody
-	public com.neemre.btcdcli4j.core.domain.Info getInfo(ModelMap model) throws BitcoindException, 
-			com.neemre.btcdcli4j.core.CommunicationException {
-		return clientResolver.getBtcdClient("BITCOIN_TEST3").getInfo();
+	public com.neemre.btcdcli4j.core.domain.Info getInfo(ModelMap model) 
+			throws BitcoinWrapperException {
+		return nodeClient.getBtcInfo("BITCOIN_TEST3");
 	}
 
 	@RequestMapping(value = "/ltc/info", method = RequestMethod.GET)
 	@ResponseBody
-	public com.neemre.ltcdcli4j.core.domain.Info getInfo1(ModelMap model) throws LitecoindException, 
-			com.neemre.ltcdcli4j.core.CommunicationException {
-		return clientResolver.getLtcdClient("LITECOIN_TEST3").getInfo();
+	public com.neemre.ltcdcli4j.core.domain.Info getInfo1(ModelMap model) 
+			throws LitecoinWrapperException {
+		return nodeClient.getLtcInfo("LITECOIN_TEST3");
 	}
 }

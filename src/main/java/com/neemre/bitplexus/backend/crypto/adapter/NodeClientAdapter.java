@@ -138,6 +138,28 @@ public class NodeClientAdapter extends NodeWrapperAdapter {
 		}
 	}
 
+	public com.neemre.btcdcli4j.core.domain.Info getBtcInfo(String chainCode) 
+			throws BitcoinWrapperException {
+		try {
+			return wrapperResolver.getBtcdClient(chainCode).getInfo();
+		} catch (BitcoindException e) {
+			throw new BitcoinWrapperException(Errors.TODO, e);
+		} catch (com.neemre.btcdcli4j.core.CommunicationException e) {
+			throw new BitcoinWrapperException(Errors.TODO, e);
+		}
+	}
+
+	public com.neemre.ltcdcli4j.core.domain.Info getLtcInfo(String chainCode) 
+			throws LitecoinWrapperException {
+		try {
+			return wrapperResolver.getLtcdClient(chainCode).getInfo();
+		} catch (LitecoindException e) {
+			throw new LitecoinWrapperException(Errors.TODO, e);
+		} catch (com.neemre.ltcdcli4j.core.CommunicationException e) {
+			throw new LitecoinWrapperException(Errors.TODO, e);
+		}
+	}
+
 	public String getBtcNewAddress(String chainCode) throws BitcoinWrapperException {
 		try {
 			return wrapperResolver.getBtcdClient(chainCode).getNewAddress();
