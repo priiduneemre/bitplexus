@@ -17,7 +17,7 @@ public final class Defaults {
 	public static final int BTC_COMPLETED_CONF_COUNT = 3;
 	public static final int LTC_COMPLETED_CONF_COUNT = 12;
 
-	public static final BigDecimal BTC_TXN_FEE_COEFFICIENT = new BigDecimal("3.0");
+	public static final BigDecimal BTC_TXN_FEE_COEFFICIENT = new BigDecimal("5.0");
 	public static final BigDecimal LTC_TXN_FEE_COEFFICIENT = new BigDecimal("3.0");
 	public static final int BTC_TXN_MAX_SIG_ATTEMPTS = 3;
 	public static final int LTC_TXN_MAX_SIG_ATTEMPTS = 3;

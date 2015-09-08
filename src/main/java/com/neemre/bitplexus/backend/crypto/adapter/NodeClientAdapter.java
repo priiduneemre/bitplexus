@@ -1,12 +1,13 @@
 package com.neemre.bitplexus.backend.crypto.adapter;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.neemre.bitplexus.backend.crypto.BitcoinWrapperException;
 import com.neemre.bitplexus.backend.crypto.LitecoinWrapperException;
@@ -15,7 +16,6 @@ import com.neemre.bitplexus.backend.model.Address.EncodedFormExtractor;
 import com.neemre.bitplexus.common.Defaults;
 import com.neemre.bitplexus.common.Errors;
 import com.neemre.bitplexus.common.PropertyKeys;
-import com.neemre.bitplexus.common.dto.virtual.PaymentDetailsDto;
 import com.neemre.btcdcli4j.core.BitcoindException;
 import com.neemre.btcdcli4j.core.client.BtcdClient;
 import com.neemre.ltcdcli4j.core.LitecoindException;
@@ -24,13 +24,13 @@ import com.neemre.ltcdcli4j.core.client.LtcdClient;
 @Component
 public class NodeClientAdapter extends NodeWrapperAdapter {
 
-	public String createBtcRawTransaction(PaymentDetailsDto paymentDetailsDto,
-			List<com.neemre.btcdcli4j.core.domain.OutputOverview> unspentOutputs, String chainCode) 
-					throws BitcoinWrapperException {
+	public String createBtcRawTransaction(
+			List<? extends com.neemre.btcdcli4j.core.domain.OutputOverview> unspentOutputs, 
+			Map<String, BigDecimal> toAddresses, String chainCode) throws BitcoinWrapperException {
 		try {
-			return wrapperResolver.getBtcdClient(chainCode).createRawTransaction(unspentOutputs, 
-					ImmutableMap.of(paymentDetailsDto.getRecipientAddress(), paymentDetailsDto
-							.getAmount()));
+			return wrapperResolver.getBtcdClient(chainCode).createRawTransaction(
+					new ArrayList<com.neemre.btcdcli4j.core.domain.OutputOverview>(unspentOutputs), 
+					toAddresses);
 		} catch (BitcoindException e) {
 			throw new BitcoinWrapperException(Errors.TODO, e);
 		} catch (com.neemre.btcdcli4j.core.CommunicationException e) {
@@ -38,13 +38,13 @@ public class NodeClientAdapter extends NodeWrapperAdapter {
 		}
 	}
 
-	public String createLtcRawTransaction(PaymentDetailsDto paymentDetailsDto,
-			List<com.neemre.ltcdcli4j.core.domain.OutputOverview> unspentOutputs, String chainCode) 
-					throws LitecoinWrapperException {
+	public String createLtcRawTransaction(
+			List<? extends com.neemre.ltcdcli4j.core.domain.OutputOverview> unspentOutputs, 
+			Map<String, BigDecimal> toAddresses, String chainCode) throws LitecoinWrapperException {
 		try {
-			return wrapperResolver.getLtcdClient(chainCode).createRawTransaction(unspentOutputs, 
-					ImmutableMap.of(paymentDetailsDto.getRecipientAddress(), paymentDetailsDto
-							.getAmount()));
+			return wrapperResolver.getLtcdClient(chainCode).createRawTransaction(
+					new ArrayList<com.neemre.ltcdcli4j.core.domain.OutputOverview>(unspentOutputs),
+					toAddresses);
 		} catch (LitecoindException e) {
 			throw new LitecoinWrapperException(Errors.TODO, e);
 		} catch (com.neemre.ltcdcli4j.core.CommunicationException e) {
