@@ -3,6 +3,11 @@ package com.neemre.bitplexus.common.dto.virtual;
 import java.io.Serializable;
 import java.math.BigDecimal;
 
+import javax.validation.constraints.DecimalMin;
+import javax.validation.constraints.Digits;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -22,13 +27,26 @@ public class TickerDto implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
+	@NotNull
+	@Size(max = 8)
 	@JsonProperty("base")
 	private String source;
+	@NotNull
+	@Size(max = 8)
 	private String target;
+	@NotNull
+	@Digits(integer = 15, fraction = 8)
+	@DecimalMin(value = "0", inclusive = false)
 	private BigDecimal price;
+	@NotNull
+	@Digits(integer = 15, fraction = 8)
+	@DecimalMin("0")
 	private BigDecimal volume;
+	@NotNull
+	@Digits(integer = 15, fraction = 8)
 	@JsonProperty("change")
 	private BigDecimal priceChange;
+
 
 	public void setPrice(BigDecimal price) {
 		this.price = price.setScale(Defaults.DECIMAL_SCALE, Defaults.ROUNDING_MODE);

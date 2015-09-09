@@ -3,6 +3,9 @@ package com.neemre.bitplexus.common.dto.virtual;
 import java.io.Serializable;
 import java.util.Date;
 
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Past;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,11 +26,16 @@ public class TickerWrapperDto implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
+	@NotNull
 	private TickerDto ticker;
+	@NotNull
+	@Past
 	@JsonDeserialize(using = UnixTimestampDeserializer.class)
 	@JsonProperty("timestamp")
 	private Date updatedAt;
+	@NotNull
 	@JsonProperty("success")
 	private Boolean isSuccess;
+	@NotNull
 	private String error;
 }
