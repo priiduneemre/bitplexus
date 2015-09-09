@@ -3,8 +3,11 @@ package com.neemre.bitplexus.backend.service.impl;
 import java.math.BigDecimal;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
@@ -43,6 +46,7 @@ import com.neemre.bitplexus.common.dto.AddressDto;
 import com.neemre.bitplexus.common.dto.TransactionDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
 import com.neemre.bitplexus.common.dto.virtual.PaymentDetailsDto;
+import com.neemre.bitplexus.common.util.CollectionUtils;
 import com.neemre.bitplexus.common.util.DateUtils;
 import com.neemre.bitplexus.common.util.StringUtils;
 
@@ -158,16 +162,9 @@ public class TransactionServiceImpl implements TransactionService {
 
 	@Transactional(readOnly = true)
 	@Override
-	public BigDecimal findTransactionOptimalFee(String hexTransaction, String chainCode) {
-		Currency currency = currencyRepository.findByChainCode(chainCode);
-		if (currency.getName().equals(Currencies.BITCOIN.getName())) {
-			return transactionRepository.estimateFeeByHexTxnAndFeeCoefficient(currency.getName(), 
-					hexTransaction, Defaults.BTC_TXN_FEE_COEFFICIENT);
-		} else if (currency.getName().equals(Currencies.LITECOIN.getName())) {
-			return transactionRepository.estimateFeeByHexTxnAndFeeCoefficient(currency.getName(), 
-					hexTransaction, Defaults.LTC_TXN_FEE_COEFFICIENT);
-		}
-		throw new IllegalArgumentException(Errors.TODO.getDescription());
+	public BigDecimal findTransactionOptimalFee(BigDecimal requiredAmount, Integer walletId, 
+			String chainCode) {
+		return findTransactionMinimumFee(chainCode);
 	}
 
 	@Transactional
@@ -375,67 +372,96 @@ public class TransactionServiceImpl implements TransactionService {
 		}
 	}
 
+	@Transactional
+	@Override
+	public TransactionDto sendNewTransaction(PaymentDetailsDto paymentDetailsDto, Integer walletId, 
+			String chainCode) throws NodeWrapperException {
+		Transaction transaction = new Transaction();
+		BigDecimal fee = findTransactionOptimalFee(paymentDetailsDto.getAmount(), walletId, chainCode);
+		if (nodeClient.isOperationalBtcChain(chainCode)) {
+			List<com.neemre.btcdcli4j.core.domain.Output> unspentOutputs = nodeClient.getBtcUnspentOutputs(
+					addressRepository.findByWalletIdAndChainCode(walletId, chainCode), chainCode);
+			checkBtcOutgoingTxnSufficientFunds(unspentOutputs, paymentDetailsDto.getAmount(), fee);
+			List<com.neemre.btcdcli4j.core.domain.Output> selectedOutputs = selectBtcOutgoingTxnOutputs(
+					unspentOutputs, paymentDetailsDto.getAmount().add(fee), chainCode);
+			Map<String, BigDecimal> recipients = buildBtcOutgoingTxnRecipientList(selectedOutputs, 
+					paymentDetailsDto, fee, walletId, chainCode);
+			String networkUid = nodeClient.sendBtcRawTransaction(nodeClient.signBtcRawTransaction(
+					nodeClient.createBtcRawTransaction(selectedOutputs, recipients, chainCode), 
+					chainCode), chainCode);
+			com.neemre.btcdcli4j.core.domain.Transaction networkTransaction = 
+					nodeClient.getBtcTransaction(networkUid, chainCode);
+			com.neemre.btcdcli4j.core.domain.RawTransaction rawNetworkTransaction = 
+					nodeClient.getBtcRawTransaction(networkUid, chainCode);
+			transaction.setNetworkUid(networkUid);
+			transaction.setReceivedAt(DateUtils.toDate(networkTransaction.getTimeReceived()));
+			transaction.setBinarySize(StringUtils.toByteArray(networkTransaction.getHex()).length);
+			for (com.neemre.btcdcli4j.core.domain.RawInput networkInput : rawNetworkTransaction.getVIn()) {
+				transaction.addTransactionEndpoint(buildBtcOutgoingTxnInput(networkInput, chainCode));
+			}
+			for (com.neemre.btcdcli4j.core.domain.RawOutput networkOutput : rawNetworkTransaction.getVOut()) {
+				transaction.addTransactionEndpoint(buildBtcOutgoingTxnOutput(networkOutput, 
+						paymentDetailsDto.getRecipientAddress(), chainCode));
+			}
+		} else if (nodeClient.isOperationalLtcChain(chainCode)) {
+			List<com.neemre.ltcdcli4j.core.domain.Output> unspentOutputs = nodeClient.getLtcUnspentOutputs(
+					addressRepository.findByWalletIdAndChainCode(walletId, chainCode), chainCode);
+			checkLtcOutgoingTxnSufficientFunds(unspentOutputs, paymentDetailsDto.getAmount(), fee);
+			List<com.neemre.ltcdcli4j.core.domain.Output> selectedOutputs = selectLtcOutgoingTxnOutputs(
+					unspentOutputs, paymentDetailsDto.getAmount().add(fee), chainCode);
+			Map<String, BigDecimal> recipients = buildLtcOutgoingTxnRecipientList(selectedOutputs,
+					paymentDetailsDto, fee, walletId, chainCode);
+			String networkUid = nodeClient.sendLtcRawTransaction(nodeClient.signLtcRawTransaction(
+					nodeClient.createLtcRawTransaction(selectedOutputs, recipients, chainCode), 
+					chainCode), chainCode);
+			com.neemre.ltcdcli4j.core.domain.Transaction networkTransaction = 
+					nodeClient.getLtcTransaction(networkUid, chainCode);
+			com.neemre.ltcdcli4j.core.domain.RawTransaction rawNetworkTransaction = 
+					nodeClient.getLtcRawTransaction(networkUid, chainCode);
+			transaction.setNetworkUid(networkUid);
+			transaction.setReceivedAt(DateUtils.toDate(networkTransaction.getTimeReceived()));
+			transaction.setBinarySize(StringUtils.toByteArray(networkTransaction.getHex()).length);
+			for (com.neemre.ltcdcli4j.core.domain.RawInput networkInput : rawNetworkTransaction.getVIn()) {
+				transaction.addTransactionEndpoint(buildLtcOutgoingTxnInput(networkInput, chainCode));
+			}
+			for (com.neemre.ltcdcli4j.core.domain.RawOutput networkOutput : rawNetworkTransaction.getVOut()) {
+				transaction.addTransactionEndpoint(buildLtcOutgoingTxnOutput(networkOutput, 
+						paymentDetailsDto.getRecipientAddress(), chainCode));
+			}
+		}
+		transaction.setTransactionStatusType(transactionRepository.findTransactionStatusTypeByCode(
+				TransactionStatusTypes.UNCONFIRMED.name()));
+		transaction.setFee(fee);
+		transaction.setUnitPrice(chainService.findChainUnitPrice(chainCode));
+		transaction.setNote(paymentDetailsDto.getNote());
+		Transaction sentTransaction = transactionRepository.saveAndFlush(transaction);
+		return dtoAssembler.assemble(sentTransaction, Transaction.class, TransactionDto.class);
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+	private void checkBtcOutgoingTxnSufficientFunds(List<com.neemre.btcdcli4j.core.domain.Output>
+			unspentOutputs, BigDecimal requiredAmount, BigDecimal fee) {
+		if (getBtcOutgoingTxnOutputSum(unspentOutputs).compareTo(requiredAmount.add(fee)) < 0) {
+			throw new IllegalStateException(Errors.TODO.getDescription());
 		}
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private List<com.neemre.btcdcli4j.core.domain.OutputOverview> selectBtcOutgoingTxnOutputs(
-			List<com.neemre.btcdcli4j.core.domain.Output> unspentOutputs, BigDecimal requiredAmount, 
-			String chainCode) {
-		List<com.neemre.btcdcli4j.core.domain.OutputOverview> selectedOutputs = 
-				new ArrayList<com.neemre.btcdcli4j.core.domain.OutputOverview>();
-		for (int i = 0; i < unspentOutputs.size(); i++) {
-			if (unspentOutputs.get(i).getAmount().compareTo(requiredAmount) == 0) {
-				selectedOutputs.add(unspentOutputs.get(i));
-				return selectedOutputs;
-			}
+	private void checkLtcOutgoingTxnSufficientFunds(List<com.neemre.ltcdcli4j.core.domain.Output>
+			unspentOutputs, BigDecimal requiredAmount, BigDecimal fee) {
+		if (getLtcOutgoingTxnOutputSum(unspentOutputs).compareTo(requiredAmount.add(fee)) < 0) {
+			throw new IllegalStateException(Errors.TODO.getDescription());
 		}
-		BigDecimal allocatedAmount = BigDecimal.ZERO;
-		for (int i = 0; i < unspentOutputs.size(); i++) {
-			com.neemre.btcdcli4j.core.domain.Output selectedOutput = unspentOutputs.remove(
-					new SecureRandom().nextInt(unspentOutputs.size()));
-			selectedOutputs.add(selectedOutput);
-			allocatedAmount = allocatedAmount.add(selectedOutput.getAmount());
-			if (allocatedAmount.compareTo(requiredAmount) >= 0) {
-				break;
-			}
-		}
-		return selectedOutputs;
-	}
-
-	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
-	private List<com.neemre.ltcdcli4j.core.domain.OutputOverview> selectLtcOutgoingTxnOutputs(
-			List<com.neemre.ltcdcli4j.core.domain.Output> unspentOutputs, BigDecimal requiredAmount,
-			String chainCode) {
-		List<com.neemre.ltcdcli4j.core.domain.OutputOverview> selectedOutputs = 
-				new ArrayList<com.neemre.ltcdcli4j.core.domain.OutputOverview>();
-		for (int i = 0; i < unspentOutputs.size(); i++) {
-			if (unspentOutputs.get(i).getAmount().compareTo(requiredAmount) == 0) {
-				selectedOutputs.add(unspentOutputs.get(i));
-				return selectedOutputs;
-			}
-		}
-		BigDecimal allocatedAmount = BigDecimal.ZERO;
-		for (int i = 0; i < unspentOutputs.size(); i++) {
-			com.neemre.ltcdcli4j.core.domain.Output selectedOutput = unspentOutputs.remove(
-					new SecureRandom().nextInt(unspentOutputs.size()));
-			selectedOutputs.add(selectedOutput);
-			allocatedAmount = allocatedAmount.add(selectedOutput.getAmount());
-			if (allocatedAmount.compareTo(requiredAmount) >= 0) {
-				break;
-			}
-		}
-		return selectedOutputs;
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
 	private BigDecimal getBtcOutgoingTxnOutputSum(
-			List<? extends com.neemre.btcdcli4j.core.domain.Output> networkOutputs) {
+			List<com.neemre.btcdcli4j.core.domain.Output> networkOutputs) {
 		BigDecimal outputSum = BigDecimal.ZERO;
 		if (networkOutputs != null) {
 			for (com.neemre.btcdcli4j.core.domain.Output networkOutput : networkOutputs) {
 				if (networkOutput != null) {
-					outputSum.add(networkOutput.getAmount());
+					outputSum = outputSum.add(networkOutput.getAmount());
 				}
 			}
 		}
@@ -444,15 +470,163 @@ public class TransactionServiceImpl implements TransactionService {
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
 	private BigDecimal getLtcOutgoingTxnOutputSum(
-			List<? extends com.neemre.ltcdcli4j.core.domain.Output> networkOutputs) {
+			List<com.neemre.ltcdcli4j.core.domain.Output> networkOutputs) {
 		BigDecimal outputSum = BigDecimal.ZERO;
 		if (networkOutputs != null) {
 			for (com.neemre.ltcdcli4j.core.domain.Output networkOutput : networkOutputs) {
 				if (networkOutput != null) {
-					outputSum.add(networkOutput.getAmount());
+					outputSum = outputSum.add(networkOutput.getAmount());
 				}
 			}
 		}
 		return outputSum;
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+	private List<com.neemre.btcdcli4j.core.domain.Output> selectBtcOutgoingTxnOutputs(
+			List<com.neemre.btcdcli4j.core.domain.Output> unspentOutputs, BigDecimal requiredAmount, 
+			String chainCode) {
+		for (int i = 0; i < unspentOutputs.size(); i++) {
+			if (unspentOutputs.get(i).getAmount().compareTo(requiredAmount) == 0) {
+				return Arrays.asList(unspentOutputs.remove(i));
+			}
+		}
+		List<com.neemre.btcdcli4j.core.domain.Output> selectedOutputs = 
+				new ArrayList<com.neemre.btcdcli4j.core.domain.Output>();
+		BigDecimal allocatedAmount = BigDecimal.ZERO;
+		while (allocatedAmount.compareTo(requiredAmount) < 0) {
+			com.neemre.btcdcli4j.core.domain.Output selectedOutput = unspentOutputs.remove(
+					new SecureRandom().nextInt(unspentOutputs.size()));
+			selectedOutputs.add(selectedOutput);
+			allocatedAmount = allocatedAmount.add(selectedOutput.getAmount());
+		}
+		return selectedOutputs;
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+	private List<com.neemre.ltcdcli4j.core.domain.Output> selectLtcOutgoingTxnOutputs(
+			List<com.neemre.ltcdcli4j.core.domain.Output> unspentOutputs, BigDecimal requiredAmount,
+			String chainCode) {
+		for (int i = 0; i < unspentOutputs.size(); i++) {
+			if (unspentOutputs.get(i).getAmount().compareTo(requiredAmount) == 0) {
+				return Arrays.asList(unspentOutputs.remove(i));
+			}
+		}
+		List<com.neemre.ltcdcli4j.core.domain.Output> selectedOutputs = 
+				new ArrayList<com.neemre.ltcdcli4j.core.domain.Output>();
+		BigDecimal allocatedAmount = BigDecimal.ZERO;
+		while (allocatedAmount.compareTo(requiredAmount) < 0) {
+			com.neemre.ltcdcli4j.core.domain.Output selectedOutput = unspentOutputs.remove(
+					new SecureRandom().nextInt(unspentOutputs.size()));
+			selectedOutputs.add(selectedOutput);
+			allocatedAmount = allocatedAmount.add(selectedOutput.getAmount());
+		}
+		return selectedOutputs;
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY)
+	private Map<String, BigDecimal> buildBtcOutgoingTxnRecipientList(List<com.neemre.btcdcli4j.core
+			.domain.Output> selectedOutputs, PaymentDetailsDto paymentDetailsDto, BigDecimal fee, 
+			Integer walletId, String chainCode) throws NodeWrapperException {
+		Map<String, BigDecimal> recipients = new HashMap<String, BigDecimal>();
+		BigDecimal excessAmount = getBtcOutgoingTxnOutputSum(selectedOutputs).subtract(
+				paymentDetailsDto.getAmount().add(fee));
+		recipients.put(paymentDetailsDto.getRecipientAddress(), paymentDetailsDto.getAmount());
+		if (excessAmount.compareTo(BigDecimal.ZERO) > 0) {
+			AddressDto changeAddressDto = addressService.createNewWalletAddress(new AddressDto(null, 
+					walletId, null, null, null, null, null, null, null), true, chainCode);
+			recipients.put(changeAddressDto.getEncodedForm(), excessAmount);
+		}
+		recipients = CollectionUtils.shuffle(recipients);
+		return recipients;
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY)
+	private Map<String, BigDecimal> buildLtcOutgoingTxnRecipientList(List<com.neemre.ltcdcli4j.core
+			.domain.Output> selectedOutputs, PaymentDetailsDto paymentDetailsDto, BigDecimal fee,
+			Integer walletId, String chainCode) throws NodeWrapperException {
+		Map<String, BigDecimal> recipients = new HashMap<String, BigDecimal>();
+		BigDecimal excessAmount = getLtcOutgoingTxnOutputSum(selectedOutputs).subtract(
+				paymentDetailsDto.getAmount().add(fee));
+		recipients.put(paymentDetailsDto.getRecipientAddress(), paymentDetailsDto.getAmount());
+		if (excessAmount.compareTo(BigDecimal.ZERO) > 0) {
+			AddressDto changeAddressDto = addressService.createNewWalletAddress(new AddressDto(null,
+					walletId, null, null, null, null, null, null, null), true, chainCode);
+			recipients.put(changeAddressDto.getEncodedForm(), excessAmount);
+		}
+		recipients = CollectionUtils.shuffle(recipients);
+		return recipients;
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+	private TransactionEndpoint buildBtcOutgoingTxnInput(com.neemre.btcdcli4j.core.domain.RawInput
+			networkInput, String chainCode) throws BitcoinWrapperException {
+		TransactionEndpoint transactionInput = new TransactionEndpoint();
+		String encodedForm = Iterables.getOnlyElement(nodeClient.getBtcRawTransaction(
+				networkInput.getTxId(), chainCode).getVOut().get(networkInput.getVOut())
+				.getScriptPubKey().getAddresses());
+		transactionInput.setAddress(addressRepository.findByEncodedForm(encodedForm));
+		transactionInput.setTransactionEndpointType(transactionEndpointRepository
+				.findTransactionEndpointTypeByCode(TransactionEndpointTypes.INPUT.name()));
+		transactionInput.setAmount(nodeClient.getBtcRawTransaction(networkInput.getTxId(),
+				chainCode).getVOut().get(networkInput.getVOut()).getValue());
+		return transactionInput;
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+	private TransactionEndpoint buildLtcOutgoingTxnInput(com.neemre.ltcdcli4j.core.domain.RawInput
+			networkInput, String chainCode) throws LitecoinWrapperException {
+		TransactionEndpoint transactionInput = new TransactionEndpoint();
+		String encodedForm = Iterables.getOnlyElement(nodeClient.getLtcRawTransaction(
+				networkInput.getTxId(), chainCode).getVOut().get(networkInput.getVOut())
+				.getScriptPubKey().getAddresses());
+		transactionInput.setAddress(addressRepository.findByEncodedForm(encodedForm));
+		transactionInput.setTransactionEndpointType(transactionEndpointRepository
+				.findTransactionEndpointTypeByCode(TransactionEndpointTypes.INPUT.name()));
+		transactionInput.setAmount(nodeClient.getLtcRawTransaction(networkInput.getTxId(),
+				chainCode).getVOut().get(networkInput.getVOut()).getValue());
+		return transactionInput;
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY)
+	private TransactionEndpoint buildBtcOutgoingTxnOutput(com.neemre.btcdcli4j.core.domain.RawOutput
+			networkOutput, String recipientAddress, String chainCode) {
+		TransactionEndpoint transactionOutput = new TransactionEndpoint();
+		String encodedForm = Iterables.getOnlyElement(networkOutput.getScriptPubKey().getAddresses());
+		if (addressRepository.findByEncodedForm(encodedForm) == null) {
+			addressService.createNewExternalAddress(new AddressDto(null, null, null, null, null, 
+					encodedForm, null, null, null), chainCode);
+		}
+		transactionOutput.setAddress(addressRepository.findByEncodedForm(encodedForm));
+		if (transactionOutput.getAddress().getEncodedForm().equals(recipientAddress)) {
+			transactionOutput.setTransactionEndpointType(transactionEndpointRepository
+					.findTransactionEndpointTypeByCode(TransactionEndpointTypes.OUTPUT_MAIN.name()));
+		} else {
+			transactionOutput.setTransactionEndpointType(transactionEndpointRepository
+					.findTransactionEndpointTypeByCode(TransactionEndpointTypes.OUTPUT_CHANGE.name()));
+		}
+		transactionOutput.setAmount(networkOutput.getValue());
+		return transactionOutput;
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY)
+	private TransactionEndpoint buildLtcOutgoingTxnOutput(com.neemre.ltcdcli4j.core.domain.RawOutput
+			networkOutput, String recipientAddress, String chainCode) {
+		TransactionEndpoint transactionOutput = new TransactionEndpoint();
+		String encodedForm = Iterables.getOnlyElement(networkOutput.getScriptPubKey().getAddresses());
+		if (addressRepository.findByEncodedForm(encodedForm) == null) {
+			addressService.createNewExternalAddress(new AddressDto(null, null, null, null, null,
+					encodedForm, null, null, null), chainCode);
+		}
+		transactionOutput.setAddress(addressRepository.findByEncodedForm(encodedForm));
+		if (transactionOutput.getAddress().getEncodedForm().equals(recipientAddress)) {
+			transactionOutput.setTransactionEndpointType(transactionEndpointRepository
+					.findTransactionEndpointTypeByCode(TransactionEndpointTypes.OUTPUT_MAIN.name()));
+		} else {
+			transactionOutput.setTransactionEndpointType(transactionEndpointRepository
+					.findTransactionEndpointTypeByCode(TransactionEndpointTypes.OUTPUT_CHANGE.name()));
+		}
+		transactionOutput.setAmount(networkOutput.getValue());
+		return transactionOutput;
 	}
 }
