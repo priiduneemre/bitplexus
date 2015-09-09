@@ -69,9 +69,9 @@ import com.neemre.bitplexus.backend.model.reference.AddressStateType;
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class)})
 })
 public class Address extends BaseEntity {
-	
+
 	private static final long serialVersionUID = 1L;
-	
+
 	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_address_id")

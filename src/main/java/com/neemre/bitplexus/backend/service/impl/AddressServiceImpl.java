@@ -6,7 +6,10 @@ import java.util.List;
 import javax.annotation.Resource;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.base.MoreObjects;
@@ -24,6 +27,7 @@ import com.neemre.bitplexus.backend.model.enums.AddressStateTypes;
 import com.neemre.bitplexus.backend.model.enums.WalletStateTypes;
 import com.neemre.bitplexus.backend.service.AddressService;
 import com.neemre.bitplexus.common.Constants;
+import com.neemre.bitplexus.common.PropertyKeys;
 import com.neemre.bitplexus.common.dto.AddressDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
 
@@ -39,6 +43,8 @@ public class AddressServiceImpl implements AddressService {
 
 	@Resource(name = "dtoAssembler")
 	private DtoAssembler dtoAssembler;
+	@Autowired
+	private MessageSource messageSource;
 	@Autowired
 	private NodeClientAdapter nodeClient;
 
@@ -64,8 +70,8 @@ public class AddressServiceImpl implements AddressService {
 
 	@Transactional
 	@Override
-	public AddressDto createNewWalletAddress(AddressDto addressDto, String chainCode) 
-			throws NodeWrapperException {
+	public AddressDto createNewWalletAddress(AddressDto addressDto, Boolean isChange, 
+			String chainCode) throws NodeWrapperException {
 		Address address = dtoAssembler.disassemble(addressDto, AddressDto.class, Address.class);
 		if (nodeClient.isOperationalBtcChain(chainCode)) {
 			address.setEncodedForm(nodeClient.getBtcNewAddress(chainCode));
@@ -81,9 +87,32 @@ public class AddressServiceImpl implements AddressService {
 		address.setWallet(relatedWallet);
 		address.setAddressType(new AddressType(addressTypeRepository.findIdByAddressAndChainCode(
 				address.getEncodedForm(), chainCode), null, null, null, null, null, null, null, null));
+		if (address.getLabel() == null) {
+			address.setLabel(getNewAddressDefaultLabel(isChange, address.getWallet().getWalletId(), 
+					chainCode));
+		}
 		address.setBalance(BigDecimal.ZERO);
 		Address createdAddress = addressRepository.saveAndFlush(address);
 		return dtoAssembler.assemble(createdAddress, Address.class, AddressDto.class);
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+	private String getNewAddressDefaultLabel(Boolean isChange, Integer walletId, String chainCode) {
+		String labelPrefix = Constants.STRING_EMPTY;
+		if (isChange) {
+			labelPrefix = messageSource.getMessage(PropertyKeys.ADDRESS_CHANGE_LABEL_DEFAULT
+					.getValue(), null, LocaleContextHolder.getLocale());
+		} else {
+			labelPrefix = messageSource.getMessage(PropertyKeys.ADDRESS_REGULAR_LABEL_DEFAULT
+					.getValue(), null, LocaleContextHolder.getLocale());
+		}
+		int labelIndex = addressRepository.countByLabelAndWalletIdAndChainCode(labelPrefix, walletId,
+				chainCode) + 1;
+		if (labelIndex == 1) {
+			return labelPrefix;
+		} else {
+			return String.format("%s #%s", labelPrefix, labelIndex);
+		}
 	}
 
 	@Transactional(readOnly = true)

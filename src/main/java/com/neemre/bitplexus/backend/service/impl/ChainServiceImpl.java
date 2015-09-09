@@ -15,7 +15,10 @@ import com.neemre.bitplexus.backend.data.ChainRepository;
 import com.neemre.bitplexus.backend.data.CurrencyRepository;
 import com.neemre.bitplexus.backend.model.Chain;
 import com.neemre.bitplexus.backend.service.ChainService;
+import com.neemre.bitplexus.backend.service.misc.CryptonatorException;
+import com.neemre.bitplexus.common.Errors;
 import com.neemre.bitplexus.common.PropertyKeys;
+import com.neemre.bitplexus.common.WrappedCheckedException;
 import com.neemre.bitplexus.common.dto.ChainDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
 import com.neemre.bitplexus.common.dto.virtual.TickerWrapperDto;
@@ -27,22 +30,22 @@ public class ChainServiceImpl implements ChainService {
 	private ChainRepository chainRepository;
 	@Autowired
 	private CurrencyRepository currencyRepository;
-	
+
 	@Resource(name = "dtoAssembler")
 	private DtoAssembler dtoAssembler;
 	@Resource(name = "restTemplate")
 	private RestTemplate restTemplate;
 	@Resource(name = "tickerApiClientConfig")
 	private Properties tickerProperties;
-	
-	
+
+
 	@Transactional(readOnly = true)
 	@Override
 	public List<ChainDto> findChainsByOperationality(Boolean isOperational) {
 		List<Chain> chains = chainRepository.findByIsOperational(isOperational);
 		return dtoAssembler.assemble(chains, Chain.class, ChainDto.class);
 	}
-	
+
 	@Transactional(readOnly = true)
 	@Override
 	public BigDecimal findChainUnitPrice(String code) {
@@ -52,6 +55,10 @@ public class ChainServiceImpl implements ChainService {
 				String.format("%s_%s_%s", "TICKER", "ENDPOINT", currencyName)).getValue());
 		TickerWrapperDto tickerData = restTemplate.getForObject(String.format("%s/%s", urlBase, 
 				endpointUri), TickerWrapperDto.class);
+		if (!tickerData.getIsSuccess()) {
+			throw new WrappedCheckedException(new CryptonatorException(Errors.TODO, 
+					tickerData.getError()));
+		}
 		return tickerData.getTicker().getPrice();
 	}
 }

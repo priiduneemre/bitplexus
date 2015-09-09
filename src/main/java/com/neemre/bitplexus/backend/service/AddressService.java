@@ -11,7 +11,7 @@ public interface AddressService {
 
 	AddressDto createNewExternalAddress(AddressDto addressDto, String chainCode);
 
-	AddressDto createNewWalletAddress(AddressDto addressDto, String chainCode) 
+	AddressDto createNewWalletAddress(AddressDto addressDto, Boolean isChange, String chainCode) 
 			throws NodeWrapperException;
 
 	AddressDto findAddressByEncodedForm(String encodedForm);

@@ -36,6 +36,7 @@ import com.neemre.bitplexus.common.dto.VisitDto;
 import com.neemre.bitplexus.common.dto.WalletDto;
 import com.neemre.bitplexus.common.dto.WalletStateTypeDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
+import com.neemre.bitplexus.common.dto.virtual.PaymentDetailsDto;
 
 @Controller
 @RequestMapping("")
@@ -78,7 +79,7 @@ public class VisitController {
 	@ResponseBody
 	public AddressDto viewShowCreateNew1(ModelMap model) throws NodeWrapperException {
 		return addressService.createNewWalletAddress(new AddressDto(null, 16, null, null, 
-				"Anoter address #3345", null, null, null, null), "LITECOIN_TEST3");
+				"Anoter address #3345", null, null, null, null), false, "LITECOIN_TEST3");
 	}
 
 	@RequestMapping(value = "/customer/address/encodedForm", method = RequestMethod.GET)
@@ -231,12 +232,28 @@ public class VisitController {
 	@RequestMapping(value = "/customer/transactions/fee/optimal", method = RequestMethod.GET)
 	@ResponseBody
 	public  BigDecimal viewShowComplexCalcResult1(ModelMap model) {
-		return transactionService.findTransactionOptimalFee("aaaaaaaaaa", "BITCOIN_TEST3");
+		return transactionService.findTransactionOptimalFee(new BigDecimal("12.95"), 16, 
+				"LITECOIN_TEST3");
+	}
+
+	@RequestMapping(value = "/customer/transactions/new/incoming", method = RequestMethod.GET)
+	@ResponseBody
+	public TransactionDto viewShowCreateNew2(ModelMap model) throws NodeWrapperException {
+		return transactionService.receiveNewTransaction("6dbf3f7587048da3570056d66b16e5fb48e4b74e69"
+				+ "6177d8a1a714c87e0bf2dc", "BITCOIN_TEST3");
+	}
+
+	@RequestMapping(value = "/customer/transactions/new/outgoing", method = RequestMethod.GET)
+	@ResponseBody
+	public TransactionDto viewShowCreateNew3(ModelMap model) throws NodeWrapperException {
+		return transactionService.sendNewTransaction(new PaymentDetailsDto("2MtWnaT5wuuTBjd2PJY5WfT"
+				+ "Bbs1yqmykcHs", new BigDecimal("6.8"), "This is an outgoing test transaction!"), 
+				16, "LITECOIN_TEST3");
 	}
 
 	@RequestMapping(value = "/member/visits/new", method = RequestMethod.GET)
 	@ResponseBody
-	public VisitDto viewShowCreateNew2(ModelMap model, HttpServletRequest request) {
+	public VisitDto viewShowCreateNew4(ModelMap model, HttpServletRequest request) {
 		return visitService.createNewVisit(new VisitDto(null, "rebel_sloth", request.getRemoteAddr(),
 				null));
 	}
@@ -255,9 +272,15 @@ public class VisitController {
 		return visits;
 	}
 
+	@RequestMapping(value = "/customer/wallets/count", method = RequestMethod.GET)
+	@ResponseBody
+	public Integer viewShowCount2(ModelMap model) {
+		return walletService.countCustomerWalletsByName("My new wallet", 5);
+	}
+
 	@RequestMapping(value = "/customer/wallets/new", method = RequestMethod.GET)
 	@ResponseBody
-	public WalletDto viewShowCreateNew3(ModelMap model) {
+	public WalletDto viewShowCreateNew5(ModelMap model) {
 		return walletService.createNewWallet(new WalletDto(null, "rebel_sloth", null, 
 				"My new wallet", null, null));
 	}

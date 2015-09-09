@@ -13,16 +13,20 @@ public class BitcoinWrapperException extends NodeWrapperException {
 
 	private static final long serialVersionUID = 1L;
 
-	
+
 	public BitcoinWrapperException(Errors error) {
 		super(error);
 	}
-	
+
 	public BitcoinWrapperException(Errors error, String additionalMsg) {
 		super(error, additionalMsg);
 	}
-	
+
 	public BitcoinWrapperException(Errors error, Exception cause) {
 		super(error, cause);
+	}
+
+	public BitcoinWrapperException(Errors error, String additionalMsg, Exception cause) {
+		super(error, additionalMsg, cause);
 	}
 }
