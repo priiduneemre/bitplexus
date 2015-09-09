@@ -12,6 +12,7 @@ import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedStoredProcedureQueries;
 import javax.persistence.NamedStoredProcedureQuery;
 import javax.persistence.ParameterMode;
 import javax.persistence.SequenceGenerator;
@@ -43,13 +44,15 @@ import lombok.ToString;
 @Table(name = "member", schema = "public")
 @Inheritance(strategy = InheritanceType.JOINED)
 @SequenceGenerator(name = "seq_member_id", sequenceName = "seq_member_member_id", allocationSize = 1)
+@NamedStoredProcedureQueries(value = {
 @NamedStoredProcedureQuery(name = "findMemberRolesByUsername", 
 		procedureName = "f_get_member_roles", parameters = {
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_username", type = String.class)})
+})
 public class Member extends BaseEntity {
-	
+
 	private static final long serialVersionUID = 1L;
-	
+
 	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_member_id")

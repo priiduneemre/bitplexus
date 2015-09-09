@@ -50,7 +50,7 @@ import lombok.ToString;
 @Table(name = "chain", schema = "public")
 @SequenceGenerator(name = "seq_chain_id", sequenceName = "seq_chain_chain_id", allocationSize = 1)
 public class Chain extends BaseEntity {
-	
+
 	public static final Ordering<Chain> NAME_ORDERING = Ordering.natural().nullsLast()
 			.onResultOf(new NameExtractor());
 	public static final Ordering<Chain> OPERATIONALITY_ORDERING = Ordering.natural().reverse()
@@ -58,7 +58,7 @@ public class Chain extends BaseEntity {
 	public static final Ordering<Chain> NATURAL_ORDERING = OPERATIONALITY_ORDERING
 			.compound(NAME_ORDERING);
 	private static final long serialVersionUID = 1L;
-	
+
 	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_chain_id")

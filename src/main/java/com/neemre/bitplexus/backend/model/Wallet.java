@@ -10,7 +10,11 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
+import javax.persistence.NamedStoredProcedureQueries;
+import javax.persistence.NamedStoredProcedureQuery;
+import javax.persistence.ParameterMode;
 import javax.persistence.SequenceGenerator;
+import javax.persistence.StoredProcedureParameter;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
@@ -39,6 +43,12 @@ import com.neemre.bitplexus.backend.model.reference.WalletStateType;
 @Entity
 @Table(name = "wallet", schema = "public")
 @SequenceGenerator(name = "seq_wallet_id", sequenceName = "seq_wallet_wallet_id", allocationSize = 1)
+@NamedStoredProcedureQueries(value = {
+@NamedStoredProcedureQuery(name = "countByNameAndCustomerId", 
+		procedureName = "f_count_wallets_by_name", parameters = {
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_name_fragment", type = String.class),
+		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_customer_id", type = Integer.class)})
+})
 public class Wallet extends BaseEntity {
 
 	public static final Ordering<Wallet> NAME_ORDERING = Ordering.natural().nullsLast()
@@ -48,7 +58,7 @@ public class Wallet extends BaseEntity {
 	public static final Ordering<Wallet> NATURAL_ORDERING = WALLET_STATE_TYPE_ORDERING
 			.compound(NAME_ORDERING);
 	private static final long serialVersionUID = 1L;
-	
+
 	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_wallet_id")

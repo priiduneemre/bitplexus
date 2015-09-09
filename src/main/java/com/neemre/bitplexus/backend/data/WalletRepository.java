@@ -6,12 +6,14 @@ import com.neemre.bitplexus.backend.model.Wallet;
 import com.neemre.bitplexus.backend.model.reference.WalletStateType;
 
 public interface WalletRepository {
-	
+
+	Integer countByNameAndCustomerId(String nameFragment, Integer customerId);
+
 	List<Wallet> findByCustomerUsername(String username);
-	
+
 	Wallet findOne(Integer walletId);
-	
+
 	WalletStateType findWalletStateTypeByCode(String code);
-	
+
 	Wallet saveAndFlush(Wallet wallet);
 }

@@ -81,9 +81,9 @@ import com.neemre.bitplexus.backend.model.reference.TransactionStatusType;
 		@StoredProcedureParameter(mode = ParameterMode.IN, name = "in_chain_code", type = String.class)})
 })
 public class Transaction extends BaseEntity {
-	
+
 	private static final long serialVersionUID = 1L;
-	
+
 	@NotNull
 	@Id
 	@GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "seq_transaction_id")

@@ -669,6 +669,13 @@ BEGIN
 END
 $$ LANGUAGE plpgsql STABLE STRICT;
 
+CREATE OR REPLACE FUNCTION f_count_wallets_by_name(in_name_fragment VARCHAR(50), in_customer_id INTEGER)
+RETURNS INTEGER AS $$
+SELECT CAST(count(*) AS INTEGER) AS wallet_count
+FROM wallet AS w
+WHERE w.customer_id = in_customer_id AND lower(w.name) LIKE lower('%' || in_name_fragment || '%');
+$$ LANGUAGE sql STABLE LEAKPROOF STRICT;
+
 CREATE OR REPLACE FUNCTION f_get_wallet_subbalance(in_wallet_id INTEGER, in_chain_code VARCHAR(30)) 
 RETURNS NUMERIC(23, 8) AS $$
 SELECT sum(a.balance) AS wallet_balance_by_chain
@@ -868,6 +875,7 @@ DROP FUNCTION IF EXISTS f_calc_btc_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_estimate_btc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) CASCADE;
 DROP FUNCTION IF EXISTS f_calc_ltc_supply(in_block_height INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_estimate_ltc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) CASCADE;
+DROP FUNCTION IF EXISTS f_count_wallets_by_name(in_name_fragment VARCHAR(50), in_customer_id INTEGER) CASCADE;
 DROP FUNCTION IF EXISTS f_get_wallet_subbalance(in_wallet_id INTEGER, in_chain_code VARCHAR(30)) CASCADE;
 DROP FUNCTION IF EXISTS f_get_address_type_id(in_address VARCHAR(35), in_chain_code VARCHAR(30)) CASCADE;
 DROP FUNCTION IF EXISTS f_count_addresses_by_label(in_label_fragment VARCHAR(60), in_wallet_id INTEGER, in_chain_code VARCHAR(30)) CASCADE;
@@ -1436,6 +1444,7 @@ GRANT EXECUTE ON FUNCTION f_calc_btc_supply(in_block_height INTEGER) TO bitplexu
 GRANT EXECUTE ON FUNCTION f_estimate_btc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_calc_ltc_supply(in_block_height INTEGER) TO bitplexus_employee, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_estimate_ltc_supply(in_chain_started_at TIMESTAMP(0), in_measured_at TIMESTAMP(0)) TO bitplexus_employee, bitplexus_dbm;
+GRANT EXECUTE ON FUNCTION f_count_wallets_by_name(in_name_fragment VARCHAR(50), in_customer_id INTEGER) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_get_wallet_subbalance(in_wallet_id INTEGER, in_chain_code VARCHAR(30)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_get_address_type_id(in_address VARCHAR(35), in_chain_code VARCHAR(30)) TO bitplexus_customer, bitplexus_dbm;
 GRANT EXECUTE ON FUNCTION f_count_addresses_by_label(in_label_fragment VARCHAR(60), in_wallet_id INTEGER, in_chain_code VARCHAR(30)) TO bitplexus_customer, bitplexus_dbm;
