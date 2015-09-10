@@ -79,7 +79,7 @@ public class VisitController {
 	@ResponseBody
 	public AddressDto viewShowCreateNew1(ModelMap model) throws NodeWrapperException {
 		return addressService.createNewWalletAddress(new AddressDto(null, 16, null, null, 
-				"Anoter address #3345", null, null, null, null), false, "LITECOIN_TEST3");
+				null, null, null, null, null), false, "LITECOIN_TEST3");
 	}
 
 	@RequestMapping(value = "/customer/address/encodedForm", method = RequestMethod.GET)
@@ -246,8 +246,8 @@ public class VisitController {
 	@RequestMapping(value = "/customer/transactions/new/outgoing", method = RequestMethod.GET)
 	@ResponseBody
 	public TransactionDto viewShowCreateNew3(ModelMap model) throws NodeWrapperException {
-		return transactionService.sendNewTransaction(new PaymentDetailsDto("2MtWnaT5wuuTBjd2PJY5WfT"
-				+ "Bbs1yqmykcHs", new BigDecimal("6.8"), "This is an outgoing test transaction!"), 
+		return transactionService.sendNewTransaction(new PaymentDetailsDto("mxtvQJptaDT2B5XMyaqt4Uh"
+				+ "YwitNEvbQs4", new BigDecimal("0.12"), "Thfis is an outgoing test transaction!"), 
 				16, "LITECOIN_TEST3");
 	}
 
@@ -282,7 +282,7 @@ public class VisitController {
 	@ResponseBody
 	public WalletDto viewShowCreateNew5(ModelMap model) {
 		return walletService.createNewWallet(new WalletDto(null, "rebel_sloth", null, 
-				"My new wallet", null, null));
+				null, null, null));
 	}
 
 	@RequestMapping(value = "/customer/wallets/chain/balance", method = RequestMethod.GET)

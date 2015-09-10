@@ -8,13 +8,13 @@ import lombok.ToString;
 @ToString
 @AllArgsConstructor
 public enum Errors {
-	
-	TODO(1, "TODO: proper error codes & messages");
-	
+
+	TODO(10001, "TODO: define custom error codes & messages!");
+
 	private final int code;
 	private final String message;
-	
-	
+
+
 	public String getDescription() {
 		return String.format("Error #%s: %s", code, message);
 	}

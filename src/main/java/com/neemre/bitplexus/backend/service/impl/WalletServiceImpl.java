@@ -34,7 +34,7 @@ public class WalletServiceImpl implements WalletService {
 
 	@Resource(name = "dtoAssembler")
 	private DtoAssembler dtoAssembler;
-	@Autowired
+	@Resource(name = "messageSource")
 	private MessageSource messageSource;
 
 

@@ -6,4 +6,4 @@ target/
 .project
 
 # Project-specific patterns
-rebel.xml
+src/main/resources/rebel.xml

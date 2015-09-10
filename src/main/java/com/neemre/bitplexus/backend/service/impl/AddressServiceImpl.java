@@ -43,7 +43,7 @@ public class AddressServiceImpl implements AddressService {
 
 	@Resource(name = "dtoAssembler")
 	private DtoAssembler dtoAssembler;
-	@Autowired
+	@Resource(name = "messageSource")
 	private MessageSource messageSource;
 	@Autowired
 	private NodeClientAdapter nodeClient;
