@@ -11,6 +11,13 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class DateUtils {
 
+	public static Date addSeconds(Date date, int amount) {
+		if (date == null) {
+			throw new IllegalArgumentException(Errors.TODO.getDescription());
+		}
+		return new Date(date.getTime() + TimeUnit.SECONDS.toMillis(amount));
+	}
+
 	public static Date toDate(long unixTimestamp) {
 		if (unixTimestamp < 0) {
 			throw new IllegalArgumentException(Errors.TODO.getDescription());

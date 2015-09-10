@@ -23,6 +23,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.neemre.bitplexus.backend.crypto.BitcoinWrapperException;
 import com.neemre.bitplexus.backend.crypto.LitecoinWrapperException;
+import com.neemre.bitplexus.backend.crypto.LockedTransactionPool;
 import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
 import com.neemre.bitplexus.backend.crypto.adapter.NodeClientAdapter;
 import com.neemre.bitplexus.backend.data.AddressRepository;
@@ -64,6 +65,8 @@ public class TransactionServiceImpl implements TransactionService {
 
 	@Resource(name = "dtoAssembler")
 	private DtoAssembler dtoAssembler;
+	@Resource(name = "lockedTransactionPool")
+	private LockedTransactionPool lockedTransactions;
 	@Autowired
 	private NodeClientAdapter nodeClient;
 
@@ -171,6 +174,9 @@ public class TransactionServiceImpl implements TransactionService {
 	@Override
 	public TransactionDto receiveNewTransaction(String networkUid, String chainCode) 
 			throws NodeWrapperException {
+		if (!lockedTransactions.addTransaction(networkUid)) {
+			return null;
+		}
 		Transaction transaction = new Transaction();
 		if (nodeClient.isOperationalBtcChain(chainCode)) {
 			com.neemre.btcdcli4j.core.domain.Transaction networkTransaction = 
@@ -221,6 +227,7 @@ public class TransactionServiceImpl implements TransactionService {
 		transaction.setNetworkUid(networkUid);
 		transaction.setUnitPrice(chainService.findChainUnitPrice(chainCode));
 		Transaction receivedTransaction = transactionRepository.saveAndFlush(transaction);
+		lockedTransactions.removeTransaction(receivedTransaction.getNetworkUid());
 		return dtoAssembler.assemble(receivedTransaction, Transaction.class, TransactionDto.class);
 	}
 
@@ -389,6 +396,7 @@ public class TransactionServiceImpl implements TransactionService {
 			String networkUid = nodeClient.sendBtcRawTransaction(nodeClient.signBtcRawTransaction(
 					nodeClient.createBtcRawTransaction(selectedOutputs, recipients, chainCode), 
 					chainCode), chainCode);
+			lockedTransactions.addTransaction(networkUid);
 			com.neemre.btcdcli4j.core.domain.Transaction networkTransaction = 
 					nodeClient.getBtcTransaction(networkUid, chainCode);
 			com.neemre.btcdcli4j.core.domain.RawTransaction rawNetworkTransaction = 
@@ -414,6 +422,7 @@ public class TransactionServiceImpl implements TransactionService {
 			String networkUid = nodeClient.sendLtcRawTransaction(nodeClient.signLtcRawTransaction(
 					nodeClient.createLtcRawTransaction(selectedOutputs, recipients, chainCode), 
 					chainCode), chainCode);
+			lockedTransactions.addTransaction(networkUid);
 			com.neemre.ltcdcli4j.core.domain.Transaction networkTransaction = 
 					nodeClient.getLtcTransaction(networkUid, chainCode);
 			com.neemre.ltcdcli4j.core.domain.RawTransaction rawNetworkTransaction = 
@@ -435,6 +444,7 @@ public class TransactionServiceImpl implements TransactionService {
 		transaction.setUnitPrice(chainService.findChainUnitPrice(chainCode));
 		transaction.setNote(paymentDetailsDto.getNote());
 		Transaction sentTransaction = transactionRepository.saveAndFlush(transaction);
+		lockedTransactions.removeTransaction(sentTransaction.getNetworkUid());
 		return dtoAssembler.assemble(sentTransaction, Transaction.class, TransactionDto.class);
 	}
 

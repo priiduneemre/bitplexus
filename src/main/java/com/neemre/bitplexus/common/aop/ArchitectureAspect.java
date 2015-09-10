@@ -24,7 +24,7 @@ public class ArchitectureAspect {
 	@Pointcut("within(com.neemre.bitplexus.backend.data..*)")
 	public final void inDataAccessLayer() {}
 
-	@Pointcut("within(com.neemre.bitplexus.backend.crypto.NodeWrapperResolver) "
+	@Pointcut("within(com.neemre.bitplexus.backend.crypto.*) "
 			+ "|| within(com.neemre.bitplexus.backend.crypto.adapter..*)"
 			+ "|| within(com.neemre.bitplexus.backend.crypto.event.NetworkEventListenerRegistrar)")
 	public final void inHelperLayer() {}
@@ -52,7 +52,7 @@ public class ArchitectureAspect {
 	@Pointcut("execution(* com.neemre.bitplexus.backend.data..*.*(..))")
 	public final void dataAccessOperation() {}
 
-	@Pointcut("execution(* com.neemre.bitplexus.backend.crypto.NodeWrapperResolver.*(..)) "
+	@Pointcut("execution(* com.neemre.bitplexus.backend.crypto.*.*(..)) "
 			+ "|| execution(* com.neemre.bitplexus.backend.crypto.adapter..*.*(..))"
 			+ "|| execution(* com.neemre.bitplexus.backend.crypto.event.NetworkEventListenerRegistrar.*(..))")
 	public final void helperOperation() {}

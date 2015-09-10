@@ -39,4 +39,7 @@
 		class="com.neemre.ltcdcli4j.daemon.LtcdDaemonImpl">
 		<constructor-arg name="ltcdProvider" ref="ltcdTestnet3Client"/>
 	</bean>
+
+	<bean id="lockedTransactionPool" 
+		class="com.neemre.bitplexus.backend.crypto.LockedTransactionPool"/>
 </beans>
