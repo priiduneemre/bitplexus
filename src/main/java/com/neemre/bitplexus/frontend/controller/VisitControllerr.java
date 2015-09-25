@@ -40,7 +40,7 @@ import com.neemre.bitplexus.common.dto.virtual.PaymentDetailsDto;
 
 @Controller
 @RequestMapping("")
-public class VisitController {
+public class VisitControllerr {
 
 	@Autowired
 	private AddressService addressService;
