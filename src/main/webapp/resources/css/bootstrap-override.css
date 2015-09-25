@@ -1,0 +1,47 @@
+
+.alert {
+	margin-bottom: 15px;
+}
+
+.btn-social-icon {
+	opacity: 0.7;
+}
+
+.jumbotron {
+	background-image: url('../img/bg_raindrops_strip.jpg');
+	background-size: cover;
+	color: #ffffff;
+	margin-top: -10px;
+	text-shadow: 0.1em 0.1em 0.15em #000000;
+}
+
+.modal-body {
+	padding: 20px 15px 15px 15px;
+}
+
+.modal-footer .btn + .btn {
+	margin-left: 0px;
+}
+
+.modal-header {
+	padding: 17px 15px 10px 15px;
+}
+
+.navbar-default {
+	background-image: none;
+	background-repeat: no-repeat;
+}
+
+.page-header {
+	margin: 0px 0px 20px 0px;
+}
+
+.table > thead > tr > th {
+	background-color: #f9f9f9;
+	border-bottom: 1px solid #dddddd;
+	border-top: 1px solid #dddddd !important;
+}
+
+.table-striped {
+	background-color: #f9f9f9;
+}

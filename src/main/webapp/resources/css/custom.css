@@ -1,0 +1,81 @@
+
+#error-image {
+	height: 280px;
+}
+
+#login-icon {
+	height: 24px;
+	margin: 0px 2px 6px 0px;
+}
+
+.btn-back-glyph {
+	margin: 0px 1px 0px 0px;
+	vertical-align: middle;
+}
+
+.btn-create-new-glyph {
+	margin: 0px 2px 0px 0px;
+	vertical-align: middle;
+}
+
+.btn-send-glyph {
+	margin: 0px 2px 0px 0px;
+}
+
+.currency-icon-sm {
+	height: 16px;
+	margin: -2px 2px 0px 0px;
+}
+
+.incoming-txn-glyph {
+	color: #5cb85c;
+}
+
+.internal-transfer-glyph {
+	color: #5bc0de;
+}
+
+.outgoing-txn-glyph {
+	color: #d9534f;
+}
+
+.td-transaction-type {
+	padding: 8px 4px 8px 8px !important;
+}
+
+.th-address {
+	width: 311px;
+}
+
+.th-amount-narrow {
+	width: 150px;
+}
+
+.th-amount-wide {
+	width: 160px;
+}
+
+.th-balance {
+	width: 160px;
+}
+
+.th-confirmations {
+	width: 150px;
+}
+
+.th-date-narrow {
+	width: 160px;
+}
+
+.th-date-wide {
+	width: 240px;
+}
+
+.th-transaction-type {
+	padding: 8px 4px 8px 8px !important;
+	width: 26px;
+}
+
+.wallet-glyph {
+	margin: 0px 2px 0px 0px;
+}

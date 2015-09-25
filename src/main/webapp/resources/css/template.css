@@ -1,0 +1,225 @@
+
+#brand-image {
+	height: 65px;
+	margin-top: -23px;
+}
+
+#footer {
+	bottom: 0px;
+	height: 70px;
+	position: absolute;
+	width: 100%;
+}
+
+#footer a:active {
+	color: #bbbbbb !important;
+}
+
+#footer a:hover {
+	color: #bbbbbb !important;
+}
+
+#footer a:link {
+	color: #efefef;
+}
+
+#footer a:visited {
+	color: #efefef;
+}
+
+#footer-icon {
+	height: 40px; 
+	margin: 15px 0px 15px 0px;
+	opacity: 0.7;
+}
+
+#footer-top-button {
+	margin-left: 15px;
+	vertical-align: middle;
+}
+
+.body-btn-margin {
+	margin: 5px 0px 10px 0px;
+}
+
+.body-btn-margin-shallow {
+	margin: 0px 0px 5px 0px;
+}
+
+.body-btn-margin-short {
+	margin: 5px 0px 0px 0px;
+}
+
+.body-btn-margin-tall {
+	margin: 20px 0px 10px 0px;
+}
+
+.col-padding-slim-left {
+	padding-left: 5px;
+}
+
+.col-padding-slim-right {
+	padding-right: 5px;
+}
+
+.dropdown-activity-glyph {
+	margin-left: 56px;
+}
+
+.dropdown-logout-glyph {
+	margin-left: 52px;
+}
+
+.dropdown-settings-glyph {
+	margin-left: 49px;
+}
+
+.footer-bg {
+	background-color: #5a5a5a;
+}
+
+.footer-color {
+	color: #bbbbbb;
+}
+
+.footer-separator-color {
+	color: #efefef;
+}
+
+.layer-bottom {
+	z-index: 1;
+}
+
+.layer-middle {
+	z-index: 2;
+}
+
+.layer-top {
+	z-index: 3;
+}
+
+.modal-header-close-btn {
+	margin-top: -7px !important;
+}
+
+.modal-header-heading {
+}
+
+.modal-header-subheading {
+	margin: -3px 0px 0px 1px;
+}
+
+.navbar-btn-margin-left {
+	margin-left: 4px;
+}
+
+.navbar-btn-margin-right {
+	margin-right: 4px;
+}
+
+.navbar-content-margin-right {
+	margin-right: 15px;
+}
+
+.navbar-glyph-margin-right {
+	margin-right: 2px;
+}
+
+.pagination-bottom {
+	margin: 0px 0px 0px 0px;
+}
+
+.panel-base {
+	margin: 0px 0px 20px 0px;
+	padding: 0px 0px 10px 0px;
+}
+
+.panel-base-form {
+	margin: 20px 0px 20px 0px;
+}
+
+.panel-base-heading {
+	margin-top: 15px;
+}
+
+.panel-base-menu {
+	margin: 0px 0px -40px 0px;
+}
+
+.panel-base-menu a:link {
+	background-color: #f9f9f9;
+}
+
+.panel-base-menu a:visited {
+	background-color: #f9f9f9;
+}
+
+.panel-base-menu-pill {
+	margin: 0px 0px 0px 1px;
+}
+
+.panel-base-rates {
+	margin: 3px 0px -43px 0px;
+}
+
+.panel-base-subheading {
+	margin: -12px 0px 0px 1px;
+	padding: 0px 0px 8px 0px;
+}
+
+.panel-item-margin {
+	margin: 20px 0px 20px 0px;
+}
+
+.panel-item-margin-singleton {
+	margin: 25px 0px 5px 0px;
+}
+
+.panel-item-margin-tall {
+	margin: 25px 0px 20px 0px;
+}
+
+.table-label {
+	padding: 3px 4px 1px 4px;
+}
+
+.table-link {
+	display: block;
+}
+
+.table-navigable a {
+	color: #337ab7;
+	text-decoration: none;
+}
+
+.valign-center {
+	align-items: center;
+	display: flex;
+}
+
+@media (max-width: 991px) {
+	.col-padding-slim-left {
+		padding-left: 15px;
+	}
+	.col-padding-slim-right {
+		padding-right: 15px;
+	}
+}
+
+@media (min-width: 768px) and (max-width: 991px) {
+	body {
+		padding-top: 141px !important;
+	}
+}
+
+body {
+	/* Free background pattern provided by: http://www.subtlepatterns.com/ */
+	background-image: url('../img/bg_concrete_tile.png');
+	margin-bottom: 70px;
+	padding-top: 76px;
+}
+
+html {
+	min-height: 100%;
+	position: relative;
+}
