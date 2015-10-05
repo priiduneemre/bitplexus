@@ -46,7 +46,9 @@
 				<entry key="AddressDto" value="com.neemre.bitplexus.common.dto.AddressDto"/>
 				<entry key="AddressStateTypeDto" 
 					value="com.neemre.bitplexus.common.dto.AddressStateTypeDto"/>
+				<entry key="AddressTypeDto" value="com.neemre.bitplexus.common.dto.AddressTypeDto"/>
 				<entry key="ChainDto" value="com.neemre.bitplexus.common.dto.ChainDto"/>
+				<entry key="CurrencyDto" value="com.neemre.bitplexus.common.dto.CurrencyDto"/>
 				<entry key="MemberDto" value="com.neemre.bitplexus.common.dto.MemberDto"/>
 				<entry key="TransactionDto" value="com.neemre.bitplexus.common.dto.TransactionDto"/>
 				<entry key="TransactionEndpointDto" 
@@ -75,7 +77,8 @@
 		</property>
 	</bean>
 
-	<task:scheduler id="commonScheduler" pool-size="5"/>
+	<task:scheduler id="balanceUpdateScheduler" pool-size="5"/>
+	<task:scheduler id="lockedTxnPoolScheduler" pool-size="2"/>
 
 	<bean id="messageSource" 
 		class="org.springframework.context.support.ReloadableResourceBundleMessageSource">

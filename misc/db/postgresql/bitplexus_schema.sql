@@ -678,11 +678,12 @@ $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_get_wallet_subbalance(in_wallet_id INTEGER, in_chain_code VARCHAR(30)) 
 RETURNS NUMERIC(23, 8) AS $$
-SELECT sum(a.balance) AS wallet_balance_by_chain
+SELECT COALESCE(sum(a.balance), CAST(0 AS NUMERIC(23, 8))) AS wallet_balance_by_chain
 FROM wallet AS w INNER JOIN address AS a ON w.wallet_id = a.wallet_id
+INNER JOIN address_state_type AS ast ON a.address_state_type_id = ast.address_state_type_id
 INNER JOIN address_type AS adt ON a.address_type_id = adt.address_type_id
 INNER JOIN chain AS ch ON adt.chain_id = ch.chain_id
-WHERE w.wallet_id = in_wallet_id AND ch.code = in_chain_code;
+WHERE w.wallet_id = in_wallet_id AND ch.code = in_chain_code AND ast.code NOT IN ('ALLOCATED', 'DELETED');
 $$ LANGUAGE sql STABLE LEAKPROOF STRICT;
 
 CREATE OR REPLACE FUNCTION f_get_address_type_id(in_address VARCHAR(35), in_chain_code VARCHAR(30)) 
