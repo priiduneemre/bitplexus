@@ -74,6 +74,10 @@
 	margin-left: 49px;
 }
 
+.element-hidden {
+	display: none;
+}
+
 .footer-bg {
 	background-color: #5a5a5a;
 }
@@ -98,6 +102,12 @@
 	z-index: 3;
 }
 
+.menu-link {
+	background-image: none !important;
+	background-repeat: no-repeat !important;
+	box-shadow: none !important;
+}
+
 .modal-header-close-btn {
 	margin-top: -7px !important;
 }
@@ -117,10 +127,6 @@
 	margin-right: 4px;
 }
 
-.navbar-content-margin-right {
-	margin-right: 15px;
-}
-
 .navbar-glyph-margin-right {
 	margin-right: 2px;
 }
@@ -132,6 +138,10 @@
 .panel-base {
 	margin: 0px 0px 20px 0px;
 	padding: 0px 0px 10px 0px;
+}
+
+.panel-base-alert {
+	margin: 20px 0px -5px 0px;
 }
 
 .panel-base-form {
@@ -179,6 +189,10 @@
 	margin: 25px 0px 20px 0px;
 }
 
+.table-dropdown {
+	margin: -1px 0px -2px 0px;
+}
+
 .table-label {
 	padding: 3px 4px 1px 4px;
 }
@@ -222,4 +236,14 @@ body {
 html {
 	min-height: 100%;
 	position: relative;
+}
+
+input::-webkit-inner-spin-button,
+input::-webkit-outer-spin-button {
+	-webkit-appearance: none;
+	margin: 0px;
+}
+
+input[type='number'] {
+	-moz-appearance: textfield;
 }

@@ -8,6 +8,10 @@
 	margin: 0px 2px 6px 0px;
 }
 
+.address-glyph {
+	margin: 0px 2px 0px 0px;	
+}
+
 .btn-back-glyph {
 	margin: 0px 1px 0px 0px;
 	vertical-align: middle;
@@ -39,12 +43,20 @@
 	color: #d9534f;
 }
 
+.sign-in-glyph {
+	margin: 0px 2px 0px 0px;
+}
+
 .td-transaction-type {
 	padding: 8px 4px 8px 8px !important;
 }
 
+.th-manage {
+	width: 83px;
+}
+
 .th-address {
-	width: 311px;
+	width: 310px;
 }
 
 .th-amount-narrow {
@@ -64,11 +76,27 @@
 }
 
 .th-date-narrow {
-	width: 160px;
+	width: 162px;
 }
 
 .th-date-wide {
-	width: 240px;
+	width: 250px;
+}
+
+.th-date-wide-pct {
+	width: 33%;
+}
+
+.th-index {
+	width: 45px;
+}
+
+.th-ip-address-pct {
+	width: 24.5%;
+}
+
+.th-label-pct {
+	width: 38%;
 }
 
 .th-transaction-type {
