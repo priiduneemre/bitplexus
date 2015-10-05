@@ -16,7 +16,7 @@ public class LockedTransactionPool {
 
 	private Set<String> networkUids;
 
-	@Resource(name = "commonScheduler")
+	@Resource(name = "lockedTxnPoolScheduler")
 	private TaskScheduler scheduler;
 
 

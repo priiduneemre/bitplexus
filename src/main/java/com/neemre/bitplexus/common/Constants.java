@@ -6,6 +6,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class Constants {
 
+	public static final String JSON_MEDIA_TYPE = "application/json; charset=UTF-8";
 	public static final String STRING_EMPTY = "";
 	public static final String STRING_NULL = "null";
 	public static final String STRING_SPACE = " ";

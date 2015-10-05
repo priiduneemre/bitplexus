@@ -88,6 +88,26 @@ public class NodeClientAdapter extends NodeWrapperAdapter {
 		}
 	}
 
+	public String getBtcBestBlockHash(String chainCode) throws BitcoinWrapperException {
+		try {
+			return wrapperResolver.getBtcdClient(chainCode).getBestBlockHash();
+		} catch (BitcoindException e) {
+			throw new BitcoinWrapperException(Errors.TODO, e);
+		} catch (com.neemre.btcdcli4j.core.CommunicationException e) {
+			throw new BitcoinWrapperException(Errors.TODO, e);
+		}
+	}
+
+	public String getLtcBestBlockHash(String chainCode) throws LitecoinWrapperException {
+		try {
+			return wrapperResolver.getLtcdClient(chainCode).getBestBlockHash();
+		} catch (LitecoindException e) {
+			throw new LitecoinWrapperException(Errors.TODO, e);
+		} catch (com.neemre.ltcdcli4j.core.CommunicationException e) {
+			throw new LitecoinWrapperException(Errors.TODO, e);
+		}
+	}
+
 	public com.neemre.btcdcli4j.core.domain.Block getBtcBlock(Integer blockHeight, String chainCode) 
 			throws BitcoinWrapperException {
 		try {

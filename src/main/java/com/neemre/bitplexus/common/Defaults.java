@@ -12,6 +12,8 @@ public final class Defaults {
 	public static final int DECIMAL_SCALE = 8;
 	public static final RoundingMode ROUNDING_MODE = RoundingMode.HALF_UP;
 
+	public static final int NEW_TXN_SETTLE_TIME = 1;
+
 	public static final int UNCONFIRMED_CONF_COUNT = 0;
 	public static final int CONFIRMED_CONF_COUNT = 1;
 	public static final int BTC_COMPLETED_CONF_COUNT = 3;
@@ -28,5 +30,4 @@ public final class Defaults {
 	public static final boolean BLOCK_VERBOSITY = true;
 	public static final int PASSPHRASE_TIMEOUT = 1;
 	public static final int RAW_TXN_VERBOSITY = 1;
-
 }
