@@ -30,11 +30,14 @@ import com.neemre.bitplexus.backend.data.AddressRepository;
 import com.neemre.bitplexus.backend.data.CurrencyRepository;
 import com.neemre.bitplexus.backend.data.TransactionEndpointRepository;
 import com.neemre.bitplexus.backend.data.TransactionRepository;
+import com.neemre.bitplexus.backend.model.Address;
 import com.neemre.bitplexus.backend.model.Currency;
 import com.neemre.bitplexus.backend.model.TransactionEndpoint;
+import com.neemre.bitplexus.backend.model.enums.AddressStateTypes;
 import com.neemre.bitplexus.backend.model.enums.Currencies;
 import com.neemre.bitplexus.backend.model.enums.TransactionEndpointTypes;
 import com.neemre.bitplexus.backend.model.enums.TransactionStatusTypes;
+import com.neemre.bitplexus.backend.model.reference.AddressStateType;
 import com.neemre.bitplexus.backend.model.reference.TransactionStatusType;
 import com.neemre.bitplexus.backend.model.Transaction;
 import com.neemre.bitplexus.backend.service.AddressService;
@@ -46,7 +49,9 @@ import com.neemre.bitplexus.common.Errors;
 import com.neemre.bitplexus.common.dto.AddressDto;
 import com.neemre.bitplexus.common.dto.TransactionDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
+import com.neemre.bitplexus.common.dto.enums.TransactionTypes;
 import com.neemre.bitplexus.common.dto.virtual.PaymentDetailsDto;
+import com.neemre.bitplexus.common.dto.virtual.TransactionTypeDto;
 import com.neemre.bitplexus.common.util.CollectionUtils;
 import com.neemre.bitplexus.common.util.DateUtils;
 import com.neemre.bitplexus.common.util.StringUtils;
@@ -151,6 +156,23 @@ public class TransactionServiceImpl implements TransactionService {
 
 	@Transactional(readOnly = true)
 	@Override
+	public Integer findTransactionConfirmations(Long transactionId) throws NodeWrapperException {
+		Transaction transaction = transactionRepository.findOne(transactionId);
+		if (transaction.getBlockHeight() == null) {
+			return 0;
+		}
+		String chainCode = transaction.getTransactionEndpoints().get(0).getAddress().getAddressType()
+				.getChain().getCode();
+		if (nodeClient.isOperationalBtcChain(chainCode)) {
+			return nodeClient.getBtcBlock(transaction.getBlockHeight(), chainCode).getConfirmations();
+		} else if (nodeClient.isOperationalLtcChain(chainCode)) {
+			return nodeClient.getLtcBlock(transaction.getBlockHeight(), chainCode).getConfirmations();
+		}
+		throw new IllegalArgumentException(Errors.TODO.getDescription());
+	}
+
+	@Transactional(readOnly = true)
+	@Override
 	public BigDecimal findTransactionMinimumFee(String chainCode) {
 		Currency currency = currencyRepository.findByChainCode(chainCode);
 		if (currency.getName().equals(Currencies.BITCOIN.getName())) {
@@ -168,6 +190,35 @@ public class TransactionServiceImpl implements TransactionService {
 	public BigDecimal findTransactionOptimalFee(BigDecimal requiredAmount, Integer walletId, 
 			String chainCode) {
 		return findTransactionMinimumFee(chainCode);
+	}
+
+	@Transactional(readOnly = true)
+	@Override
+	public TransactionTypeDto findTransactionType(Long transactionId) {
+		Boolean isIncoming = false;
+		Boolean isOutgoing = false;
+		Transaction transaction = transactionRepository.findOne(transactionId);
+		for (TransactionEndpoint transactionEndpoint : transaction.getTransactionEndpoints()) {
+			Address address = addressRepository.findOne(transactionEndpoint.getAddress().getAddressId());
+			if ((transactionEndpoint.getTransactionEndpointType().getCode().equals(
+					TransactionEndpointTypes.INPUT.name())) && (address.getWallet() != null)) {
+				isOutgoing = true;
+			} else if ((transactionEndpoint.getTransactionEndpointType().getCode().equals(
+					TransactionEndpointTypes.OUTPUT_MAIN.name())) && (address.getWallet() != null)) {
+				isIncoming = true;
+			}
+		}
+		if (isIncoming && isOutgoing) {
+			return new TransactionTypeDto(TransactionTypes.INTERNAL.name(), 
+					TransactionTypes.INTERNAL.getName());
+		} else if (isIncoming) {
+			return new TransactionTypeDto(TransactionTypes.INCOMING.name(),
+					TransactionTypes.INCOMING.getName());
+		} else if (isOutgoing) {
+			return new TransactionTypeDto(TransactionTypes.OUTGOING.name(),
+					TransactionTypes.OUTGOING.getName());
+		}
+		throw new IllegalArgumentException(Errors.TODO.getDescription());
 	}
 
 	@Transactional
@@ -292,7 +343,7 @@ public class TransactionServiceImpl implements TransactionService {
 				.getScriptPubKey().getAddresses());
 		if (addressRepository.findByEncodedForm(encodedForm) == null) {
 			addressService.createNewExternalAddress(new AddressDto(null, null, null, null, null, 
-					encodedForm, null, null, null), chainCode);
+					encodedForm, null, null, null, null, null, null), chainCode);
 		}
 		transactionInput.setAddress(addressRepository.findByEncodedForm(encodedForm));
 		transactionInput.setTransactionEndpointType(transactionEndpointRepository
@@ -311,7 +362,7 @@ public class TransactionServiceImpl implements TransactionService {
 				.getScriptPubKey().getAddresses());
 		if (addressRepository.findByEncodedForm(encodedForm) == null) {
 			addressService.createNewExternalAddress(new AddressDto(null, null, null, null, null,
-					encodedForm, null, null, null), chainCode);
+					encodedForm, null, null, null, null, null, null), chainCode);
 		}
 		transactionInput.setAddress(addressRepository.findByEncodedForm(encodedForm));
 		transactionInput.setTransactionEndpointType(transactionEndpointRepository
@@ -328,7 +379,7 @@ public class TransactionServiceImpl implements TransactionService {
 		String encodedForm = Iterables.getOnlyElement(networkOutput.getScriptPubKey().getAddresses());
 		if (addressRepository.findByEncodedForm(encodedForm) == null) {
 			addressService.createNewExternalAddress(new AddressDto(null, null, null, null, null, 
-					encodedForm, null, null, null), chainCode);
+					encodedForm, null, null, null, null, null, null), chainCode);
 		}
 		transactionOutput.setAddress(addressRepository.findByEncodedForm(encodedForm));
 		if (transactionOutput.getAddress().getWallet() != null) {
@@ -349,7 +400,7 @@ public class TransactionServiceImpl implements TransactionService {
 		String encodedForm = Iterables.getOnlyElement(networkOutput.getScriptPubKey().getAddresses());
 		if (addressRepository.findByEncodedForm(encodedForm) == null) {
 			addressService.createNewExternalAddress(new AddressDto(null, null, null, null, null, 
-					encodedForm, null, null, null), chainCode);
+					encodedForm, null, null, null, null, null, null), chainCode);
 		}
 		transactionOutput.setAddress(addressRepository.findByEncodedForm(encodedForm));
 		if (transactionOutput.getAddress().getWallet() != null) {
@@ -385,9 +436,11 @@ public class TransactionServiceImpl implements TransactionService {
 			String chainCode) throws NodeWrapperException {
 		Transaction transaction = new Transaction();
 		BigDecimal fee = findTransactionOptimalFee(paymentDetailsDto.getAmount(), walletId, chainCode);
+		List<Address> usableAddresses = filterOutgoingTxnUsableAddresses(addressRepository
+				.findByWalletIdAndChainCode(walletId, chainCode));
 		if (nodeClient.isOperationalBtcChain(chainCode)) {
 			List<com.neemre.btcdcli4j.core.domain.Output> unspentOutputs = nodeClient.getBtcUnspentOutputs(
-					addressRepository.findByWalletIdAndChainCode(walletId, chainCode), chainCode);
+					usableAddresses, chainCode);
 			checkBtcOutgoingTxnSufficientFunds(unspentOutputs, paymentDetailsDto.getAmount(), fee);
 			List<com.neemre.btcdcli4j.core.domain.Output> selectedOutputs = selectBtcOutgoingTxnOutputs(
 					unspentOutputs, paymentDetailsDto.getAmount().add(fee), chainCode);
@@ -413,7 +466,7 @@ public class TransactionServiceImpl implements TransactionService {
 			}
 		} else if (nodeClient.isOperationalLtcChain(chainCode)) {
 			List<com.neemre.ltcdcli4j.core.domain.Output> unspentOutputs = nodeClient.getLtcUnspentOutputs(
-					addressRepository.findByWalletIdAndChainCode(walletId, chainCode), chainCode);
+					usableAddresses, chainCode);
 			checkLtcOutgoingTxnSufficientFunds(unspentOutputs, paymentDetailsDto.getAmount(), fee);
 			List<com.neemre.ltcdcli4j.core.domain.Output> selectedOutputs = selectLtcOutgoingTxnOutputs(
 					unspentOutputs, paymentDetailsDto.getAmount().add(fee), chainCode);
@@ -446,6 +499,19 @@ public class TransactionServiceImpl implements TransactionService {
 		Transaction sentTransaction = transactionRepository.saveAndFlush(transaction);
 		lockedTransactions.removeTransaction(sentTransaction.getNetworkUid());
 		return dtoAssembler.assemble(sentTransaction, Transaction.class, TransactionDto.class);
+	}
+
+	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+	private List<Address> filterOutgoingTxnUsableAddresses(List<Address> addresses) {
+		List<Address> usableAddresses = new ArrayList<Address>();
+		for (Address address : addresses) {
+			AddressStateType addressStateType = address.getAddressStateType();
+			if (!(addressStateType.getCode().equals(AddressStateTypes.ALLOCATED.name())) &&
+					!(addressStateType.getCode().equals(AddressStateTypes.DELETED.name()))) {
+				usableAddresses.add(address);
+			}
+		}
+		return usableAddresses;
 	}
 
 	@Transactional(propagation = Propagation.MANDATORY, readOnly = true)
@@ -544,7 +610,8 @@ public class TransactionServiceImpl implements TransactionService {
 		recipients.put(paymentDetailsDto.getRecipientAddress(), paymentDetailsDto.getAmount());
 		if (excessAmount.compareTo(BigDecimal.ZERO) > 0) {
 			AddressDto changeAddressDto = addressService.createNewWalletAddress(new AddressDto(null, 
-					walletId, null, null, null, null, null, null, null), true, chainCode);
+					walletId, null, null, null, null, null, null, null, null, null, null), true, 
+					chainCode);
 			recipients.put(changeAddressDto.getEncodedForm(), excessAmount);
 		}
 		recipients = CollectionUtils.shuffle(recipients);
@@ -561,7 +628,8 @@ public class TransactionServiceImpl implements TransactionService {
 		recipients.put(paymentDetailsDto.getRecipientAddress(), paymentDetailsDto.getAmount());
 		if (excessAmount.compareTo(BigDecimal.ZERO) > 0) {
 			AddressDto changeAddressDto = addressService.createNewWalletAddress(new AddressDto(null,
-					walletId, null, null, null, null, null, null, null), true, chainCode);
+					walletId, null, null, null, null, null, null, null, null, null, null), true, 
+					chainCode);
 			recipients.put(changeAddressDto.getEncodedForm(), excessAmount);
 		}
 		recipients = CollectionUtils.shuffle(recipients);
@@ -605,7 +673,7 @@ public class TransactionServiceImpl implements TransactionService {
 		String encodedForm = Iterables.getOnlyElement(networkOutput.getScriptPubKey().getAddresses());
 		if (addressRepository.findByEncodedForm(encodedForm) == null) {
 			addressService.createNewExternalAddress(new AddressDto(null, null, null, null, null, 
-					encodedForm, null, null, null), chainCode);
+					encodedForm, null, null, null, null, null, null), chainCode);
 		}
 		transactionOutput.setAddress(addressRepository.findByEncodedForm(encodedForm));
 		if (transactionOutput.getAddress().getEncodedForm().equals(recipientAddress)) {
@@ -626,7 +694,7 @@ public class TransactionServiceImpl implements TransactionService {
 		String encodedForm = Iterables.getOnlyElement(networkOutput.getScriptPubKey().getAddresses());
 		if (addressRepository.findByEncodedForm(encodedForm) == null) {
 			addressService.createNewExternalAddress(new AddressDto(null, null, null, null, null,
-					encodedForm, null, null, null), chainCode);
+					encodedForm, null, null, null, null, null, null), chainCode);
 		}
 		transactionOutput.setAddress(addressRepository.findByEncodedForm(encodedForm));
 		if (transactionOutput.getAddress().getEncodedForm().equals(recipientAddress)) {

@@ -41,6 +41,23 @@ public class ChainServiceImpl implements ChainService {
 
 	@Transactional(readOnly = true)
 	@Override
+	public Boolean checkChainOperationality(Short chainId) {
+		Chain chain = chainRepository.findOne(chainId);
+		if ((chain != null) && (chain.getIsOperational().equals(true))) {
+			return true;
+		}
+		return false;
+	}
+
+	@Transactional(readOnly = true)
+	@Override
+	public ChainDto findChainById(Short chainId) {
+		Chain chain = chainRepository.findOne(chainId);
+		return dtoAssembler.assemble(chain, Chain.class, ChainDto.class);
+	}
+
+	@Transactional(readOnly = true)
+	@Override
 	public List<ChainDto> findChainsByOperationality(Boolean isOperational) {
 		List<Chain> chains = chainRepository.findByIsOperational(isOperational);
 		return dtoAssembler.assemble(chains, Chain.class, ChainDto.class);

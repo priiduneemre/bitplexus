@@ -9,6 +9,8 @@ import com.neemre.bitplexus.backend.model.reference.TransactionStatusType;
 
 public interface TransactionRepository {
 
+	Integer countByAddressId(Long addressId);
+
 	BigDecimal estimateFeeByHexTxnAndFeeCoefficient(String currencyName, String hexTransaction, 
 			BigDecimal feeCoefficient);
 

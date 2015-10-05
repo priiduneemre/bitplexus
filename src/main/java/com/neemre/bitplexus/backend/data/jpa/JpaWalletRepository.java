@@ -19,7 +19,7 @@ public interface JpaWalletRepository extends WalletRepository, JpaRepository<Wal
 
 	@Override
 	@Query("SELECT w FROM Wallet AS w INNER JOIN w.walletStateType AS wst INNER JOIN w.customer AS c "
-			+ "WHERE c.username = :username ORDER BY wst.walletStateTypeId, w.name")
+			+ "WHERE c.username = :username ORDER BY w.name")
 	List<Wallet> findByCustomerUsername(@Param("username") String username);
 
 	@Override

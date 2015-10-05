@@ -19,11 +19,14 @@ import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
 import com.neemre.bitplexus.backend.crypto.adapter.NodeClientAdapter;
 import com.neemre.bitplexus.backend.data.AddressRepository;
 import com.neemre.bitplexus.backend.data.AddressTypeRepository;
+import com.neemre.bitplexus.backend.data.TransactionEndpointRepository;
+import com.neemre.bitplexus.backend.data.TransactionRepository;
 import com.neemre.bitplexus.backend.data.WalletRepository;
 import com.neemre.bitplexus.backend.model.Address;
 import com.neemre.bitplexus.backend.model.AddressType;
 import com.neemre.bitplexus.backend.model.Wallet;
 import com.neemre.bitplexus.backend.model.enums.AddressStateTypes;
+import com.neemre.bitplexus.backend.model.enums.TransactionEndpointTypes;
 import com.neemre.bitplexus.backend.model.enums.WalletStateTypes;
 import com.neemre.bitplexus.backend.service.AddressService;
 import com.neemre.bitplexus.common.Constants;
@@ -39,6 +42,10 @@ public class AddressServiceImpl implements AddressService {
 	@Autowired
 	private AddressTypeRepository addressTypeRepository;
 	@Autowired
+	private TransactionEndpointRepository transactionEndpointRepository;
+	@Autowired
+	private TransactionRepository transactionRepository;
+	@Autowired
 	private WalletRepository walletRepository;
 
 	@Resource(name = "dtoAssembler")
@@ -48,6 +55,22 @@ public class AddressServiceImpl implements AddressService {
 	@Autowired
 	private NodeClientAdapter nodeClient;
 
+
+	@Transactional(readOnly = true)
+	@Override
+	public Boolean checkAddressOwnership(Long addressId, String username) {
+		Address address = addressRepository.findOne(addressId);
+		if (address.getWallet().getCustomer().getUsername().equals(username)) {
+			return true;
+		}
+		return false;
+	}
+
+	@Transactional(readOnly = true)
+	@Override
+	public Integer countAddressTransactions(Long addressId) {
+		return transactionRepository.countByAddressId(addressId);
+	}
 
 	@Transactional(readOnly = true)
 	@Override
@@ -87,7 +110,7 @@ public class AddressServiceImpl implements AddressService {
 		address.setWallet(relatedWallet);
 		address.setAddressType(new AddressType(addressTypeRepository.findIdByAddressAndChainCode(
 				address.getEncodedForm(), chainCode), null, null, null, null, null, null, null, null));
-		if (address.getLabel() == null) {
+		if ((address.getLabel() == null) || (address.getLabel().isEmpty())) {
 			address.setLabel(getNewAddressDefaultLabel(isChange, address.getWallet().getWalletId(), 
 					chainCode));
 		}
@@ -136,6 +159,28 @@ public class AddressServiceImpl implements AddressService {
 		return Lists.newArrayList(Splitter.on(Constants.STRING_COMMA).omitEmptyStrings().trimResults()
 				.split(MoreObjects.firstNonNull(encodedFormsCsv, Constants.STRING_EMPTY)
 						.replaceAll(Constants.STRING_NULL, Constants.STRING_EMPTY)));
+	}
+
+	@Transactional(readOnly = true)
+	@Override
+	public BigDecimal findAddressTotalReceived(Long addressId) {
+		BigDecimal mainOutputSum = MoreObjects.firstNonNull(
+				transactionEndpointRepository.sumAmountByAddressIdAndTxnEndpointTypeCode(addressId, 
+						TransactionEndpointTypes.OUTPUT_MAIN.name()), BigDecimal.ZERO);
+		BigDecimal changeOutputSum = MoreObjects.firstNonNull(
+				transactionEndpointRepository.sumAmountByAddressIdAndTxnEndpointTypeCode(addressId, 
+						TransactionEndpointTypes.OUTPUT_CHANGE.name()), BigDecimal.ZERO);
+		BigDecimal outputSum = mainOutputSum.add(changeOutputSum);
+		return outputSum;
+	}
+
+	@Transactional(readOnly = true)
+	@Override
+	public BigDecimal findAddressTotalSent(Long addressId) {
+		BigDecimal inputSum = MoreObjects.firstNonNull(
+				transactionEndpointRepository.sumAmountByAddressIdAndTxnEndpointTypeCode(addressId, 
+						TransactionEndpointTypes.INPUT.name()), BigDecimal.ZERO);
+		return inputSum;
 	}
 
 	@Transactional(readOnly = true)

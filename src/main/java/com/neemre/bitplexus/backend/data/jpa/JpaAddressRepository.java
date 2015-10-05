@@ -46,7 +46,7 @@ public interface JpaAddressRepository extends AddressRepository, JpaRepository<A
 	@Override
 	@Query("SELECT a FROM Address AS a INNER JOIN a.addressStateType AS ast INNER JOIN a.wallet AS w "
 			+ "INNER JOIN a.addressType AS at INNER JOIN at.chain AS ch WHERE w.walletId = :walletId "
-			+ "AND ch.code = :chainCode ORDER BY ast.addressStateTypeId, a.label")
+			+ "AND ch.code = :chainCode ORDER BY a.label, a.encodedForm")
 	List<Address> findByWalletIdAndChainCode(@Param("walletId") Integer walletId, 
 			@Param("chainCode") String chainCode);
 

@@ -7,6 +7,7 @@ import java.util.List;
 import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
 import com.neemre.bitplexus.common.dto.TransactionDto;
 import com.neemre.bitplexus.common.dto.virtual.PaymentDetailsDto;
+import com.neemre.bitplexus.common.dto.virtual.TransactionTypeDto;
 
 public interface TransactionService {
 
@@ -23,10 +24,14 @@ public interface TransactionService {
 
 	TransactionDto findTransactionByNetworkUid(String networkUid);
 
+	Integer findTransactionConfirmations(Long transactionId) throws NodeWrapperException;
+
 	BigDecimal findTransactionMinimumFee(String chainCode);
 
 	BigDecimal findTransactionOptimalFee(BigDecimal requiredAmount, Integer walletId, 
 			String chainCode);
+
+	TransactionTypeDto findTransactionType(Long transactionId);
 
 	TransactionDto receiveNewTransaction(String networkUid, String chainCode) 
 			throws NodeWrapperException;

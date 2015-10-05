@@ -17,6 +17,11 @@ public interface JpaTransactionRepository extends TransactionRepository,
 		JpaRepository<Transaction, Long> {
 
 	@Override
+	@Query("SELECT count(DISTINCT t.transactionId) FROM Transaction AS t "
+			+ "INNER JOIN t.transactionEndpoints AS te INNER JOIN te.address AS a "
+			+ "WHERE a.addressId = :addressId")
+	Integer countByAddressId(@Param("addressId") Long addressId);
+
 	@Procedure("f_estimate_transaction_fee")
 	BigDecimal estimateFeeByHexTxnAndFeeCoefficient(String currencyName, String hexTransaction, 
 			BigDecimal feeCoefficient);
@@ -26,7 +31,7 @@ public interface JpaTransactionRepository extends TransactionRepository,
 	Transaction findByNetworkUid(@Param("networkUid") String networkUid);
 
 	@Override
-	@Query("SELECT t FROM Transaction AS t INNER JOIN t.transactionEndpoints AS te "
+	@Query("SELECT DISTINCT t FROM Transaction AS t INNER JOIN t.transactionEndpoints AS te "
 			+ "INNER JOIN te.address AS a INNER JOIN a.wallet AS w INNER JOIN a.addressType AS at "
 			+ "INNER JOIN at.chain AS ch WHERE w.walletId = :walletId AND ch.code = :chainCode "
 			+ "ORDER BY t.receivedAt DESC")

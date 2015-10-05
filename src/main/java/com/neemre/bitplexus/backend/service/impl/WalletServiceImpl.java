@@ -17,8 +17,11 @@ import com.neemre.bitplexus.backend.data.CustomerRepository;
 import com.neemre.bitplexus.backend.data.WalletRepository;
 import com.neemre.bitplexus.backend.model.Wallet;
 import com.neemre.bitplexus.backend.model.enums.WalletStateTypes;
+import com.neemre.bitplexus.backend.service.ChainService;
+import com.neemre.bitplexus.backend.service.TransactionService;
 import com.neemre.bitplexus.backend.service.WalletService;
 import com.neemre.bitplexus.common.PropertyKeys;
+import com.neemre.bitplexus.common.dto.ChainDto;
 import com.neemre.bitplexus.common.dto.WalletDto;
 import com.neemre.bitplexus.common.dto.assembly.DtoAssembler;
 
@@ -37,6 +40,35 @@ public class WalletServiceImpl implements WalletService {
 	@Resource(name = "messageSource")
 	private MessageSource messageSource;
 
+	@Autowired
+	private ChainService chainService;
+	@Autowired
+	private TransactionService transactionService;
+
+
+	@Transactional(readOnly = true)
+	@Override
+	public Boolean checkSubwalletSufficientFunds(BigDecimal requiredAmount, Integer walletId, 
+			String chainCode) {
+		BigDecimal subwalletBalance = addressRepository.sumBalanceByWalletIdAndChainCode(walletId, 
+				chainCode);
+		BigDecimal fee = transactionService.findTransactionOptimalFee(requiredAmount, walletId,
+				chainCode);
+		if (subwalletBalance.compareTo(requiredAmount.add(fee)) >= 0) {
+			return true;
+		}
+		return false;
+	}
+
+	@Transactional(readOnly = true)
+	@Override
+	public Boolean checkWalletOwnership(Integer walletId, String username) {
+		Wallet wallet = walletRepository.findOne(walletId);
+		if (wallet.getCustomer().getUsername().equals(username)) {
+			return true;
+		}
+		return false;
+	}
 
 	@Transactional(readOnly = true)
 	@Override
@@ -51,7 +83,7 @@ public class WalletServiceImpl implements WalletService {
 		wallet.setCustomer(customerRepository.findByUsername(walletDto.getUsername()));
 		wallet.setWalletStateType(walletRepository.findWalletStateTypeByCode(
 				WalletStateTypes.CREATED.name()));
-		if (wallet.getName() == null) {
+		if ((wallet.getName() == null) || wallet.getName().isEmpty()) {
 			wallet.setName(getNewWalletDefaultName(wallet.getCustomer().getCustomerId()));
 		}
 		Wallet createdWallet = walletRepository.saveAndFlush(wallet);
@@ -74,6 +106,20 @@ public class WalletServiceImpl implements WalletService {
 	@Override
 	public BigDecimal findSubwalletBalance(Integer walletId, String chainCode) {
 		return addressRepository.sumBalanceByWalletIdAndChainCode(walletId, chainCode);
+	}
+
+	@Transactional(readOnly = true)
+	@Override
+	public BigDecimal findWalletBalance(Integer walletId) {
+		BigDecimal balance = BigDecimal.ZERO;
+		List<ChainDto> chains = chainService.findChainsByOperationality(true);
+		for (ChainDto chain : chains) {
+			BigDecimal subwalletBalance = addressRepository.sumBalanceByWalletIdAndChainCode(walletId,
+					chain.getCode());
+			BigDecimal unitPrice = chainService.findChainUnitPrice(chain.getCode());
+			balance = balance.add(subwalletBalance.multiply(unitPrice));
+		}
+		return balance;
 	}
 
 	@Transactional(readOnly = true)

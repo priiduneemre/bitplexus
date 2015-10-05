@@ -1,11 +1,16 @@
 package com.neemre.bitplexus.backend.service;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import com.neemre.bitplexus.backend.crypto.NodeWrapperException;
 import com.neemre.bitplexus.common.dto.AddressDto;
 
 public interface AddressService {
+
+	Boolean checkAddressOwnership(Long addressId, String username);
+
+	Integer countAddressTransactions(Long addressId);
 
 	Integer countSubwalletAddressesByLabel(String labelFragment, Integer walletId, String chainCode);
 
@@ -19,6 +24,10 @@ public interface AddressService {
 	AddressDto findAddressById(Long addressId);
 
 	List<String> findAddressesByTransactionNetworkUid(String networkUid);
+
+	BigDecimal findAddressTotalReceived(Long addressId);
+
+	BigDecimal findAddressTotalSent(Long addressId);
 
 	List<AddressDto> findExternalAddressesByChainCode(String chainCode);
 
