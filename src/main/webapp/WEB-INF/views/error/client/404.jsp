@@ -1,4 +1,9 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="bpl" uri="http://www.bitplexus.com/jstl/tags/layout" %>
 
+<c:url value="404" var="pageBaseUrl"/>
+
+<bpl:page activeMenuItem="null" title="Page not found">
 		<div class="container">
 			<div class="row">
 				<div class="col-md-12">
@@ -14,7 +19,7 @@
 										You've reached a dead end... this page has either been moved, deleted, or it never 
 										existed in the first place :(.
 									</p>
-									<a class="btn btn-success body-btn-margin" href="">Back to homepage</a>
+									<a class="btn btn-success body-btn-margin" href="${pageBaseUrl}/../">Back to homepage</a>
 									<p class="small">
 										P.S. If this link ruined your day, please consider <a href="mailto:tips@bitplexus.com">reporting it</a>.
 									</p>
@@ -25,3 +30,4 @@
 				</div>
 			</div>
 		</div>
+</bpl:page>

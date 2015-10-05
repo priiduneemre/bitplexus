@@ -1,4 +1,9 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="bpl" uri="http://www.bitplexus.com/jstl/tags/layout" %>
 
+<c:url value="500" var="pageBaseUrl"/>
+
+<bpl:page activeMenuItem="null" title="Internal server error">
 		<div class="container">
 			<div class="row">
 				<div class="col-md-12">
@@ -14,7 +19,7 @@
 										Well, that was unexpected... the server stumbled over itself and was unable	to
 										complete your request :(.
 									</p>
-									<a class="btn btn-success body-btn-margin" href="">Back to homepage</a>
+									<a class="btn btn-success body-btn-margin" href="${pageBaseUrl}/../">Back to homepage</a>
 									<p class="small">
 										P.S. If this problem ruined your day, please consider <a href="mailto:tips@bitplexus.com">reporting it</a>.
 									</p>
@@ -25,3 +30,4 @@
 				</div>
 			</div>
 		</div>
+</bpl:page>

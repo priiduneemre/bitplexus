@@ -1,4 +1,9 @@
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="bpl" uri="http://www.bitplexus.com/jstl/tags/layout" %>
 
+<c:url value="403" var="pageBaseUrl"/>
+
+<bpl:page activeMenuItem="null" title="Access denied">
 		<div class="container">
 			<div class="row">
 				<div class="col-md-12">
@@ -14,7 +19,7 @@
 										Nothing to see here folks, move along. You don't have permission to view this page --
 										at least not with those credentials :(.
 									</p>
-									<a class="btn btn-success body-btn-margin" href="">Back to homepage</a>
+									<a class="btn btn-success body-btn-margin" href="${pageBaseUrl}/../">Back to homepage</a>
 								</div>
 							</div>
 						</div>
@@ -22,3 +27,4 @@
 				</div>
 			</div>
 		</div>
+</bpl:page>
