@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<taglib xmlns="http://java.sun.com/xml/ns/javaee"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+		http://java.sun.com/xml/ns/javaee
+		http://java.sun.com/xml/ns/javaee/web-jsptaglibrary_2_1.xsd" 
+	version="2.1">
+	
+	<description>Top-level layout fragments for the 'Bitplexus' cryptocurrency wallet project</description>
+	<display-name>Bitplexus - layout tags</display-name>
+	<tlib-version>1.0.0</tlib-version>
+	<short-name>bpl</short-name>
+	<uri>http://www.bitplexus.com/jstl/tags/layout</uri>
+	
+	<tag-file>
+		<name>page</name>
+		<path>/WEB-INF/tags/layout/page.tag</path>
+	</tag-file>
+	<tag-file>
+		<name>header</name>
+		<path>/WEB-INF/tags/layout/header.tag</path>
+	</tag-file>
+	<tag-file>
+		<name>menu</name>
+		<path>/WEB-INF/tags/layout/menu.tag</path>
+	</tag-file>
+	<tag-file>
+		<name>footer</name>
+		<path>/WEB-INF/tags/layout/footer.tag</path>
+	</tag-file>
+</taglib>

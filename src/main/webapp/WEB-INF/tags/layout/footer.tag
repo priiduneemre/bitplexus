@@ -13,22 +13,22 @@
 					<div class="col-md-5 col-lg-7 text-center">
 						<a href="" title="Home">Home</a> 
 						<span class="footer-separator-color">·</span> 
-						<a href="faq/" title="FAQ">FAQ</a>
+						<a href="faq" title="FAQ">FAQ</a>
 						<span class="footer-separator-color">·</span>
 						<a href="mailto:support@bitplexus.com" title="Support">Support</a>
 						<span class="footer-separator-color">·</span>
-						<a href="privacy/" title="Privacy Policy">Privacy Policy</a>
+						<a href="privacy" title="Privacy Policy">Privacy Policy</a>
 						<span class="footer-separator-color">·</span> 
-						<a href="terms/" title="Terms of Service">Terms of Service</a>
+						<a href="terms" title="Terms of Service">Terms of Service</a>
 						<span class="footer-separator-color">·</span> 
-						<a href="blog/" title="Blog">Blog</a>
+						<a href="blog" title="Blog">Blog</a>
 						<span class="footer-separator-color">·</span>
-						<a href="about-us/" title="About Us">About Us</a>
+						<a href="about-us" title="About Us">About Us</a>
 						<span class="footer-separator-color">·</span>
-						<a href="dev/" title="Developers">Developers</a>
+						<a href="dev" title="Developers">Developers</a>
 					</div>
 					<div class="col-md-3 col-lg-2 text-right">
-						<a class="btn btn-xs btn-social-icon btn-facebook" href="https://www.facebook.com/priidu.neemre" target="_blank">
+						<a class="btn btn-xs btn-social-icon btn-facebook" href="https://facebook.com/priidu.neemre" target="_blank">
 							<i class="fa fa-facebook"></i>
 						</a>
 						<a class="btn btn-xs btn-social-icon btn-twitter" href="https://twitter.com/pneemre" target="_blank">
@@ -40,7 +40,7 @@
 						<a class="btn btn-xs btn-social-icon btn-github" href="https://github.com/priiduneemre/bitplexus" target="_blank">
 							<i class="fa fa-github"></i>
 						</a>
-						<a href="${requestScope['javax.servlet.forward.request_uri']}#" title="Back to top">
+						<a href="${requestScope['javax.servlet.forward.request_uri']}#top" title="Back to top">
 							<span id="footer-top-button" class="glyphicon glyphicon-menu-up" aria-hidden="true"></span>
 						</a>
 					</div>

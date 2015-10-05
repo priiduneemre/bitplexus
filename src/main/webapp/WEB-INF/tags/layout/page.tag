@@ -1,4 +1,7 @@
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@ taglib prefix="bpl" uri="http://www.bitplexus.com/jstl/tags/layout" %>
+
+<%@ attribute name="activeMenuItem" required="true" rtexprvalue="true" %>
+<%@ attribute name="title" required="true" rtexprvalue="true" %>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -11,7 +14,7 @@
 		<meta name="keywords" content="bitcoin, blockchain, cryptocurrency, litecoin, multicurrency, multi-currency, online wallet, wallet, wallet service, web wallet"/>
 		<meta name="author" content="Priidu Neemre"/>
 
-		<title>Bitplexus - Take control of your money | Cryptocurrency Wallet</title>
+		<title>Bitplexus - ${title} | Cryptocurrency Wallet</title>
 
 		<base href="/bitplexus-webapp/"/>
 
@@ -26,10 +29,13 @@
 		<link rel="stylesheet" type="text/css" href="static/css/template.css"/>
 		<script type="text/javascript" src="static/js/vendor/jquery/2.1.4/jquery.min.js"></script>
 		<script type="text/javascript" src="static/js/vendor/bootstrap/3.3.5/bootstrap.min.js"></script>
+		<script type="text/javascript" src="static/js/bootstrap-override.js"></script>
+		<script type="text/javascript" src="static/js/exchange.js"></script>
+		<script type="text/javascript" src="static/js/widget.js"></script>
 	</head>
 	<body>
-		<jsp:include page="header.jsp"/>
-		<jsp:include page="../login.jsp"/>
-		<jsp:include page="footer.jsp"/>
+		<bpl:header activeMenuItem="${activeMenuItem}"/>
+		<jsp:doBody/>
+		<bpl:footer/>
 	</body>
 </html>
