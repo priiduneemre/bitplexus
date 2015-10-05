@@ -6,11 +6,16 @@ import lombok.ToString;
 @ToString
 @AllArgsConstructor
 public enum AddressStateTypes {
-	
+
 	ALLOCATED,
 	ACTIVE,
 	USED,
 	HIDDEN,
 	DELETED,
 	NOT_APPLICABLE;
+
+
+	public String getName() {
+		return name();
+	}
 }

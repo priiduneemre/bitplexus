@@ -11,4 +11,9 @@ public enum Roles {
 	SUPPORT_ENGINEER,
 	DATABASE_MANAGER,
 	DATABASE_ADMIN;
+
+
+	public String getName() {
+		return name();
+	}
 }

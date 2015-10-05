@@ -6,8 +6,13 @@ import lombok.ToString;
 @ToString
 @AllArgsConstructor
 public enum TransactionEndpointTypes {
-	
+
 	INPUT,
 	OUTPUT_MAIN,
 	OUTPUT_CHANGE;
+
+
+	public String getName() {
+		return name();
+	}
 }

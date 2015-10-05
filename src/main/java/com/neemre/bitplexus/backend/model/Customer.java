@@ -51,7 +51,7 @@ public class Customer extends Person {
 	
 	@Setter(AccessLevel.NONE)
 	@OneToMany(fetch = FetchType.LAZY, mappedBy = "customer")
-	@OrderBy("walletStateType, name")
+	@OrderBy("name")
 	private List<Wallet> wallets = new ArrayList<Wallet>();
 	
 	

@@ -14,23 +14,31 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Dto("com.neemre.bitplexus.backend.model.Wallet")
-public class WalletDto implements Serializable {
+@Dto("com.neemre.bitplexus.backend.model.Currency")
+public class CurrencyDto implements Serializable {
 
 	private static final long serialVersionUID = 1L;
 
-	@DtoField(value = "walletId", readOnly = true)
-	private Integer walletId;
-	@DtoField(value = "customer.username", readOnly = true, entityBeanKeys = {"Customer"})
-	private String username;
-	@DtoField(value = "walletStateType", readOnly = true, dtoBeanKey = "WalletStateTypeDto", 
-			entityBeanKeys = {"WalletStateType"})
-	private WalletStateTypeDto walletStateType;
+	@DtoField(value = "currencyId", readOnly = true)
+	private Short currencyId;
 	@DtoField("name")
 	private String name;
-	private BigDecimal balance;
+	@DtoField("abbreviation")
+	private String abbreviation;
+	@DtoField("symbol")
+	private String symbol;
+	@DtoField("launchedOn")
+	private Date launchedOn;
+	@DtoField("blockTime")
+	private Integer blockTime;
+	@DtoField("standardFee")
+	private BigDecimal standardFee;
+	@DtoField("websiteUrl")
+	private String websiteUrl;
 	@DtoField(value = "createdAt", readOnly = true)
 	private Date createdAt;
 	@DtoField(value = "updatedAt", readOnly = true)
 	private Date updatedAt;
+	@DtoField(value = "updatedBy.employeeId", readOnly = true, entityBeanKeys = {"Employee"})
+	private Integer updatedById;
 }
